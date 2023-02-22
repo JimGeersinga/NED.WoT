@@ -1,4 +1,5 @@
 ﻿@inject SettingService SettingService
+@inject IJSRuntime JSRuntime
 
 <MudItem xs="6">
     <MudPaper Elevation="4" Outlined="true">
@@ -12,7 +13,7 @@
                 }
             </ToolBarContent>
             <ColGroup>
-                <col />
+                <col style="width: 50px" />
                 <col />
                 <col />
                 <col />
@@ -29,17 +30,16 @@
             </ColGroup>
             <HeaderContent>
                 <MudTHeadRow Class="header-centered">
-                    <MudTh colspan="2" Class="sticky-left"></MudTh>
-                    <MudTh></MudTh>
+                    <MudTh colspan="3" Class="sticky-left"></MudTh>
                     <MudTh colspan="3">Prestatie</MudTh>
                     <MudTh colspan="3">Schade</MudTh>
                     <MudTh colspan="3">Schoten</MudTh>
                     <MudTh colspan="2">Overig</MudTh>
                 </MudTHeadRow>
                 <MudTHeadRow>
-                    <MudTh Class="sticky-left number"><MudTableSortLabel SortBy="new Func<Player, object>(x=>x.Number)">Nr</MudTableSortLabel></MudTh>
+                    <MudTh Class="sticky-left"><MudTableSortLabel SortBy="new Func<Player, object>(x=>x.Number)">Nr</MudTableSortLabel></MudTh>
                     <MudTh Class="sticky-left name"><MudTableSortLabel SortBy="new Func<Player, object>(x=>x.DisplayName)">Naam</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<Player, object>(x=>x.Vehicle)">Tank</MudTableSortLabel></MudTh>
+                    <MudTh Class="sticky-left vehicle"><MudTableSortLabel SortBy="new Func<Player, object>(x=>x.Vehicle)">Tank</MudTableSortLabel></MudTh>
                     <MudTh><MudTableSortLabel InitialDirection="SortDirection.Descending" SortBy="new Func<Player, object>(x=>x.ExperienceEarned)">XP</MudTableSortLabel></MudTh>
                     <MudTh><MudTableSortLabel SortBy="new Func<Player, object>(x=>x.CreditsEarned)">Credits</MudTableSortLabel></MudTh>
                     <MudTh><MudTableSortLabel SortBy="new Func<Player, object>(x=>x.Kills)">Kills</MudTableSortLabel></MudTh>
@@ -54,9 +54,9 @@
                 </MudTHeadRow>
             </HeaderContent>
             <RowTemplate>
-                <MudTd DataLabel="Number" Class="sticky-left number ">@context.Number</MudTd>
+                <MudTd DataLabel="Number" Class="sticky-left">@context.Number</MudTd>
                 <MudTd DataLabel="Name" Class="no-break sticky-left name">@context.DisplayName</MudTd>
-                <MudTd DataLabel="Vehicle" Class="no-break">@context.Vehicle</MudTd>
+                <MudTd DataLabel="Vehicle" Class="no-break sticky-left vehicle">@context.Vehicle</MudTd>
                 <MudTd DataLabel="ExperienceEarned">@context.ExperienceEarned</MudTd>
                 <MudTd DataLabel="CreditsEarned">@context.CreditsEarned</MudTd>
                 <MudTd DataLabel="Kills">@context.Kills</MudTd>
@@ -78,6 +78,15 @@
     [Parameter]
     public Team Team { get; set; }
 
+    private int _nameOffset = 0;
+    private int _vehicleOffset = 0;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await JSRuntime.InvokeVoidAsync("keepElementOffset", $".mud-table.player-table .sticky-left.name");
+        await JSRuntime.InvokeVoidAsync("keepElementOffset", $".mud-table.player-table .sticky-left.vehicle");
+    }
+
     private string HighlightPlayerClassFunc(Player player, int rowNumber)
     {
         if (player.Name != null && player.Name?.ToLower() == SettingService.Settings.PlayerName?.ToLower())
@@ -85,6 +94,7 @@
 
         if (player.IsTeamKiller.GetValueOrDefault())
             return "teamkiller";
+
 
         return string.Empty;
     }

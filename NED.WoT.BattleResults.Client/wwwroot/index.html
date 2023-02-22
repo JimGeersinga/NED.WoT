@@ -33,6 +33,23 @@
 
     <script src="_framework/blazor.webview.js" autostart="false"></script>
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
+
+    <script>
+        function keepElementOffset(selector) {
+            var elements = document.querySelectorAll(selector);
+            for (var i = 0; i < elements.length; i++) {
+                var offset = elements[i].offsetLeft;
+                elements[i].style = `left: ${offset}px`;          
+            }
+        }
+
+        function scrollIntoView(elementId) {
+            var elem = document.getElementById(elementId);
+            if (elem) {
+                elem.scrollIntoView();
+            }
+        }
+    </script>
 </body>
 
 </html>

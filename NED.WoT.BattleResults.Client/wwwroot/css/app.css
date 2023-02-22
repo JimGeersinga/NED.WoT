@@ -151,6 +151,10 @@ a, .btn-link {
     white-space: nowrap;
 }
 
+.mud-table.player-table .mud-table-row {
+    position: relative;
+}
+
 .mud-table.player-table .mud-table-cell.sticky-left {
     left: 0;
     position: sticky;
@@ -164,14 +168,6 @@ a, .btn-link {
 
 .mud-table.player-table .teamkiller .name {
     color: var(--mud-palette-info);
-}
-
-.mud-table.player-table .mud-table-cell.sticky-left.name {
-    left: 82.08px;
-}
-
-.mud-table.player-table .mud-table-cell.sticky-left.tank {
-    left: 284.34px;
 }
 
 .mud-table.player-table {
@@ -198,6 +194,7 @@ a, .btn-link {
     color: var(--mud-palette-warning) !important;
 }
 
-.report-table.mud-table-sticky-header > .mud-table-container > .mud-table-root > .mud-table-head * .mud-table-cell {
+.report-table.mud-table-sticky-header > .mud-table-container > .mud-table-root > .mud-table-head * .mud-table-cell,
+.report-table.mud-table-sticky-footer > .mud-table-container > .mud-table-root > .mud-table-foot * .mud-table-cell {
     z-index: 4;
 }

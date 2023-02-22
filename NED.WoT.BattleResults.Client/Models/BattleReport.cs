@@ -94,7 +94,7 @@ public class Player
         {            
             if(!string.IsNullOrEmpty(Clan))
             {
-                return $"{Name} [{Clan}]";
+                return $"[{Clan}] {Name}";
             }
             return $"{Name}";
         }

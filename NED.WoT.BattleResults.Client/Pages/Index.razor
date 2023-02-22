@@ -4,6 +4,7 @@
 
 @inject BattleReportService BattleResultService;
 @inject SettingService SettingService;
+@inject IJSRuntime JSRuntime;
 
 
 <MudToolBar Style="background-color:var(--mud-palette-surface)">
@@ -39,7 +40,7 @@
         <MudTh>Uitslag</MudTh>
     </HeaderContent>
     <GroupHeaderTemplate>
-        <MudTh Class="mud-table-cell-custom-group " colspan="5">
+        <MudTh Class="mud-table-cell-custom-group " colspan="4">
             @{
                 var wins = context.Items.Count(x => x.IsWin(SettingService.Settings));
                 var loses = context.Items.Count(x => x.IsLose(SettingService.Settings));
@@ -50,16 +51,17 @@
                 <MudText Typo="Typo.subtitle1" Class="d-inline"><b>@context.Key</b>, <b>@context.Items.Count()</b> battles gespeeld</MudText>
                 <MudText Typo="Typo.subtitle1" Class="d-inline">
 
-                    <b class="@Result.Win.ToString()">@wins</b> W
+                    <b class="@Result.Win.ToString()">@wins</b> Gewonnen
                     <span class="mx-2 grey-text text-darken-1">|</span>
-                    <b class="@Result.Draw.ToString()">@draws</b> D
+                    <b class="@Result.Draw.ToString()">@draws</b> Gelijkspel
                     <span class="mx-2 grey-text text-darken-1">|</span>
-                    <b class="@Result.Lose.ToString()">@loses</b> L
+                    <b class="@Result.Lose.ToString()">@loses</b> Verloren
                     <span class="mx-2 grey-text text-darken-1">|</span>
-                    <b>@unknowns</b> U
+                    <b>@unknowns</b> Onbekend
                 </MudText>
             </div>
         </MudTh>
+        <MudTh></MudTh>
     </GroupHeaderTemplate>
     <RowTemplate>
         @if (context.Error != null)
@@ -71,7 +73,7 @@
             Team ownTeam = context.GetOwnTeam(SettingService.Settings);
             var mapBase = ownTeam == null ? string.Empty : ownTeam.Number == 1 ? "I" : "II";
 
-            var result = "Unkown";
+            var result = "Onbekend";
             if (ownTeam != null)
             {
                 result = ownTeam.Result switch
@@ -79,11 +81,16 @@
                     Result.Win => "Gewonnen",
                     Result.Lose => "Verloren",
                     Result.Draw => "Gelijkspel",
-                    _ => "Unkown",
+                    _ => "Onbekend",
                 };
             }
 
-            <MudTd><MudToggleIconButton @bind-Toggled="@context.ShowDetails" Size="Size.Medium" ToggledSize="Size.Medium" Icon="@Icons.Material.Filled.KeyboardArrowRight" ToggledIcon="@Icons.Material.Filled.KeyboardArrowDown" /></MudTd>
+            var id = $"Timestamp_{context.Timestamp.Ticks}_achor";
+
+            <MudTd Class="relative">
+                <MudToggleIconButton Toggled="context.ShowDetails" ToggledChanged="(e) => OnShowDetailsAsync(e, context)" Size="Size.Medium" ToggledSize="Size.Medium" Icon="@Icons.Material.Filled.KeyboardArrowRight" ToggledIcon="@Icons.Material.Filled.KeyboardArrowDown" />
+                <a id="@id" style="position: absolute; top:-61px;" />
+            </MudTd>
             <MudTd DataLabel="Timestamp">@context.Timestamp.ToString("dd/MM/yyyy HH:mm:ss")</MudTd>
             <MudTd DataLabel="MapName">@context.MapName @mapBase</MudTd>
             <MudTd DataLabel="Versus">
@@ -98,7 +105,7 @@
         @if (context.ShowDetails)
         {
             <MudTr>
-                <td colspan="5" class="pa-4 mud-table-cell">
+                <td colspan="5" class="pa-4 mud-table-cell relative">
                     <MudGrid Spacing="1">
                         <TeamStats Team="@context.Team1" />
                         <TeamStats Team="@context.Team2" />
@@ -108,9 +115,9 @@
         }
     </ChildRowContent>
     <FooterContent>
-        <MudTd colspan="5" Class="mud-background-gray">
+        <MudTd colspan="4" Class="mud-background-gray">
             @{
-                var filteredReports = _reports.Where(x => TableFilter(x));
+                var filteredReports = _reports.Where(x => TableFilter(x)).ToList();
                 var wins = filteredReports.Count(x => x.IsWin(SettingService.Settings));
                 var loses = filteredReports.Count(x => x.IsLose(SettingService.Settings));
                 var draws = filteredReports.Count(x => x.IsDraw());
@@ -119,16 +126,17 @@
             <div class="d-flex justify-space-between">
                 <MudText Typo="Typo.subtitle1" Class="d-inline text-bold">Totaal</MudText>
                 <MudText Typo="Typo.subtitle1" Class="d-inline">
-                    <b class="@Result.Win.ToString()">@wins</b> W
+                    <b class="@Result.Win.ToString()">@wins</b> Gewonnen
                     <span class="mx-2 grey-text text-darken-1">|</span>
-                    <b class="@Result.Draw.ToString()">@draws</b> D
+                    <b class="@Result.Draw.ToString()">@draws</b> Gelijkspel
                     <span class="mx-2 grey-text text-darken-1">|</span>
-                    <b class="@Result.Lose.ToString()">@loses</b> L
+                    <b class="@Result.Lose.ToString()">@loses</b> Verloren
                     <span class="mx-2 grey-text text-darken-1">|</span>
-                    <b>@unknowns</b> U
+                    <b>@unknowns</b> Onbekend
                 </MudText>
             </div>
         </MudTd>
+        <MudTd Class="mud-background-gray"></MudTd>
     </FooterContent>
 </MudTable>
 
@@ -138,6 +146,7 @@
     private bool _loading = true;
     private string searchString = "";
     private bool _hideNormalMatchMaking = true;
+
     private List<BattleReport> _reports = new List<BattleReport>();
     private HashSet<Element> selectedItems = new HashSet<Element>();
     private TableGroupDefinition<BattleReport> _groupDefinition = new()
@@ -230,6 +239,15 @@
         foreach (var report in _reports)
         {
             report.ShowDetails = false;
+        }
+    }
+
+    private async Task OnShowDetailsAsync(bool value, BattleReport report)
+    {
+        report.ShowDetails = value;
+        if (report.ShowDetails)
+        {
+            await JSRuntime.InvokeVoidAsync("scrollIntoView", $"Timestamp_{report.Timestamp.Ticks}_achor");
         }
     }
 }
