@@ -38,6 +38,8 @@
     <GenerateTestArtifacts>True</GenerateTestArtifacts>
     <AppInstallerUri>https://ned-wot.azurewebsites.net/battleresults-app</AppInstallerUri>
     <HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
+    <AppxBundle>Never</AppxBundle>
+    <UapAppxPackageBuildMode>SideLoadOnly</UapAppxPackageBuildMode>
   </PropertyGroup>
 
   <ItemGroup>
