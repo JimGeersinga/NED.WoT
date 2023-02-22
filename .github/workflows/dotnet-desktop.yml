@@ -46,5 +46,6 @@ jobs:
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v3.1.2
       with:
-        path: .\**\AppPackages\**\*.*
+        name: windows-artifact
+        path: bin\Release\net6.0-windows10.0.19041.0\win10-x64\AppPackages\**\*.*
      
