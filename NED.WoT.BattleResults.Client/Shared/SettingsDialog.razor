@@ -1,0 +1,82 @@
+﻿@inject ISnackbar Snackbar
+@inject SettingService SettingService
+@inject BattleReportService BattleReportService
+@inject NavigationManager NavigationManager;
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Settings" Class="mr-3 mb-n1" />
+            Instellingen
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudForm @ref="form">
+            <MudTextField @bind-Value="@_settings.WotReplayDirectory" Label="WOT Replay File Path" Validation="@(new Func<string, IEnumerable<string>>(DirectoryExists))"
+                          Required="true" RequiredError="WOT Replay File Path is verplicht!" />
+            <MudDatePicker @bind-Date="@_settings.LoadBattlesSince" Label="Laad battles sinds" Required="true" RequiredError="Datum is verplicht!" />
+            <MudTextField @bind-Value="@_settings.ClanAbbreviation" Label="Clan afkorting" />
+            <MudTextField @bind-Value="@_settings.PlayerName" Label="Speler naam" />
+            <MudSwitch @bind-Checked="@_settings.ShowCopyNamesOnlyWhenClanMatches" Color="Color.Primary" Label="Copy names is alleen zichtbaar bij eigen clan" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        @if (canCancel)
+        {
+            <MudButton OnClick="Cancel">Annuleren</MudButton>
+        }
+        <MudButton Color="Color.Primary" OnClick="SaveSettings">Opslaan</MudButton>
+    </DialogActions>
+</MudDialog>
+@code {
+
+    [CascadingParameter]
+    private MudDialogInstance MudDialog { get; set; }
+
+
+    [Parameter] 
+    public bool canCancel { get; set; } = true;
+
+    private MudForm form;
+    private Settings _settings = new Settings();
+
+    protected override void OnInitialized()
+    {
+        _settings.WotReplayDirectory = SettingService.Settings.WotReplayDirectory;
+        _settings.LoadBattlesSince = SettingService.Settings.LoadBattlesSince;
+        _settings.ClanAbbreviation = SettingService.Settings.ClanAbbreviation;
+        _settings.PlayerName = SettingService.Settings.PlayerName;
+        _settings.ShowCopyNamesOnlyWhenClanMatches = SettingService.Settings.ShowCopyNamesOnlyWhenClanMatches;      
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private void SaveSettings()
+    {
+        form.Validate();
+
+        if (!form.IsValid) return;
+
+        SettingService.Save(_settings);
+
+        NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
+
+        Snackbar.Add("Settings succevol opgeslagen", Severity.Success);
+        MudDialog.Close(DialogResult.Ok(SettingService.Settings));
+    }
+
+    private IEnumerable<string> DirectoryExists(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            yield return "WOT Replay File Path is verplicht";
+            yield break;
+        }
+
+        if (!Directory.Exists(path))
+            yield return "WOT Replay File Path bestaat niet";
+    }
+}

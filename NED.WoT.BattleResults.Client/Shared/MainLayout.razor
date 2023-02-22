@@ -1,0 +1,69 @@
+﻿@inherits LayoutComponentBase
+
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject NavigationManager NavigationManager
+@inject SettingService SettingService
+
+
+<MudThemeProvider @ref="@_mudThemeProvider" @bind-IsDarkMode="@_isDarkMode" />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar>
+        <MudText Typo="Typo.h6">[NED] WoT CW resultaten</MudText>
+        <MudSpacer />
+        <MudIconButton Icon="@Icons.Material.Filled.Refresh" Color="Color.Inherit" OnClick="Refresh" />
+        <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode: Icons.Material.Filled.DarkMode)" Color="Color.Inherit" @onclick="() => _isDarkMode = !_isDarkMode" />
+        <MudIconButton Icon="@Icons.Material.Filled.Settings" Color="Color.Inherit" OnClick="(e) => OpenSettings(true)" />
+    </MudAppBar>
+    <MudMainContent>
+        @Body
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private bool _isDarkMode = true;
+    private MudThemeProvider _mudThemeProvider;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrWhiteSpace(SettingService.Settings.WotReplayDirectory) || !Directory.Exists(SettingService.Settings.WotReplayDirectory))
+        {
+            Snackbar.Add("Wot replay directory is niet ingevuld of bestaat niet", Severity.Warning);
+
+            await Task.Delay(500);
+
+            OpenSettings(false);
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _isDarkMode = await _mudThemeProvider.GetSystemPreference();
+            StateHasChanged();
+        }
+    }
+
+    private void Refresh()
+    {
+        NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
+    }
+
+    private void OpenSettings(bool canCancel = true)
+    {
+        DialogService.Show<SettingsDialog>("Instellingen", new DialogParameters()
+            {
+                ["canCancel"] = canCancel
+            }, new DialogOptions()
+            {
+                MaxWidth = MaxWidth.Medium,
+                FullWidth = true,
+                DisableBackdropClick = true,
+                CloseButton = false
+            });
+    }
+}

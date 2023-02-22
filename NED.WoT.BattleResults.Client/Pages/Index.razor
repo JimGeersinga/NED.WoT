@@ -1,0 +1,235 @@
+﻿@page "/"
+@using System.Collections.ObjectModel;
+@using System.Collections.Specialized;
+
+@inject BattleReportService BattleResultService;
+@inject SettingService SettingService;
+
+
+<MudToolBar Style="background-color:var(--mud-palette-surface)">
+    <MudGrid Justify="Justify.SpaceBetween">
+        <MudItem sm="4" Class="d-flex align-center">
+            <MudText Typo="Typo.subtitle1">Battles sinds @SettingService.Settings.LoadBattlesSince?.ToString("dd/MM/yyyy")</MudText>
+        </MudItem>
+        <MudItem sm="4" Class="d-flex align-center">
+            <MudTextField @bind-Value="searchString" Placeholder="Zoek op player naam of clan tag" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+        </MudItem>
+        <MudItem sm="4" Class="d-flex align-center justify-end">
+            <MudButton Variant="Variant.Filled" Class="ml-4" Color="Color.Default" OnClick="() => _hideNormalMatchMaking = !_hideNormalMatchMaking">
+                @(_hideNormalMatchMaking ? "Clan" : "Alle") battles
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+</MudToolBar>
+
+<MudTable Items="@_reports" FixedHeader="true" FixedFooter="true" Dense="true" Hover="true" Virtualize="true" Bordered="true" Loading="@_loading"
+          RowClassFunc="@SelectedRowClass" Filter="new Func<BattleReport,bool>(TableFilter)" Height="calc(100vh - 128px);" Class="report-table" GroupBy="@_groupDefinition">
+    <ColGroup>
+        <col style="width: 50px" />
+        <col style="width: 175px;" />
+        <col style="width: 200px;" />
+        <col />
+        <col style="width: 175px;" />
+    </ColGroup>
+    <HeaderContent>
+        <MudTh Style="text-align:center"><MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowUp" Size="Size.Medium" OnClick="CollapseAllBattleReports" /></MudTh>
+        <MudTh><MudTableSortLabel SortBy="new Func<BattleReport, object>(x=>x.Timestamp)">Datum</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel SortBy="new Func<BattleReport, object>(x=>x.MapName)">Map</MudTableSortLabel></MudTh>
+        <MudTh>VS</MudTh>
+        <MudTh>Uitslag</MudTh>
+    </HeaderContent>
+    <GroupHeaderTemplate>
+        <MudTh Class="mud-table-cell-custom-group " colspan="5">
+            @{
+                var wins = context.Items.Count(x => x.IsWin(SettingService.Settings));
+                var loses = context.Items.Count(x => x.IsLose(SettingService.Settings));
+                var draws = context.Items.Count(x => x.IsDraw());
+                var unknowns = context.Items.Count(x => x.IsUnkown());
+            }
+            <div class="d-flex justify-space-between">
+                <MudText Typo="Typo.subtitle1" Class="d-inline"><b>@context.Key</b>, <b>@context.Items.Count()</b> battles gespeeld</MudText>
+                <MudText Typo="Typo.subtitle1" Class="d-inline">
+
+                    <b class="@Result.Win.ToString()">@wins</b> W
+                    <span class="mx-2 grey-text text-darken-1">|</span>
+                    <b class="@Result.Draw.ToString()">@draws</b> D
+                    <span class="mx-2 grey-text text-darken-1">|</span>
+                    <b class="@Result.Lose.ToString()">@loses</b> L
+                    <span class="mx-2 grey-text text-darken-1">|</span>
+                    <b>@unknowns</b> U
+                </MudText>
+            </div>
+        </MudTh>
+    </GroupHeaderTemplate>
+    <RowTemplate>
+        @if (context.Error != null)
+        {
+            <MudTd colspan="5"><MudAlert Severity="Severity.Warning">@context.Error</MudAlert></MudTd>
+        }
+        else
+        {
+            Team ownTeam = context.GetOwnTeam(SettingService.Settings);
+            var mapBase = ownTeam == null ? string.Empty : ownTeam.Number == 1 ? "I" : "II";
+
+            var result = "Unkown";
+            if (ownTeam != null)
+            {
+                result = ownTeam.Result switch
+                {
+                    Result.Win => "Gewonnen",
+                    Result.Lose => "Verloren",
+                    Result.Draw => "Gelijkspel",
+                    _ => "Unkown",
+                };
+            }
+
+            <MudTd><MudToggleIconButton @bind-Toggled="@context.ShowDetails" Size="Size.Medium" ToggledSize="Size.Medium" Icon="@Icons.Material.Filled.KeyboardArrowRight" ToggledIcon="@Icons.Material.Filled.KeyboardArrowDown" /></MudTd>
+            <MudTd DataLabel="Timestamp">@context.Timestamp.ToString("dd/MM/yyyy HH:mm:ss")</MudTd>
+            <MudTd DataLabel="MapName">@context.MapName @mapBase</MudTd>
+            <MudTd DataLabel="Versus">
+                <strong class="@context.Team1.Result.ToString()">@context.Team1.Abbreviation</strong>
+                vs
+                <strong class="@context.Team2.Result.ToString()">@context.Team2.Abbreviation</strong>
+            </MudTd>
+            <MudTd DataLabel="Result" Class="@ownTeam?.Result.ToString()">@result</MudTd>
+        }
+    </RowTemplate>
+    <ChildRowContent>
+        @if (context.ShowDetails)
+        {
+            <MudTr>
+                <td colspan="5" class="pa-4 mud-table-cell">
+                    <MudGrid Spacing="1">
+                        <TeamStats Team="@context.Team1" />
+                        <TeamStats Team="@context.Team2" />
+                    </MudGrid>
+                </td>
+            </MudTr>
+        }
+    </ChildRowContent>
+    <FooterContent>
+        <MudTd colspan="5" Class="mud-background-gray">
+            @{
+                var filteredReports = _reports.Where(x => TableFilter(x));
+                var wins = filteredReports.Count(x => x.IsWin(SettingService.Settings));
+                var loses = filteredReports.Count(x => x.IsLose(SettingService.Settings));
+                var draws = filteredReports.Count(x => x.IsDraw());
+                var unknowns = filteredReports.Count(x => x.IsUnkown());
+            }
+            <div class="d-flex justify-space-between">
+                <MudText Typo="Typo.subtitle1" Class="d-inline text-bold">Totaal</MudText>
+                <MudText Typo="Typo.subtitle1" Class="d-inline">
+                    <b class="@Result.Win.ToString()">@wins</b> W
+                    <span class="mx-2 grey-text text-darken-1">|</span>
+                    <b class="@Result.Draw.ToString()">@draws</b> D
+                    <span class="mx-2 grey-text text-darken-1">|</span>
+                    <b class="@Result.Lose.ToString()">@loses</b> L
+                    <span class="mx-2 grey-text text-darken-1">|</span>
+                    <b>@unknowns</b> U
+                </MudText>
+            </div>
+        </MudTd>
+    </FooterContent>
+</MudTable>
+
+
+
+@code {
+    private bool _loading = true;
+    private string searchString = "";
+    private bool _hideNormalMatchMaking = true;
+    private List<BattleReport> _reports = new List<BattleReport>();
+    private HashSet<Element> selectedItems = new HashSet<Element>();
+    private TableGroupDefinition<BattleReport> _groupDefinition = new()
+        {
+            Indentation = false,
+            Expandable = false,
+            Selector = (e) =>
+            {
+                var daysAgo = (DateTime.Now.Date - e.Timestamp.Date).Days;
+                if (e.Timestamp.Hour <= 2)
+                {
+                    daysAgo += 1;
+                }
+
+                if (daysAgo == 0)
+                {
+                    return "Vandaag";
+                }
+                else if (daysAgo == 1)
+                {
+                    return "Gisteren";
+                }
+
+                return $"{daysAgo} dagen geleden";
+            }
+        };
+
+    protected override async Task OnInitializedAsync()
+    {
+        BattleResultService.LoadingBattleReportsStarted += async (s, e) =>
+        {
+            await InvokeAsync(() =>
+            {
+                _reports = new List<BattleReport>();
+                _loading = true;
+                StateHasChanged();
+            });
+        };
+
+        BattleResultService.BattleReportAdded += (s, e) =>
+        {
+            _reports.Add(e.Report);
+        };
+
+        BattleResultService.BattleReportRemoved += (s, e) =>
+       {
+           _reports.Remove(e.Report);
+       };
+
+        BattleResultService.LoadingBattleReportsFinished += async (s, e) =>
+        {
+            await InvokeAsync(() =>
+            {
+                _reports = BattleResultService.BattleReports.OrderByDescending(x => x.Value.Timestamp).Select(x => x.Value).ToList();
+                _loading = false;
+                StateHasChanged();
+            });
+        };
+
+        await Task.Run(() => BattleResultService.LoadBattleReports());
+
+        _loading = false;
+    }
+
+    private string SelectedRowClass(BattleReport report, int rowNumber)
+    {
+        return report?.ShowDetails ?? false ? "selected" : string.Empty;
+    }
+
+    private bool TableFilter(BattleReport report)
+    {
+        if (_hideNormalMatchMaking && (report.Team1.Abbreviation == null || report.Team1.Abbreviation == "?")
+                                   && (report.Team2.Abbreviation == null || report.Team2.Abbreviation == "?"))
+            return false;
+        else if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+        else if (report.Team1.Abbreviation?.Equals(searchString, StringComparison.OrdinalIgnoreCase) ?? false)
+            return true;
+        else if (report.Team2.Abbreviation?.Equals(searchString, StringComparison.OrdinalIgnoreCase) ?? false)
+            return true;
+        else if (report.Team1.Players.Any(x => x.Name?.Equals(searchString, StringComparison.OrdinalIgnoreCase) ?? false))
+            return true;
+        else if (report.Team2.Players.Any(x => x.Name?.Equals(searchString, StringComparison.OrdinalIgnoreCase) ?? false))
+            return true;
+        return false;
+    }
+
+    private void CollapseAllBattleReports()
+    {
+        foreach (var report in _reports)
+        {
+            report.ShowDetails = false;
+        }
+    }
+}
