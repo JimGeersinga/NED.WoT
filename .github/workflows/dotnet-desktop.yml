@@ -8,26 +8,30 @@ on:
     branches: [ "master" ]
   workflow_dispatch:
 
+env:
+  AZURE_WEBAPP_NAME: ned-wot
+  AZURE_WEBAPP_PACKAGE_PATH: 'battleresults-app'      # set this to the path to your web app project, defaults to the repository root
+  DOTNET_VERSION: '6.0.x'           # set this to the dot net version to use
+
 jobs:
   build:
   
     runs-on: windows-latest 
-    
-    env:
-      Solution_Name: NED.Wot.sln                         
-      Wap_Project_Directory: NED.WoT.BattleResults.Client  
-      Wap_Project_Path: NED.WoT.BattleResults.Client\NED.WoT.BattleResults.Client.csproj
-
+     
     steps:
     - name: Checkout
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
+            
+    - uses: azure/webapps-deploy@v2
+      with:
+        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
         
     - name: Install .NET Core
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 6.0.x
+        dotnet-version: ${{ env.DOTNET_VERSION }} 
     
     - name: Install MAUI workload
       run: dotnet workload install maui
@@ -47,5 +51,11 @@ jobs:
       uses: actions/upload-artifact@v3.1.2
       with:
         name: windows-artifact
-        path: bin\Release\net6.0-windows10.0.19041.0\win10-x64\AppPackages\**\*.*
+        path: NED.WoT\NED.WoT\NED.WoT.BattleResults.Client\bin\Release\net6.0-windows10.0.19041.0\win10-x64\AppPackages\**\*.*
      
+    - name: 'Run Azure webapp deploy action using publish profile credentials'
+      uses: azure/webapps-deploy@v2
+      with: 
+        app-name: ${{ env.AZURE_WEBAPP_NAME }}
+        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+        package: 'NED.WoT/NED.WoT/NED.WoT.BattleResults.Client/bin/Release/net6.0-windows10.0.19041.0/win10-x64/AppPackages'
