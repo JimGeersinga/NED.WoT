@@ -12,7 +12,14 @@
 
 <MudLayout>
     <MudAppBar>
-        <MudText Typo="Typo.h6">[NED] WoT CW resultaten</MudText>
+        @{
+            var clan = string.Empty;
+            if (!string.IsNullOrEmpty(SettingService.Settings.ClanAbbreviation))
+            {
+                clan = $"[{SettingService.Settings.ClanAbbreviation}] ";
+            }
+        }
+        <MudText Typo="Typo.h6">@(clan)WoT battle resultaten <span style="color: var(--mud-palette-grey-dark)">V@(AppInfo.VersionString)</span></MudText>
         <MudSpacer />
         <MudIconButton Icon="@Icons.Material.Filled.Refresh" Color="Color.Inherit" OnClick="Refresh" />
         <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode: Icons.Material.Filled.DarkMode)" Color="Color.Inherit" @onclick="() => _isDarkMode = !_isDarkMode" />
