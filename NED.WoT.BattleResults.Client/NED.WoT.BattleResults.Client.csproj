@@ -40,6 +40,7 @@
     <HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
     <AppxBundle>Never</AppxBundle>
     <UapAppxPackageBuildMode>SideLoadOnly</UapAppxPackageBuildMode>
+    <DefaultLanguage>nl-NL</DefaultLanguage>
   </PropertyGroup>
 
   <ItemGroup>
