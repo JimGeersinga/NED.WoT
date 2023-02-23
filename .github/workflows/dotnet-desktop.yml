@@ -1,5 +1,5 @@
 
-name: .NET Core Desktop
+name: .NET Core Desktop - Build and Deploy
 
 on:
   push:
@@ -42,11 +42,11 @@ jobs:
     - name: Build
       run:  dotnet publish NED.WoT.BattleResults.Client\NED.WoT.BattleResults.Client.csproj -c Release -f:net6.0-windows10.0.19041.0
 
-    - name: Upload Build Artifact
-      uses: actions/upload-artifact@v3.1.2
-      with:
-        name: windows-artifact
-        path: ${{ env.APP_PACKAGES_LOCATION }}\**\*.*
+    #- name: Upload Build Artifact
+    #  uses: actions/upload-artifact@v3.1.2
+    #  with:
+    #    name: windows-artifact
+    #    path: ${{ env.APP_PACKAGES_LOCATION }}\**\*.*
         
   deploy:  
     runs-on: windows-latest      
