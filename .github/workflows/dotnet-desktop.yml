@@ -47,11 +47,7 @@ jobs:
     #  with:
     #    name: windows-artifact
     #    path: ${{ env.APP_PACKAGES_LOCATION }}\**\*.*
-        
-  deploy:  
-    runs-on: windows-latest      
-    needs: build
-    steps:
+    
     - name: Deploy to Azure webapp
       uses: azure/webapps-deploy@v2
       with: 
