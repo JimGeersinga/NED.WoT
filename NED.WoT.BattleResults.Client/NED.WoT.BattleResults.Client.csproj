@@ -36,7 +36,7 @@
     <AppxAutoIncrementPackageRevision>True</AppxAutoIncrementPackageRevision>
     <AppxSymbolPackageEnabled>False</AppxSymbolPackageEnabled>
     <GenerateTestArtifacts>True</GenerateTestArtifacts>
-    <AppInstallerUri>https://ned-wot.azurewebsites.net/battleresults-app</AppInstallerUri>
+    <AppInstallerUri>https://ned-wot.azurewebsites.net/</AppInstallerUri>
     <HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
     <AppxBundle>Never</AppxBundle>
     <UapAppxPackageBuildMode>SideLoadOnly</UapAppxPackageBuildMode>
