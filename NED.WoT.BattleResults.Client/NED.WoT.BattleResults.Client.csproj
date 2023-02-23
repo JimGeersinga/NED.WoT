@@ -54,7 +54,6 @@
     </MauiSplashScreen>
 
     <!-- Images -->
-    <MauiImage Include="Resources\Images\*" />
 
     <!-- Custom Fonts -->
     <MauiFont Include="Resources\Fonts\*" />
@@ -70,10 +69,6 @@
   <ItemGroup>
     <PackageReference Include="MudBlazor" Version="6.1.9" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Resources\Images\" />
   </ItemGroup>
 
 </Project>
