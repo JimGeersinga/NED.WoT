@@ -23,47 +23,70 @@ public class BattleReport
 
     public bool ShowDetails { get; set; }
 
-    public Team GetOwnTeam(Settings settings)
+    public string Group
     {
-        if(Team1.IsOwnTeam(settings)) return Team1;
-        if(Team2.IsOwnTeam(settings)) return Team2;
-        return default;
-    }
-    public bool IsDraw()
-    {
-        return Team1.IsWinner == false && Team2.IsWinner == false;
+        get
+        {
+            var daysAgo = (DateTime.Now.Date - Timestamp.Date).Days;
+            if (Timestamp.Hour <= 2)
+            {
+                daysAgo += 1;
+            }
+
+            if (daysAgo == 0)
+            {
+                return "Vandaag";
+            }
+            else if (daysAgo == 1)
+            {
+                return "Gisteren";
+            }
+
+            return $"{daysAgo} dagen geleden";
+        }
     }
 
-    public bool IsUnkown()
-    {
-        return Team1.IsWinner == null && Team2.IsWinner == null;
-    }
+public Team GetOwnTeam(Settings settings)
+{
+    if (Team1.IsOwnTeam(settings)) return Team1;
+    if (Team2.IsOwnTeam(settings)) return Team2;
+    return default;
+}
+public bool IsDraw()
+{
+    return Team1.IsWinner == false && Team2.IsWinner == false;
+}
 
-    public bool IsWin(Settings settings)
-    {
-        if (Team1.IsOwnTeam(settings))
-        {
-            return Team1.IsWinner == true;
-        }
-        else if (Team2.IsOwnTeam(settings))
-        {
-            return Team2.IsWinner == true;
-        }
-        return false;
-    }
+public bool IsUnkown()
+{
+    return Team1.IsWinner == null && Team2.IsWinner == null;
+}
 
-    public bool IsLose(Settings settings)
+public bool IsWin(Settings settings)
+{
+    if (Team1.IsOwnTeam(settings))
     {
-        if (Team1.IsOwnTeam(settings))
-        {
-            return Team1.IsWinner == false;
-        }
-        else if (Team2.IsOwnTeam(settings))
-        {
-            return Team2.IsWinner == false;
-        }
-        return false;
+        return Team1.IsWinner == true;
     }
+    else if (Team2.IsOwnTeam(settings))
+    {
+        return Team2.IsWinner == true;
+    }
+    return false;
+}
+
+public bool IsLose(Settings settings)
+{
+    if (Team1.IsOwnTeam(settings))
+    {
+        return Team1.IsWinner == false;
+    }
+    else if (Team2.IsOwnTeam(settings))
+    {
+        return Team2.IsWinner == false;
+    }
+    return false;
+}
 }
 
 
@@ -91,8 +114,8 @@ public class Player
     public string DisplayName
     {
         get
-        {            
-            if(!string.IsNullOrEmpty(Clan))
+        {
+            if (!string.IsNullOrEmpty(Clan))
             {
                 return $"[{Clan}] {Name}";
             }

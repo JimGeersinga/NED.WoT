@@ -3,7 +3,7 @@
 
 <MudItem xs="6">
     <MudPaper Elevation="4" Outlined="true">
-        <MudTable Items="@Team.Players" RowClassFunc="@HighlightPlayerClassFunc" SortLabel="Sort By" Class="player-table" Striped="true" Dense="true" CustomHeader="true">
+        <MudTable Items="@Team.Players" RowClassFunc="@HighlightPlayerClassFunc" SortLabel="Sort By" Class="player-table" Striped="true" Dense="true" CustomHeader="true" AllowUnsorted="false">
             <ToolBarContent>
                 <MudText Typo="Typo.h6">@Team.Abbreviation</MudText>
                 <MudSpacer />
@@ -34,10 +34,10 @@
                     <MudTh colspan="3">Prestatie</MudTh>
                     <MudTh colspan="3">Schade</MudTh>
                     <MudTh colspan="3">Schoten</MudTh>
-                    <MudTh colspan="2">Overig</MudTh>
+                    <MudTh colspan="1">Overig</MudTh>
                 </MudTHeadRow>
                 <MudTHeadRow>
-                    <MudTh Class="sticky-left"><MudTableSortLabel SortBy="new Func<Player, object>(x=>x.Number)">Nr</MudTableSortLabel></MudTh>
+                    <MudTh Class="sticky-left" Style="text-align: center">Nr</MudTh>
                     <MudTh Class="sticky-left name"><MudTableSortLabel SortBy="new Func<Player, object>(x=>x.DisplayName)">Naam</MudTableSortLabel></MudTh>
                     <MudTh Class="sticky-left vehicle"><MudTableSortLabel SortBy="new Func<Player, object>(x=>x.Vehicle)">Tank</MudTableSortLabel></MudTh>
                     <MudTh><MudTableSortLabel InitialDirection="SortDirection.Descending" SortBy="new Func<Player, object>(x=>x.ExperienceEarned)">XP</MudTableSortLabel></MudTh>
@@ -49,13 +49,15 @@
                     <MudTh><MudTableSortLabel SortBy="new Func<Player, object>(x=>x.Shots)">Gelost</MudTableSortLabel></MudTh>
                     <MudTh><MudTableSortLabel SortBy="new Func<Player, object>(x=>x.DirectHits)">Geraakt</MudTableSortLabel></MudTh>
                     <MudTh><MudTableSortLabel SortBy="new Func<Player, object>(x=>x.Piercings)">Gepierced</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<Player, object>(x=>x.Health)">Health</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<Player, object>(x=>x.DeathReason)">Death reason</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<Player, object>(x=>x.Health)">HP</MudTableSortLabel></MudTh>
                 </MudTHeadRow>
             </HeaderContent>
             <RowTemplate>
-                <MudTd DataLabel="Number" Class="sticky-left">@context.Number</MudTd>
-                <MudTd DataLabel="Name" Class="no-break sticky-left name">@context.DisplayName</MudTd>
+                <MudTd DataLabel="Number" Class="sticky-left" Style="text-align: center">@context.Number</MudTd>
+                <MudTd DataLabel="Name" Class="no-break sticky-left name">
+                    <i class="fa-solid fa-skull mr-2 @(context.DeathReason != -1 ? string.Empty : "invisible")"></i>
+                    @context.DisplayName
+                </MudTd>
                 <MudTd DataLabel="Vehicle" Class="no-break sticky-left vehicle">@context.Vehicle</MudTd>
                 <MudTd DataLabel="ExperienceEarned">@context.ExperienceEarned</MudTd>
                 <MudTd DataLabel="CreditsEarned">@context.CreditsEarned</MudTd>
@@ -67,7 +69,6 @@
                 <MudTd DataLabel="DirectHits">@context.DirectHits</MudTd>
                 <MudTd DataLabel="Piercings">@context.Piercings</MudTd>
                 <MudTd DataLabel="Health">@context.Health</MudTd>
-                <MudTd DataLabel="DeathReason">@context.DeathReason</MudTd>
             </RowTemplate>
         </MudTable>
     </MudPaper>
@@ -80,8 +81,11 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        await JSRuntime.InvokeVoidAsync("keepElementOffset", $".mud-table.player-table .sticky-left.name");
-        await JSRuntime.InvokeVoidAsync("keepElementOffset", $".mud-table.player-table .sticky-left.vehicle");
+        if (firstRender)
+        {
+            await JSRuntime.InvokeVoidAsync("keepElementOffset", $".mud-table.player-table .sticky-left.name");
+            await JSRuntime.InvokeVoidAsync("keepElementOffset", $".mud-table.player-table .sticky-left.vehicle");
+        }
     }
 
     private string HighlightPlayerClassFunc(Player player, int rowNumber)

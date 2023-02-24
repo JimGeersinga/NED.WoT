@@ -10,6 +10,30 @@
 <MudDialogProvider />
 <MudSnackbarProvider />
 
+@if (_isDarkMode)
+{
+    <style>
+        .mud-table.player-table .mud-table-cell.sticky-left {
+            background-color: none;
+        }
+        .mud-table.player-table .mud-table-body .mud-table-cell.sticky-left {
+            background-color: var(--mud-palette-background-grey);
+        }
+
+        .mud-table.player-table .mud-table-head .mud-table-cell.sticky-left {
+            background-color: #373740;
+        }
+
+        .mud-table.player-table .mud-table-body .mud-table-row:nth-of-type(odd) .mud-table-cell.sticky-left {
+            background-color: #5f5f66;
+        }
+
+        .mud-table.player-table .mud-table-body .mud-table-row:nth-of-type(even) .mud-table-cell.sticky-left {
+            background-color: #373740;
+        }
+    </style>
+}
+
 <MudLayout>
     <MudAppBar>
         @{

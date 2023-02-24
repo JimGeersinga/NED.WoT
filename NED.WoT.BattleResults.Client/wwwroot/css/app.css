@@ -162,6 +162,7 @@ a, .btn-link {
     z-index: 3;
 }
 
+
 .mud-table.player-table .highlight .name {
     color: var(--mud-palette-warning-lighten);
 }
@@ -170,16 +171,14 @@ a, .btn-link {
     color: var(--mud-palette-info);
 }
 
-.mud-table.player-table {
-    background-color: var(--mud-palette-background-grey);
-}
+
 
 .mud-table-head .header-centered th {
     text-align: center;
 }
 
 .selected {
-    background-color: rgba(0,0,0,0.5) !important;
+    background-color: rgba(0,0,0,0.25) !important;
 }
 
 .Win {
@@ -197,4 +196,7 @@ a, .btn-link {
 .report-table.mud-table-sticky-header > .mud-table-container > .mud-table-root > .mud-table-head * .mud-table-cell,
 .report-table.mud-table-sticky-footer > .mud-table-container > .mud-table-root > .mud-table-foot * .mud-table-cell {
     z-index: 4;
+}
+.fa-skull {
+    color: var(--mud-palette-error);
 }

@@ -74,6 +74,7 @@
 
   <ItemGroup>
     <Folder Include="Resources\Images\" />
+    <Folder Include="wwwroot\js\fontawesome\" />
   </ItemGroup>
 
 </Project>

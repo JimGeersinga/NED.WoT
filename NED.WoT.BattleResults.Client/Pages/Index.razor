@@ -23,9 +23,10 @@
     </MudGrid>
 </MudToolBar>
 
-<MudTable Items="@_reports" FixedHeader="true" FixedFooter="true" Dense="true" Hover="true" Virtualize="true" Bordered="true" Loading="@_loading"
-          RowClassFunc="@SelectedRowClass" Filter="new Func<BattleReport,bool>(TableFilter)" Height="calc(100vh - 128px);" Class="report-table" GroupBy="@_groupDefinition">
+<MudTable Items="@_reports" FixedHeader="true" FixedFooter="true" Dense="true" Hover="true" Virtualize="true" Bordered="true" Loading="@_loading" GroupHeaderStyle="background-color:var(--mud-palette-background-grey)"
+          RowClassFunc="@SelectedRowClass" Filter="new Func<BattleReport,bool>(TableFilter)" Height="calc(100vh - 128px);" Class="report-table" GroupBy="@_groupDefinition" AllowUnsorted="false">
     <ColGroup>
+        <col style="width: 50px" />
         <col style="width: 50px" />
         <col style="width: 175px;" />
         <col style="width: 200px;" />
@@ -33,14 +34,15 @@
         <col style="width: 175px;" />
     </ColGroup>
     <HeaderContent>
-        <MudTh Style="text-align:center"><MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowUp" Size="Size.Medium" OnClick="CollapseAllBattleReports" /></MudTh>
+        <MudTh Style="text-align:center; cursor: pointer;" @onclick="CollapseAllBattleReports"><MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowUp" Variant="Variant.Text" Size="Size.Small" /></MudTh>
+        <MudTh>Nr</MudTh>
         <MudTh><MudTableSortLabel SortBy="new Func<BattleReport, object>(x=>x.Timestamp)">Datum</MudTableSortLabel></MudTh>
         <MudTh><MudTableSortLabel SortBy="new Func<BattleReport, object>(x=>x.MapName)">Map</MudTableSortLabel></MudTh>
         <MudTh>VS</MudTh>
         <MudTh>Uitslag</MudTh>
     </HeaderContent>
     <GroupHeaderTemplate>
-        <MudTh Class="mud-table-cell-custom-group " colspan="4">
+        <MudTh Class="mud-table-cell-custom-group " colspan="5">
             @{
                 var wins = context.Items.Count(x => x.IsWin(SettingService.Settings));
                 var loses = context.Items.Count(x => x.IsLose(SettingService.Settings));
@@ -66,7 +68,7 @@
     <RowTemplate>
         @if (context.Error != null)
         {
-            <MudTd colspan="5"><MudAlert Severity="Severity.Warning">@context.Error</MudAlert></MudTd>
+            <MudTd colspan="6"><MudAlert Severity="Severity.Warning">@context.Error</MudAlert></MudTd>
         }
         else
         {
@@ -87,9 +89,22 @@
 
             var id = $"Timestamp_{context.Timestamp.Ticks}_achor";
 
-            <MudTd Class="relative">
-                <MudToggleIconButton Toggled="context.ShowDetails" ToggledChanged="(e) => OnShowDetailsAsync(e, context)" Size="Size.Medium" ToggledSize="Size.Medium" Icon="@Icons.Material.Filled.KeyboardArrowRight" ToggledIcon="@Icons.Material.Filled.KeyboardArrowDown" />
-                <a id="@id" style="position: absolute; top:-61px;" />
+            <MudTd Class="relative" @onclick="() => ToggleShowDetailsAsync(context)" Style="text-align:center;cursor: pointer">
+                @if (context.ShowDetails)
+                {
+                    <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.KeyboardArrowDown" Variant="Variant.Text" @onclick="() => ToggleShowDetailsAsync(context)" />
+                }
+                else
+                {
+                    <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.KeyboardArrowRight" Variant="Variant.Text" @onclick="() => ToggleShowDetailsAsync(context)" />
+                }
+                <a id="@id" style="position: absolute; top:-80px;" />
+            </MudTd>
+            <MudTd Style="text-align:center;">
+                @{
+                    var group = _reports.GroupBy(x => x.Group).First(x => x.Any(i => i.FileName == context.FileName)).OrderBy(x => x.Timestamp).ToList();
+                    <text>@(group.FindIndex(x => x.FileName == context.FileName) + 1)</text>
+                }
             </MudTd>
             <MudTd DataLabel="Timestamp">@context.Timestamp.ToString("dd/MM/yyyy HH:mm:ss")</MudTd>
             <MudTd DataLabel="MapName">@context.MapName @mapBase</MudTd>
@@ -105,7 +120,7 @@
         @if (context.ShowDetails)
         {
             <MudTr>
-                <td colspan="5" class="pa-4 mud-table-cell relative">
+                <td colspan="6" class="pa-4 mud-table-cell relative">
                     <MudGrid Spacing="1">
                         <TeamStats Team="@context.Team1" />
                         <TeamStats Team="@context.Team2" />
@@ -115,7 +130,7 @@
         }
     </ChildRowContent>
     <FooterContent>
-        <MudTd colspan="4" Class="mud-background-gray">
+        <MudTd colspan="5" Class="mud-background-gray">
             @{
                 var filteredReports = _reports.Where(x => TableFilter(x)).ToList();
                 var wins = filteredReports.Count(x => x.IsWin(SettingService.Settings));
@@ -147,31 +162,14 @@
     private string searchString = "";
     private bool _hideNormalMatchMaking = true;
 
+    private int _groupIndex = 0;
+
     private List<BattleReport> _reports = new List<BattleReport>();
-    private HashSet<Element> selectedItems = new HashSet<Element>();
     private TableGroupDefinition<BattleReport> _groupDefinition = new()
         {
             Indentation = false,
             Expandable = false,
-            Selector = (e) =>
-            {
-                var daysAgo = (DateTime.Now.Date - e.Timestamp.Date).Days;
-                if (e.Timestamp.Hour <= 2)
-                {
-                    daysAgo += 1;
-                }
-
-                if (daysAgo == 0)
-                {
-                    return "Vandaag";
-                }
-                else if (daysAgo == 1)
-                {
-                    return "Gisteren";
-                }
-
-                return $"{daysAgo} dagen geleden";
-            }
+            Selector = (e) => e.Group
         };
 
     protected override async Task OnInitializedAsync()
@@ -242,9 +240,9 @@
         }
     }
 
-    private async Task OnShowDetailsAsync(bool value, BattleReport report)
+    private async Task ToggleShowDetailsAsync(BattleReport report)
     {
-        report.ShowDetails = value;
+        report.ShowDetails = !report.ShowDetails;
         if (report.ShowDetails)
         {
             await JSRuntime.InvokeVoidAsync("scrollIntoView", $"Timestamp_{report.Timestamp.Ticks}_achor");

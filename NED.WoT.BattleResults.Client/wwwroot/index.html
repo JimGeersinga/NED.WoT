@@ -7,6 +7,7 @@
     <base href="/" />
     <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" rel="stylesheet" />
     <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
+    <link href="css/fontawesome/fontawesome.min.css" />
     <link href="css/app.css" rel="stylesheet" />
     <link href="NED.WoT.BattleResults.Client.styles.css" rel="stylesheet" />
 </head>
@@ -33,17 +34,20 @@
 
     <script src="_framework/blazor.webview.js" autostart="false"></script>
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
+    <script src="js/fontawesome/all.js"></script>
 
     <script>
         function keepElementOffset(selector) {
+            console.log('keepElementOffset', selector);
             var elements = document.querySelectorAll(selector);
             for (var i = 0; i < elements.length; i++) {
                 var offset = elements[i].offsetLeft;
-                elements[i].style = `left: ${offset}px`;          
+                elements[i].style = `left: ${offset}px`;
             }
         }
 
         function scrollIntoView(elementId) {
+            console.log('scrollIntoView', elementId);
             var elem = document.getElementById(elementId);
             if (elem) {
                 elem.scrollIntoView();
