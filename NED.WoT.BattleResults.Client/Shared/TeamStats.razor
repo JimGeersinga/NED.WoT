@@ -79,6 +79,9 @@
     [Parameter]
     public Team Team { get; set; }
 
+    [Parameter]
+    public string Map { get; set; }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -102,7 +105,9 @@
 
     private async Task CopyNamesAsync()
     {
-        var names = Team.Players.Where(x => x.Name != null).OrderByDescending(x => x.ExperienceEarned).Select(x => x.Name);
+        var names = Team.Players.Where(x => x.Name != null).OrderByDescending(x => x.ExperienceEarned).Select(x => x.Name).ToList();
+        var suffix = Team.Number == 1 ? "I" : "II";
+        names.Insert(0, $"{Map} {suffix}");
         await Clipboard.SetTextAsync(string.Join(Environment.NewLine, names));
     }
 }
