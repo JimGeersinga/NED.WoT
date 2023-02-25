@@ -9,7 +9,7 @@
                 <MudSpacer />
                 @if (!SettingService.Settings.ShowCopyNamesOnlyWhenClanMatches || SettingService.Settings.ClanAbbreviation == Team.Abbreviation)
                 {
-                    <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="CopyNamesAsync">Kopieer namen</MudButton>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" OnClick="CopyNamesAsync">Kopieer namen</MudButton>
                 }
             </ToolBarContent>
             <ColGroup>
@@ -37,7 +37,7 @@
                     <MudTh colspan="1">Overig</MudTh>
                 </MudTHeadRow>
                 <MudTHeadRow>
-                    <MudTh Class="sticky-left" Style="text-align: center">Nr</MudTh>
+                    <MudTh Class="sticky-left" Style="text-align: center">#</MudTh>
                     <MudTh Class="sticky-left name"><MudTableSortLabel SortBy="new Func<Player, object>(x=>x.DisplayName)">Naam</MudTableSortLabel></MudTh>
                     <MudTh Class="sticky-left vehicle"><MudTableSortLabel SortBy="new Func<Player, object>(x=>x.Vehicle)">Tank</MudTableSortLabel></MudTh>
                     <MudTh><MudTableSortLabel InitialDirection="SortDirection.Descending" SortBy="new Func<Player, object>(x=>x.ExperienceEarned)">XP</MudTableSortLabel></MudTh>

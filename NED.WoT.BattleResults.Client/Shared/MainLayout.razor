@@ -13,6 +13,10 @@
 @if (_isDarkMode)
 {
     <style>
+        .mud-table.player-table {
+            --mud-palette-table-striped: rgba(0,0,0,.14);
+        }
+
         .mud-table.player-table .mud-table-cell.sticky-left {
             background-color: none;
         }
@@ -25,7 +29,7 @@
         }
 
         .mud-table.player-table .mud-table-body .mud-table-row:nth-of-type(odd) .mud-table-cell.sticky-left {
-            background-color: #5f5f66;
+            background-color: #2f2f37;
         }
 
         .mud-table.player-table .mud-table-body .mud-table-row:nth-of-type(even) .mud-table-cell.sticky-left {

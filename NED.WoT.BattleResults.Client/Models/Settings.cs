@@ -7,5 +7,6 @@
         public string ClanAbbreviation { get; set; }
         public string PlayerName { get; set; }
         public bool ShowCopyNamesOnlyWhenClanMatches { get; set; }
+        public bool SingleBattleResultOpenedOnly { get; set; }
     }
 }

@@ -16,7 +16,7 @@
             <MudTextField @bind-Value="searchString" Placeholder="Zoek op player naam of clan tag" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
         </MudItem>
         <MudItem sm="4" Class="d-flex align-center justify-end">
-            <MudButton Variant="Variant.Filled" Class="ml-4" Color="Color.Default" OnClick="() => _hideNormalMatchMaking = !_hideNormalMatchMaking">
+            <MudButton Variant="Variant.Filled" Class="ml-4" Color="Color.Primary" OnClick="() => _hideNormalMatchMaking = !_hideNormalMatchMaking">
                 @(_hideNormalMatchMaking ? "Clan" : "Alle") battles
             </MudButton>
         </MudItem>
@@ -31,15 +31,15 @@
         <col style="width: 175px;" />
         <col style="width: 200px;" />
         <col />
-        <col style="width: 175px;" />
+        <col style="width: 100px;" />
     </ColGroup>
     <HeaderContent>
-        <MudTh Style="text-align:center; cursor: pointer;" @onclick="CollapseAllBattleReports"><MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowUp" Variant="Variant.Text" Size="Size.Small" /></MudTh>
-        <MudTh>Nr</MudTh>
+        <MudTh Style="text-align:center; cursor: pointer;" @onclick="CollapseAllBattleReports"><MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowUp" OnClick="CollapseAllBattleReports" Variant="Variant.Text" Size="Size.Small" /></MudTh>
+        <MudTh Style="text-align: center">#</MudTh>
         <MudTh><MudTableSortLabel SortBy="new Func<BattleReport, object>(x=>x.Timestamp)">Datum</MudTableSortLabel></MudTh>
         <MudTh><MudTableSortLabel SortBy="new Func<BattleReport, object>(x=>x.MapName)">Map</MudTableSortLabel></MudTh>
-        <MudTh>VS</MudTh>
-        <MudTh>Uitslag</MudTh>
+        <MudTh>vs</MudTh>
+        <MudTh Style="text-align: center">Uitslag</MudTh>
     </HeaderContent>
     <GroupHeaderTemplate>
         <MudTh Class="mud-table-cell-custom-group " colspan="5">
@@ -113,7 +113,7 @@
                 vs
                 <strong class="@context.Team2.Result.ToString()">@context.Team2.Abbreviation</strong>
             </MudTd>
-            <MudTd DataLabel="Result" Class="@ownTeam?.Result.ToString()">@result</MudTd>
+            <MudTd DataLabel="Result" Class="@ownTeam?.Result.ToString()" Style="text-align: center">@result</MudTd>
         }
     </RowTemplate>
     <ChildRowContent>
@@ -161,8 +161,6 @@
     private bool _loading = true;
     private string searchString = "";
     private bool _hideNormalMatchMaking = true;
-
-    private int _groupIndex = 0;
 
     private List<BattleReport> _reports = new List<BattleReport>();
     private TableGroupDefinition<BattleReport> _groupDefinition = new()
@@ -242,6 +240,11 @@
 
     private async Task ToggleShowDetailsAsync(BattleReport report)
     {
+        if(!report.ShowDetails && SettingService.Settings.SingleBattleResultOpenedOnly)
+        {
+            CollapseAllBattleReports();
+        }
+
         report.ShowDetails = !report.ShowDetails;
         if (report.ShowDetails)
         {

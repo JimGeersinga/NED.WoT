@@ -1,5 +1,14 @@
 ﻿@import url('open-iconic/font/css/open-iconic-bootstrap.min.css');
 
+:root {
+    --mud-palette-primary: #ff8800 !important;
+    --mud-palette-primary-darken: #cd6e01 !important;
+    --mud-palette-primary-hover: rgba(254,135,0,0.058823529411764705) !important;
+    --mud-palette-primary-lighten: #ffab4b;
+}
+.progress-bar__progress {
+    background-color: #ff8800 !important;
+}
 
 #app {
     height: 100%;
@@ -162,6 +171,10 @@ a, .btn-link {
     z-index: 3;
 }
 
+.mud-table.player-table .mud-table-cell:not(.sticky-left) {
+    text-align:right;
+}
+
 
 .mud-table.player-table .highlight .name {
     color: var(--mud-palette-warning-lighten);
@@ -199,4 +212,8 @@ a, .btn-link {
 }
 .fa-skull {
     color: var(--mud-palette-error);
+}
+
+.mud-table-dense * .mud-table-row .mud-table-cell {
+    padding: 6px !important;
 }
