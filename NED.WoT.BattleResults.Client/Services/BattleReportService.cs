@@ -176,7 +176,7 @@ public class BattleReportService
                         startIndex = i;
                     }
                 }
-                else if (fileData[i] == end)
+                else if (fileData[i] == end && jsonStarts > jsonEnds)
                 {
                     jsonEnds++;
                 }
@@ -195,7 +195,7 @@ public class BattleReportService
                 }
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             return default;
         }
