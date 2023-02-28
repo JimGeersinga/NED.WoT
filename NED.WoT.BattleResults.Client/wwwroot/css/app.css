@@ -175,9 +175,16 @@ a, .btn-link {
     text-align:right;
 }
 
+.mud-table.report-table [data-label='Versus'] .highlight {
+
+}
+
+.mud-table.report-table [data-label='Versus']  strong:not(.highlight) {
+  color:inherit !important;
+}
 
 .mud-table.player-table .highlight .name {
-    color: var(--mud-palette-warning-lighten);
+    color: var(--mud-palette-primary) !important;
 }
 
 .mud-table.player-table .teamkiller .name {

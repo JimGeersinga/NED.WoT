@@ -109,9 +109,9 @@
             <MudTd DataLabel="Timestamp">@context.Timestamp.ToString("dd/MM/yyyy HH:mm:ss")</MudTd>
             <MudTd DataLabel="MapName">@context.MapName @mapBase</MudTd>
             <MudTd DataLabel="Versus">
-                <strong class="@context.Team1.Result.ToString()">@context.Team1.Abbreviation</strong>
+                <strong class="@context.Team1.Result.ToString() @(ownTeam?.Number == 1? "highlight" : "")">@context.Team1.Abbreviation</strong>
                 vs
-                <strong class="@context.Team2.Result.ToString()">@context.Team2.Abbreviation</strong>
+                <strong class="@context.Team2.Result.ToString() @(ownTeam?.Number == 2? "highlight" : "")">@context.Team2.Abbreviation</strong>
             </MudTd>
             <MudTd DataLabel="Result" Class="@ownTeam?.Result.ToString()" Style="text-align: center">@result</MudTd>
         }
