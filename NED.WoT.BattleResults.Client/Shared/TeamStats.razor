@@ -9,7 +9,7 @@
                 <MudSpacer />
                 @if (!SettingService.Settings.ShowCopyNamesOnlyWhenClanMatches || SettingService.Settings.ClanAbbreviation == Team.Abbreviation)
                 {
-                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" OnClick="CopyNamesAsync">Kopieer namen</MudButton>
+                    <MudIconButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" OnClick="CopyResultAsync" Icon="@Icons.Material.Filled.ContentCopy" />
                 }
             </ToolBarContent>
             <ColGroup>
@@ -76,6 +76,7 @@
 
 
 @code {
+
     [Parameter]
     public Team Team { get; set; }
 
@@ -103,11 +104,8 @@
         return string.Empty;
     }
 
-    private async Task CopyNamesAsync()
-    {
-        var names = Team.Players.Where(x => x.Name != null).OrderByDescending(x => x.ExperienceEarned).Select(x => x.Name).ToList();
-        var suffix = Team.Number == 1 ? "I" : "II";
-        names.Insert(0, $"{Map} {suffix}");
-        await Clipboard.SetTextAsync(string.Join(Environment.NewLine, names));
+    private async Task CopyResultAsync()
+    {       
+        await Clipboard.SetTextAsync(Team.GetResult(Map));
     }
 }

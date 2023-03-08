@@ -15,7 +15,7 @@ namespace NED.WoT.BattleResults.Client.Data
             var game = new BattleReport
             {
                 MapName = replay["mapDisplayName"].GetValue<string>(),
-                Timestamp = DateTime.Parse(datetime.Replace('.', '/')),
+                MatchStart = DateTime.Parse(datetime.Replace('.', '/')),
                 Team1 = new Team()
                 {
                     Number = 1
