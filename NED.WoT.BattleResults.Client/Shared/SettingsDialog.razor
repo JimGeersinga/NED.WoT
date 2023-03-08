@@ -22,9 +22,7 @@
             <MudTextField Label="Clan afkorting"
                           @bind-Value="@modal.ClanAbbreviation" For="(() => modal.ClanAbbreviation)" />
             <MudTextField Label="Speler naam"
-                          @bind-Value="@modal.PlayerName" For="(() => modal.PlayerName)" />
-            <MudSwitch Label="'Kopieer namen' alleen zichtbaar bij eigen team" Color="Color.Primary"
-                       @bind-Checked="@modal.ShowCopyNamesOnlyWhenClanMatches" For="(() => modal.ShowCopyNamesOnlyWhenClanMatches)" />
+                          @bind-Value="@modal.PlayerName" For="(() => modal.PlayerName)" />          
 
             <MudSwitch Label="Maximaal één battle resultaat open" Color="Color.Primary"
                        @bind-Checked="@modal.SingleBattleResultOpenedOnly" For="(() => modal.SingleBattleResultOpenedOnly)" />
@@ -57,7 +55,6 @@
                 LoadBattlesSince = SettingService.Settings.LoadBattlesSince,
                 ClanAbbreviation = SettingService.Settings.ClanAbbreviation,
                 PlayerName = SettingService.Settings.PlayerName,
-                ShowCopyNamesOnlyWhenClanMatches = SettingService.Settings.ShowCopyNamesOnlyWhenClanMatches,
                 SingleBattleResultOpenedOnly = SettingService.Settings.SingleBattleResultOpenedOnly
             };
     }
@@ -74,7 +71,6 @@
         settings.LoadBattlesSince = modal.LoadBattlesSince;
         settings.ClanAbbreviation = modal.ClanAbbreviation;
         settings.PlayerName = modal.PlayerName;
-        settings.ShowCopyNamesOnlyWhenClanMatches = modal.ShowCopyNamesOnlyWhenClanMatches;
         settings.SingleBattleResultOpenedOnly = modal.SingleBattleResultOpenedOnly;
 
         SettingService.Save(settings);
@@ -97,8 +93,6 @@
         public string ClanAbbreviation { get; set; }
 
         public string PlayerName { get; set; }
-
-        public bool ShowCopyNamesOnlyWhenClanMatches { get; set; }
 
         public bool SingleBattleResultOpenedOnly { get; set; }
 

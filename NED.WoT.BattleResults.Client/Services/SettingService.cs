@@ -14,7 +14,6 @@ namespace NED.WoT.BattleResults.Client.Services
                 LoadBattlesSince = new DateTime(Preferences.Default.Get(nameof(Settings.LoadBattlesSince), DateTime.Now.AddDays(-10).Date.Ticks)),
                 ClanAbbreviation = Preferences.Default.Get(nameof(Settings.ClanAbbreviation), "NED-1"),
                 PlayerName = Preferences.Default.Get(nameof(Settings.PlayerName), string.Empty),
-                ShowCopyNamesOnlyWhenClanMatches = Preferences.Default.Get(nameof(Settings.ShowCopyNamesOnlyWhenClanMatches), true),
                 SingleBattleResultOpenedOnly = Preferences.Default.Get(nameof(Settings.SingleBattleResultOpenedOnly), false),
             };
         }
@@ -26,7 +25,6 @@ namespace NED.WoT.BattleResults.Client.Services
             Preferences.Default.Set(nameof(Settings.LoadBattlesSince), Settings.LoadBattlesSince.GetValueOrDefault().Ticks);
             Preferences.Default.Set(nameof(Settings.ClanAbbreviation), Settings.ClanAbbreviation);
             Preferences.Default.Set(nameof(Settings.PlayerName), Settings.PlayerName);
-            Preferences.Default.Set(nameof(Settings.ShowCopyNamesOnlyWhenClanMatches), Settings.ShowCopyNamesOnlyWhenClanMatches);
             Preferences.Default.Set(nameof(Settings.SingleBattleResultOpenedOnly), Settings.SingleBattleResultOpenedOnly);
         }
     }
