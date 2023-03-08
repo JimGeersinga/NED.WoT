@@ -10,14 +10,14 @@
 <MudToolBar Style="background-color:var(--mud-palette-surface)">
     <MudGrid Justify="Justify.SpaceBetween">
         <MudItem sm="4" Class="d-flex align-center">
-            <MudText Typo="Typo.subtitle1">Battles sinds @SettingService.Settings.LoadBattlesSince?.ToString("dd/MM/yyyy")</MudText>
+            <MudText Typo="Typo.subtitle1">Gevechten sinds @SettingService.Settings.LoadBattlesSince?.ToString("dd/MM/yyyy")</MudText>
         </MudItem>
         <MudItem sm="4" Class="d-flex align-center">
             <MudTextField @bind-Value="searchString" Placeholder="Zoek op player naam of clan tag" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
         </MudItem>
         <MudItem sm="4" Class="d-flex align-center justify-end">
             <MudButton Variant="Variant.Filled" Class="ml-4" Color="Color.Primary" OnClick="() => _hideNormalMatchMaking = !_hideNormalMatchMaking">
-                @(_hideNormalMatchMaking ? "Clan" : "Alle") battles
+                @(_hideNormalMatchMaking ? "Clan" : "Alle") gevechten
             </MudButton>
         </MudItem>
     </MudGrid>
@@ -54,7 +54,7 @@
                 var unknowns = context.Items.Count(x => x.IsUnkown());
             }
             <div class="d-flex justify-space-between">
-                <MudText Typo="Typo.subtitle1" Class="d-inline"><b>@context.Key</b>, <b>@context.Items.Count()</b> battles gespeeld</MudText>
+                <MudText Typo="Typo.subtitle1" Class="d-inline"><b>@context.Key</b>, <b>@context.Items.Count()</b> gevechten gespeeld</MudText>
                 <MudText Typo="Typo.subtitle1" Class="d-inline">
 
                     <b class="@Result.Win.ToString()">@wins</b> Gewonnen
@@ -142,7 +142,7 @@
                 var unknowns = filteredReports.Count(x => x.IsUnkown());
             }
             <div class="d-flex justify-space-between">
-                <MudText Typo="Typo.subtitle1" Class="d-inline text-bold">Totaal @filteredReports.Count</MudText>
+                <MudText Typo="Typo.subtitle1" Class="d-inline text-bold">Totaal <b>@filteredReports.Count</b> gevechten</MudText>
                 <MudText Typo="Typo.subtitle1" Class="d-inline">
                     <b class="@Result.Win.ToString()">@wins</b> Gewonnen
                     <span class="mx-2 grey-text text-darken-1">|</span>
@@ -251,7 +251,7 @@
         report.ShowDetails = !report.ShowDetails;
         if (report.ShowDetails)
         {
-            await JSRuntime.InvokeVoidAsync("scrollIntoView", $"Timestamp_{report.MatchStart.Ticks}_achor");
+            await JSRuntime.InvokeVoidAsync("scrollIntoView", $"Timestamp_{report.MatchStart.Ticks + report.MatchDuration.GetValueOrDefault()}_achor");
         }
     }
 
