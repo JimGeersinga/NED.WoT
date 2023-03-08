@@ -142,7 +142,7 @@
                 var unknowns = filteredReports.Count(x => x.IsUnkown());
             }
             <div class="d-flex justify-space-between">
-                <MudText Typo="Typo.subtitle1" Class="d-inline text-bold">Totaal</MudText>
+                <MudText Typo="Typo.subtitle1" Class="d-inline text-bold">Totaal @filteredReports.Count</MudText>
                 <MudText Typo="Typo.subtitle1" Class="d-inline">
                     <b class="@Result.Win.ToString()">@wins</b> Gewonnen
                     <span class="mx-2 grey-text text-darken-1">|</span>
