@@ -24,7 +24,7 @@
 </MudToolBar>
 
 <MudTable Items="@_reports" FixedHeader="true" FixedFooter="true" Dense="true" Hover="true" Virtualize="true" Bordered="true" Loading="@_loading" GroupHeaderStyle="background-color:var(--mud-palette-background-grey)"
-          RowClassFunc="@SelectedRowClass" Filter="new Func<BattleReport,bool>(TableFilter)" Height="calc(100vh - 128px);" Class="report-table" GroupBy="@_groupDefinition" AllowUnsorted="false">
+          RowClassFunc="@SelectedRowClass" Filter="new Func<BattleReport,bool>(TableFilter)" Height="calc(100vh - 128px);" Class="report-table" RowClass="@(SettingService.Settings.OnlyHighlistOwnMatches ? "highlight-own-result" : "")" GroupBy="@_groupDefinition" AllowUnsorted="false">
     <ColGroup>
         <col style="width: 50px" />
         <col style="width: 50px" />
@@ -75,7 +75,7 @@
             <MudTd colspan="6"><MudAlert Severity="Severity.Warning">@context.Error</MudAlert></MudTd>
         }
         else
-        {
+        { 
             Team ownTeam = context.GetOwnTeam(SettingService.Settings);
             var mapBase = ownTeam == null ? string.Empty : ownTeam.Number == 1 ? "I" : "II";
 

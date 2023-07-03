@@ -179,8 +179,8 @@ a, .btn-link {
 
 }
 
-.mud-table.report-table [data-label='Versus']  strong:not(.highlight) {
-  color:inherit !important;
+.mud-table.report-table .highlight-own-result [data-label='Versus'] strong:not(.highlight) {
+    color: inherit !important;
 }
 
 .mud-table.player-table .highlight .name {

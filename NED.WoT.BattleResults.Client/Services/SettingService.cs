@@ -15,6 +15,7 @@ namespace NED.WoT.BattleResults.Client.Services
                 ClanAbbreviation = Preferences.Default.Get(nameof(Settings.ClanAbbreviation), "NED-1"),
                 PlayerName = Preferences.Default.Get(nameof(Settings.PlayerName), string.Empty),
                 SingleBattleResultOpenedOnly = Preferences.Default.Get(nameof(Settings.SingleBattleResultOpenedOnly), false),
+                OnlyHighlistOwnMatches = Preferences.Default.Get(nameof(Settings.OnlyHighlistOwnMatches), false),
             };
         }
         public void Save(Settings settings)
@@ -26,6 +27,7 @@ namespace NED.WoT.BattleResults.Client.Services
             Preferences.Default.Set(nameof(Settings.ClanAbbreviation), Settings.ClanAbbreviation);
             Preferences.Default.Set(nameof(Settings.PlayerName), Settings.PlayerName);
             Preferences.Default.Set(nameof(Settings.SingleBattleResultOpenedOnly), Settings.SingleBattleResultOpenedOnly);
+            Preferences.Default.Set(nameof(Settings.OnlyHighlistOwnMatches), Settings.OnlyHighlistOwnMatches);
         }
     }
 }
