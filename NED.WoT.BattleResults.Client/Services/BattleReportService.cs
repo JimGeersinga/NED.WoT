@@ -72,14 +72,13 @@ public class BattleReportService
         {
             NotifyFilter = NotifyFilters.Attributes
                               | NotifyFilters.CreationTime
-                              | NotifyFilters.DirectoryName
                               | NotifyFilters.FileName
-                              | NotifyFilters.LastAccess
                               | NotifyFilters.LastWrite
                               | NotifyFilters.Security
                               | NotifyFilters.Size,
             Filter = SEARCH_PATTERN,
-            EnableRaisingEvents = true
+            EnableRaisingEvents = true,
+            IncludeSubdirectories = false
         };
 
         _watcher.Created += OnCreated;
@@ -140,7 +139,7 @@ public class BattleReportService
             var replay = GetJsonFromFile<JsonObject>(fileData, '{', '}', ref startIndex);
             var stats = GetJsonFromFile<JsonArray>(fileData, '[', ']', ref startIndex);
 
-            if (replay == null)
+            if (replay?["dateTime"] == null)
             {
                 report.Error = $"Could not parse file: {file.Name}";
             }
