@@ -11,7 +11,7 @@ on:
 env:
   AZURE_WEBAPP_NAME: ned-wot
   AZURE_WEBAPP_PACKAGE_PATH: battleresults-app
-  DOTNET_VERSION: 6.0.x
+  DOTNET_VERSION: 8.0.x
   APP_PACKAGES_LOCATION: NED.WoT.BattleResults.Client\bin\Release\net6.0-windows10.0.19041.0\win10-x64\AppPackages
 
 jobs:
@@ -40,7 +40,7 @@ jobs:
       run: certutil -user -q -p ${{ secrets.WINDOWS_PFX_PASSWORD }} -importpfx cert.pfx NoRoot
 
     - name: Build
-      run:  dotnet publish NED.WoT.BattleResults.Client\NED.WoT.BattleResults.Client.csproj -c Release -f:net6.0-windows10.0.19041.0
+      run:  dotnet publish NED.WoT.BattleResults.Client\NED.WoT.BattleResults.Client.csproj -c Release -f:net8.0-windows10.0.19041.0
 
     #- name: Upload Build Artifact
     #  uses: actions/upload-artifact@v3.1.2
@@ -53,4 +53,4 @@ jobs:
       with: 
         app-name: ${{ env.AZURE_WEBAPP_NAME }}
         publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-        package: 'NED.WoT.BattleResults.Client/bin/Release/net6.0-windows10.0.19041.0/win10-x64/AppPackages'
+        package: 'NED.WoT.BattleResults.Client/bin/Release/net8.0-windows10.0.19041.0/win10-x64/AppPackages'
