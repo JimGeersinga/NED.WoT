@@ -194,7 +194,7 @@ public class BattleReportService
                 }
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return default;
         }
