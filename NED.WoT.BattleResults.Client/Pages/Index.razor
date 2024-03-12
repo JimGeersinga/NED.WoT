@@ -5,12 +5,16 @@
 @inject BattleReportService BattleResultService;
 @inject SettingService SettingService;
 @inject IJSRuntime JSRuntime;
-
+@inject IDialogService DialogService
 
 <MudToolBar Style="background-color:var(--mud-palette-surface)">
     <MudGrid Justify="Justify.SpaceBetween">
         <MudItem sm="4" Class="d-flex align-center">
             <MudText Typo="Typo.subtitle1">Gevechten sinds @SettingService.Settings.LoadBattlesSince?.ToString("dd/MM/yyyy")</MudText>
+            @if (TankNameResolver.UndefinedTankNames.Any() || MapNameResolver.UndefinedMapNames.Any())
+            {
+                <MudIconButton Class="ml-4" Icon="@Icons.Material.Filled.Warning" Size="@Size.Small" Color="@Color.Warning" OnClick="OpenUndefinedNamesDialog"></MudIconButton>
+            }
         </MudItem>
         <MudItem sm="4" Class="d-flex align-center">
             <MudTextField @bind-Value="searchString" Placeholder="Zoek op speler naam of clan tag" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
@@ -34,6 +38,7 @@
         <col style="width: 200px;" />
         <col />
         <col style="width: 100px;" />
+        <col style="width: 50px" />
     </ColGroup>
     <HeaderContent>
         <MudTh Style="text-align:center; cursor: pointer;" @onclick="CollapseAllBattleReports"><MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowUp" OnClick="CollapseAllBattleReports" Variant="Variant.Text" Size="Size.Small" /></MudTh>
@@ -44,9 +49,10 @@
         <MudTh><MudTableSortLabel SortBy="new Func<BattleReport, object>(x=>x.MapName)">Map</MudTableSortLabel></MudTh>
         <MudTh>vs</MudTh>
         <MudTh Style="text-align: center">Uitslag</MudTh>
+        <MudTh Style="text-align: center">#</MudTh>
     </HeaderContent>
     <GroupHeaderTemplate>
-        <MudTh Class="mud-table-cell-custom-group " colspan="7">
+        <MudTh Class="mud-table-cell-custom-group " colspan="8">
             @{
                 var wins = context.Items.Count(x => x.IsWin(SettingService.Settings));
                 var loses = context.Items.Count(x => x.IsLose(SettingService.Settings));
@@ -72,10 +78,14 @@
     <RowTemplate>
         @if (context.Error != null)
         {
-            <MudTd colspan="6"><MudAlert Severity="Severity.Warning">@context.Error</MudAlert></MudTd>
+            <MudTd colspan="7"><MudAlert Severity="Severity.Warning">@context.Error</MudAlert></MudTd>
         }
         else
-        { 
+        {
+
+            var group = _reports.Where(x => TableFilter(x)).GroupBy(x => x.Group).First(x => x.Any(i => i.FileName == context.FileName)).OrderBy(x => x.MatchStart).ToList();
+            var index = group.FindIndex(x => x.FileName == context.FileName) + 1;
+
             Team ownTeam = context.GetOwnTeam(SettingService.Settings);
             var mapBase = ownTeam == null ? string.Empty : ownTeam.Number == 1 ? "I" : "II";
 
@@ -98,12 +108,7 @@
                 }
                 <a id="@id" style="position: absolute; top:-80px;" />
             </MudTd>
-            <MudTd Style="text-align:center;">
-                @{
-                    var group = _reports.Where(x => TableFilter(x)).GroupBy(x => x.Group).First(x => x.Any(i => i.FileName == context.FileName)).OrderBy(x => x.MatchStart).ToList();
-                    <text>@(group.FindIndex(x => x.FileName == context.FileName) + 1)</text>
-                }
-            </MudTd>
+            <MudTd Style="text-align:center;">@index</MudTd>
             <MudTd DataLabel="MatchStart">@context.MatchStart.ToString("dd/MM/yyyy HH:mm")</MudTd>
             <MudTd DataLabel="MatchEnd">@context.MatchEnd?.ToString("dd/MM/yyyy HH:mm")</MudTd>
             <MudTd DataLabel="Duration">@context.MatchDurationDisplay</MudTd>
@@ -117,13 +122,14 @@
                 <MudIconButton Variant="Variant.Outlined" Color="Color.Default" Size="Size.Small" Icon="@Icons.Material.Filled.ContentCopy" OnClick="(e) => CopyResultAsync(context, ownTeam)" Style="float:right;" Disabled="(ownTeam == null)" />
             </MudTd>
             <MudTd DataLabel="Result" Class="@ownTeam?.Result.ToString()" Style="text-align: center">@result</MudTd>
+            <MudTd Style="text-align:center;">@index</MudTd>
         }
     </RowTemplate>
     <ChildRowContent>
         @if (context.ShowDetails)
         {
             <MudTr>
-                <td colspan="8" class="pa-4 mud-table-cell relative">
+                <td colspan="9" class="pa-4 mud-table-cell relative">
                     <MudGrid Spacing="1">
                         <TeamStats Team="@context.Team1" Map="@context.MapName" />
                         <TeamStats Team="@context.Team2" Map="@context.MapName" />
@@ -133,7 +139,7 @@
         }
     </ChildRowContent>
     <FooterContent>
-        <MudTd colspan="7" Class="mud-background-gray">
+        <MudTd colspan="8" Class="mud-background-gray">
             @{
                 var filteredReports = _reports.Where(x => TableFilter(x)).ToList();
                 var wins = filteredReports.Count(x => x.IsWin(SettingService.Settings));
@@ -258,5 +264,10 @@
     private async Task CopyResultAsync(BattleReport report, Team team)
     {
         await Clipboard.SetTextAsync(team.GetResult(report.MapName));
+    }
+
+    private void OpenUndefinedNamesDialog()
+    {
+        DialogService.Show<UndefinedNamesDialog>("Undefined Names", new DialogOptions { CloseOnEscapeKey = true });
     }
 }

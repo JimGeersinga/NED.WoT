@@ -1410,7 +1410,8 @@
             {"Pl203_WatchTower1_RTS","WatchTower1 RTS"},
             {"Pl208_Pillbox_SPM_4_RTS","Pillbox SPM 4 RTS"},
             {"R193_M4A2_T_34","M4A2 T-34"},
-            {"Cz15_Skoda_T-45_Prem","Skoda T 45"}
+            {"Cz15_Skoda_T-45_Prem","Skoda T 45"},
+
         };
 
         public static string GetTankName(string key)

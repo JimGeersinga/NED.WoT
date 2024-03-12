@@ -1,0 +1,31 @@
+﻿<MudDialog>
+    <DialogContent>
+        <MudList Clickable="false">
+            @if (MapNameResolver.UndefinedMapNames.Count > 0)
+            {
+                <MudListSubheader>Undefined Map Names</MudListSubheader>
+                @foreach (var name in MapNameResolver.UndefinedMapNames)
+                {
+                    <MudListItem>@name</MudListItem>
+                }
+                <MudDivider />
+            }
+            @if (TankNameResolver.UndefinedTankNames.Count > 0)
+            {
+                <MudListSubheader>Undefined Tank Names</MudListSubheader>
+                @foreach (var name in TankNameResolver.UndefinedTankNames)
+                {
+                    <MudListItem>@name</MudListItem>
+                }
+            }
+        </MudList>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+    void Cancel() => MudDialog.Close(DialogResult.Ok(true));
+}
