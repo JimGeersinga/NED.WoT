@@ -25,6 +25,11 @@ public class BattleReportService
     public event EventHandler<BattleReportAddedEventArgs> BattleReportAdded;
     public event EventHandler<BattleReportRemovedEventArgs> BattleReportRemoved;
 
+    private static readonly JsonSerializerOptions _options = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
 
     public BattleReportService(ISnackbar snackbar, SettingService settingService)
     {
@@ -63,9 +68,9 @@ public class BattleReportService
         {
             return;
         }
-        else if (_watcher != null)
+        else
         {
-            _watcher.Dispose();
+            _watcher?.Dispose();
         }
 
         _watcher = new FileSystemWatcher(_settingService.Settings.WotReplayDirectory)
@@ -186,11 +191,8 @@ public class BattleReportService
 
                     // Update startindex for next json search
                     startIndex = i;
-
-                    return JsonSerializer.Deserialize<T>(json, new JsonSerializerOptions
-                    {
-                        PropertyNameCaseInsensitive = true
-                    });
+                                        
+                    return JsonSerializer.Deserialize<T>(json, _options);
                 }
             }
         }

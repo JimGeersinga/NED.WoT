@@ -2,9 +2,9 @@
 {
     public static class TankNameResolver
     {
-        public static HashSet<string> UndefinedTankNames = new();
+        public static HashSet<string> UndefinedTankNames = [];
 
-        private static readonly IReadOnlyDictionary<string, string> _tankNames = new Dictionary<string, string>()
+        private static readonly Dictionary<string, string> _tankNames = new()
         {
             {"_105_leFH18B2","105 leFH18B2"},
             {"_105_leFH18B2_IGR","105 leFH18B2"},
@@ -1416,7 +1416,7 @@
 
         public static string GetTankName(string key)
         {
-            string strippedKey = key[(key.IndexOf(":") + 1)..];
+            string strippedKey = key[(key.IndexOf(':') + 1)..];
             if (_tankNames.TryGetValue(strippedKey, out var name))
             {
                 return name;

@@ -1,10 +1,7 @@
-﻿namespace NED.WoT.BattleResults.Client.Services
+﻿internal static class MapNameResolverHelpers
 {
-    public static class MapNameResolver
-    {
-        public static HashSet<string> UndefinedMapNames = [];
 
-        private static readonly Dictionary<string, string> _mapNames = new()
+    private static readonly IReadOnlyDictionary<string, string> _mapNames = new Dictionary<string, string>()
         {
             {"Abdij","Abbey"},
             {"Vliegveld","Airfield"},
@@ -71,21 +68,4 @@
             {"Safe Haven", "Safe Haven"},
             {"Empire's Border", "Empire's Border"}
         };
-
-        public static string GetMapName(string key)
-        {
-            string strippedKey = key[(key.IndexOf(':') + 1)..];
-            if (_mapNames.TryGetValue(strippedKey, out var name))
-            {
-                return name;
-            }
-
-            UndefinedMapNames.Add(key);
-
-            return key;
-        }
-    }
 }
-
-
-

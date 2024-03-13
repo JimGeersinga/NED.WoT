@@ -143,7 +143,7 @@ public class Team
         }
     }
 
-    public List<Player> Players { get; set; } = new List<Player>();
+    public List<Player> Players { get; set; } = [];
 
     public bool IsOwnTeam(Settings settings)
     {

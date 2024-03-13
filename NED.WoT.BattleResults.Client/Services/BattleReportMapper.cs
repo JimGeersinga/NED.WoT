@@ -78,7 +78,7 @@ namespace NED.WoT.BattleResults.Client.Data
                 team.Players.Add(new Player());
             }
 
-            team.Players = team.Players.OrderByDescending(p => p.ExperienceEarned).ToList();
+            team.Players = [.. team.Players.OrderByDescending(p => p.ExperienceEarned)];
             for (int i = 0; i < team.Players.Count; i++)
             {
                 team.Players[i].Number = i + 1;
