@@ -32,8 +32,8 @@
     <GenerateTestArtifacts>True</GenerateTestArtifacts>
     <AppInstallerUri>https://ned-wot.azurewebsites.net/</AppInstallerUri>
     <HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
+    <AutoIncrementPackageRevision>True</AutoIncrementPackageRevision>
     <AppxBundle>Never</AppxBundle>
-    <ShowPrompt>True</ShowPrompt>
     <UapAppxPackageBuildMode>SideLoadOnly</UapAppxPackageBuildMode>
     <DefaultLanguage>nl-NL</DefaultLanguage>
   </PropertyGroup>
