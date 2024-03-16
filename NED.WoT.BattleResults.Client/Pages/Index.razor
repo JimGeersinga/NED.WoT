@@ -58,9 +58,13 @@
                 var loses = context.Items.Count(x => x.IsLose(SettingService.Settings));
                 var draws = context.Items.Count(x => x.IsDraw());
                 var unknowns = context.Items.Count(x => x.IsUnkown());
+
+                var winPercentage = 100m / (wins+loses+draws) * wins;
+                var percentage_color = winPercentage > 50 ? "Win" : winPercentage < 40 ? "Lose" : "Draw";
+
             }
             <div class="d-flex justify-space-between">
-                <MudText Typo="Typo.subtitle1" Class="d-inline"><b>@context.Key</b>, <b>@context.Items.Count()</b> gevechten</MudText>
+                <MudText Typo="Typo.subtitle1" Class="d-inline"><b>@context.Key</b>, <b>@context.Items.Count()</b> gevechten <span class="ml-2 @percentage_color">@winPercentage.ToString("0.00")%</span> </MudText>
                 <MudText Typo="Typo.subtitle1" Class="d-inline">
 
                     <b class="@Result.Win.ToString()">@wins</b> Gewonnen
