@@ -59,7 +59,12 @@
                 var draws = context.Items.Count(x => x.IsDraw());
                 var unknowns = context.Items.Count(x => x.IsUnkown());
 
-                var winPercentage = 100m / (wins+loses+draws) * wins;
+                var totalBattles = wins + loses + draws;
+                var winPercentage = 0m;
+                if (totalBattles > 0)
+                {
+                    winPercentage = 100m / totalBattles * wins;
+                }
                 var percentage_color = winPercentage > 50 ? "Win" : winPercentage < 40 ? "Lose" : "Draw";
 
             }
