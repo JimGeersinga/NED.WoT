@@ -1437,6 +1437,7 @@
             {"J45_Mitsu_108","Mitsu 108" },
             {"G164_Kpz_Pr_68_P","Mittlerer Kpz. Pr. 68 (P)" },
             {"J35_Ho_Ri_3","Ho-Ri 3" },
+            {"J40_Type_71", "Type 71" }
         };
 
         public static string GetTankName(string key)

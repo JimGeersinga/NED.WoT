@@ -17,9 +17,10 @@
             }
         </MudItem>
         <MudItem sm="4" Class="d-flex align-center">
-            <MudTextField @bind-Value="searchString" Placeholder="Zoek op speler naam of clan tag" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+            <MudTextField @bind-Value="searchString" DebounceInterval="500" Placeholder="Zoek op speler naam of clan tag" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
         </MudItem>
         <MudItem sm="4" Class="d-flex align-center justify-end">
+            <MudCheckBox @bind-Value="@_showOnlyUnkown" Label="Onbekende matches"></MudCheckBox>
             <MudButton Variant="Variant.Filled" Class="ml-4" Color="Color.Primary" OnClick="() => _hideNormalMatchMaking = !_hideNormalMatchMaking">
                 @(_hideNormalMatchMaking ? "Clan" : "Alle") gevechten
             </MudButton>
@@ -27,8 +28,8 @@
     </MudGrid>
 </MudToolBar>
 
-<MudTable Items="@_reports" FixedHeader="true" FixedFooter="true" Dense="true" Hover="true" Virtualize="true" Bordered="true" Loading="@_loading" GroupHeaderStyle="background-color:var(--mud-palette-background-grey)"
-          RowClassFunc="@SelectedRowClass" Filter="new Func<BattleReport,bool>(TableFilter)" Height="calc(100vh - 128px);" Class="report-table" RowClass="@(SettingService.Settings.OnlyHighlistOwnMatches ? "highlight-own-result" : "")" GroupBy="@_groupDefinition" AllowUnsorted="false">
+<MudTable Items="@_reports" FixedHeader="true" FixedFooter="true" Dense="true" Hover="true" Virtualize="true" Bordered="true" Loading="@_loading" GroupHeaderStyle="background-color:var(--mud-palette-background-grey)" GroupHeaderClass="group-info"
+          RowClassFunc="@SelectedRowClass" Filter="new Func<BattleReport,bool>(TableFilter)" Height="calc(100vh - 128px);" Class="report-table" RowClass="@(SettingService.Settings.OnlyHighlistOwnMatches ? "highlight-own-result match-info" : "match-info")" GroupBy="@_groupDefinition" AllowUnsorted="false">
     <ColGroup>
         <col style="width: 50px" />
         <col style="width: 50px" />
@@ -43,11 +44,11 @@
     <HeaderContent>
         <MudTh Style="text-align:center; cursor: pointer;" @onclick="CollapseAllBattleReports"><MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowUp" OnClick="CollapseAllBattleReports" Variant="Variant.Text" Size="Size.Small" /></MudTh>
         <MudTh Style="text-align: center">#</MudTh>
-        <MudTh><MudTableSortLabel SortBy="new Func<BattleReport, object>(x=>x.MatchStart)">Start datum</MudTableSortLabel></MudTh>
-        <MudTh><MudTableSortLabel SortBy="new Func<BattleReport, object>(x=>x.MatchEnd)">Eind datum</MudTableSortLabel></MudTh>
+        <MudTh Style="text-align: center"><MudTableSortLabel SortBy="new Func<BattleReport, object>(x=>x.MatchStart)">Start datum</MudTableSortLabel></MudTh>
+        <MudTh Style="text-align: center"><MudTableSortLabel SortBy="new Func<BattleReport, object>(x=>x.MatchEnd)">Eind datum</MudTableSortLabel></MudTh>
         <MudTh><MudTableSortLabel SortBy="new Func<BattleReport, object>(x=>x.MatchDuration)">Duratie</MudTableSortLabel></MudTh>
         <MudTh><MudTableSortLabel SortBy="new Func<BattleReport, object>(x=>x.MapName)">Map</MudTableSortLabel></MudTh>
-        <MudTh>vs</MudTh>
+        <MudTh>VS</MudTh>
         <MudTh Style="text-align: center">Uitslag</MudTh>
         <MudTh Style="text-align: center">#</MudTh>
     </HeaderContent>
@@ -118,19 +119,25 @@
                 <a id="@id" style="position: absolute; top:-80px;" />
             </MudTd>
             <MudTd Style="text-align:center;">@index</MudTd>
-            <MudTd DataLabel="MatchStart">@context.MatchStart.ToString("dd/MM/yyyy HH:mm")</MudTd>
+            <MudTd Style="text-align:center;" DataLabel="MatchStart">@context.MatchStart.ToString("dd/MM/yyyy HH:mm")</MudTd>
             <MudTd DataLabel="MatchEnd">@context.MatchEnd?.ToString("dd/MM/yyyy HH:mm")</MudTd>
             <MudTd DataLabel="Duration">@context.MatchDurationDisplay</MudTd>
             <MudTd DataLabel="MapName">@context.MapName @mapBase</MudTd>
             <MudTd DataLabel="Versus" Class="versus-column">
-                <span>
-                    <strong class="@context.Team1.Result.ToString() @(ownTeam?.Number == 1? "highlight" : "")">@context.Team1.Abbreviation</strong>
-                    vs
-                    <strong class="@context.Team2.Result.ToString() @(ownTeam?.Number == 2? "highlight" : "")">@context.Team2.Abbreviation</strong>
-                </span>
+                <div class="versus-info">
+                    <span>
+                        <strong class="@context.Team1.Result.ToString() @(ownTeam?.Number == 1? "highlight" : "")">@context.Team1.Abbreviation</strong>
+                    </span>
+                    <span>
+                        vs
+                    </span>
+                    <span>
+                        <strong class="@context.Team2.Result.ToString() @(ownTeam?.Number == 2? "highlight" : "")">@context.Team2.Abbreviation</strong>
+                    </span>
+                </div>
                 <MudIconButton Variant="Variant.Outlined" Color="Color.Default" Size="Size.Small" Icon="@Icons.Material.Filled.ContentCopy" OnClick="(e) => CopyResultAsync(context, ownTeam)" Style="float:right;" Disabled="(ownTeam == null)" />
             </MudTd>
-            <MudTd DataLabel="Result" Class="@ownTeam?.Result.ToString()" Style="text-align: center">@result</MudTd>
+            <MudTd Style="text-align:center;" DataLabel="Result" Class="@ownTeam?.Result.ToString()">@result</MudTd>
             <MudTd Style="text-align:center;">@index</MudTd>
         }
     </RowTemplate>
@@ -155,9 +162,17 @@
                 var loses = filteredReports.Count(x => x.IsLose(SettingService.Settings));
                 var draws = filteredReports.Count(x => x.IsDraw());
                 var unknowns = filteredReports.Count(x => x.IsUnkown());
+
+                var totalBattles = wins + loses + draws;
+                var winPercentage = 0m;
+                if (totalBattles > 0)
+                {
+                    winPercentage = 100m / totalBattles * wins;
+                }
+                var percentage_color = winPercentage > 50 ? "Win" : winPercentage < 40 ? "Lose" : "Draw";
             }
             <div class="d-flex justify-space-between">
-                <MudText Typo="Typo.subtitle1" Class="d-inline text-bold">Totaal <b>@filteredReports.Count</b> gevechten</MudText>
+                <MudText Typo="Typo.subtitle1" Class="d-inline text-bold">Totaal <b>@filteredReports.Count</b> gevechten  <span class="ml-2 @percentage_color">@winPercentage.ToString("0.00")%</span></MudText>
                 <MudText Typo="Typo.subtitle1" Class="d-inline">
                     <b class="@Result.Win.ToString()">@wins</b> Gewonnen
                     <span class="mx-2 grey-text text-darken-1">|</span>
@@ -179,6 +194,8 @@
     private bool _loading = true;
     private string searchString = "";
     private bool _hideNormalMatchMaking = true;
+
+    private bool _showOnlyUnkown = false;
 
     private List<BattleReport> _reports = new List<BattleReport>();
     private TableGroupDefinition<BattleReport> _groupDefinition = new()
@@ -232,20 +249,24 @@
 
     private bool TableFilter(BattleReport report)
     {
+        bool show = false;
         if (_hideNormalMatchMaking && (report.Team1.Abbreviation == null || report.Team1.Abbreviation == "?")
                                    && (report.Team2.Abbreviation == null || report.Team2.Abbreviation == "?"))
-            return false;
+            show = false;
         else if (string.IsNullOrWhiteSpace(searchString))
-            return true;
+            show = true;
         else if (report.Team1.Abbreviation?.Equals(searchString, StringComparison.OrdinalIgnoreCase) ?? false)
-            return true;
+            show = true;
         else if (report.Team2.Abbreviation?.Equals(searchString, StringComparison.OrdinalIgnoreCase) ?? false)
-            return true;
+            show = true;
         else if (report.Team1.Players.Any(x => x.Name?.Equals(searchString, StringComparison.OrdinalIgnoreCase) ?? false))
-            return true;
+            show = true;
         else if (report.Team2.Players.Any(x => x.Name?.Equals(searchString, StringComparison.OrdinalIgnoreCase) ?? false))
-            return true;
-        return false;
+            show = true;
+
+        show = show && (!_showOnlyUnkown || report.IsUnkown());
+
+        return show;
     }
 
     private void CollapseAllBattleReports()

@@ -231,3 +231,37 @@ a, .btn-link {
     justify-content: space-between;
     align-items: center;
 }
+
+.group-info {
+    position: sticky;
+    top: 39px;
+    background-color: #f5f5f5;
+    z-index: 3;
+}
+
+.match-info {
+    position: sticky;
+    top: 80px;
+    background-color: #ffffff;
+    z-index: 3;
+}
+
+    .match-info.selected {
+        background-color: #bfbfbf !important;
+    }
+    .match-info:not(.selected):hover {
+        background-color: #f5f5f5 !important;
+    }
+
+.mud-table-sticky-footer * .mud-table-root .mud-table-foot {
+    z-index: 4;
+}
+
+.versus-column .versus-info span {
+    padding-inline: 0.25rem;
+}
+    .versus-column .versus-info span:first-child {
+        display: inline-block;
+        width: 75px;
+        text-align: right;
+    }
