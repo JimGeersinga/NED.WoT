@@ -150,7 +150,7 @@ public class BattleReportService
             }
             else
             {
-                report = BattleReportMapper.Map(replay, stats);
+                 report = BattleReportMapper.Map(replay, stats);
             }
         }
         catch (Exception ex)

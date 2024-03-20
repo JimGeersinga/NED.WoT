@@ -1,9 +1,8 @@
 ﻿using NED.WoT.BattleResults.Client.Models;
 using NED.WoT.BattleResults.Client.Services;
 
+using System.Globalization;
 using System.Text.Json.Nodes;
-
-using static MudBlazor.Colors;
 
 namespace NED.WoT.BattleResults.Client.Data
 {
@@ -11,13 +10,20 @@ namespace NED.WoT.BattleResults.Client.Data
     {
         protected BattleReportMapper() { }
 
+        private static CultureInfo CultureInfo => CultureInfo.InvariantCulture;
+
         public static BattleReport Map(JsonObject replay, JsonArray stats)
         {
             var datetime = replay["dateTime"].GetValue<string>();
+            if (!DateTime.TryParseExact(datetime, "dd.MM.yyyy HH:mm:ss", CultureInfo, DateTimeStyles.None, out DateTime matchStart))
+            {
+                throw new Exception($"Could not parse match datetime '{datetime}' with culture '{CultureInfo.Name}'. Current culture is '{CultureInfo.CurrentCulture.Name}'.");
+            }
+
             var game = new BattleReport
             {
                 MapName = MapNameResolver.GetMapName(replay["mapDisplayName"].GetValue<string>()),
-                MatchStart = DateTime.Parse(datetime.Replace('.', '/')),
+                MatchStart = matchStart,
                 Team1 = new Team()
                 {
                     Number = 1
@@ -95,7 +101,7 @@ namespace NED.WoT.BattleResults.Client.Data
         {
             var clan = playerData["clanAbbrev"].GetValue<string>();
 
-            var team = playerData["team"].GetValue<int>() == game.Team1.Number ? game.Team1 : game.Team2;             
+            var team = playerData["team"].GetValue<int>() == game.Team1.Number ? game.Team1 : game.Team2;
 
             var player = new Player()
             {
