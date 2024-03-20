@@ -1448,7 +1448,10 @@
                 return name;
             }
 
-            UndefinedTankNames.Add(key);
+            if (!string.IsNullOrWhiteSpace(key))
+            {
+                UndefinedTankNames.Add(key);
+            }
 
             return key;
         }

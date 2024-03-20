@@ -265,3 +265,7 @@ a, .btn-link {
         width: 75px;
         text-align: right;
     }
+
+.report-table .mud-table-body .match-info > td {
+    border-top: 1px solid var(--mud-palette-table-lines);
+}

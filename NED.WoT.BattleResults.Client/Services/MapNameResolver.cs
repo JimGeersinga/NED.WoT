@@ -80,7 +80,10 @@
                 return name;
             }
 
-            UndefinedMapNames.Add(key);
+            if (!string.IsNullOrWhiteSpace(key))
+            {
+                UndefinedMapNames.Add(key);
+            }
 
             return key;
         }
