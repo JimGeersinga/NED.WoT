@@ -3,6 +3,7 @@ using MudBlazor;
 using NED.WoT.BattleResults.Client.Data;
 using NED.WoT.BattleResults.Client.Models;
 
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Text;
 using System.Text.Json;
@@ -139,8 +140,9 @@ public class BattleReportService
 
         try
         {
-            int startIndex = 0;
             byte[] fileData = File.ReadAllBytes(file.FullName);
+
+            int startIndex = FindSequenceIndex(fileData, [(byte)'{', (byte)'"']);
             var replay = GetJsonFromFile<JsonObject>(fileData, '{', '}', ref startIndex);
             var stats = GetJsonFromFile<JsonArray>(fileData, '[', ']', ref startIndex);
 
@@ -217,6 +219,18 @@ public class BattleReportService
         }
 
         BattleReportAdded?.Invoke(this, new BattleReportAddedEventArgs(report));
+    }
+
+    private static int FindSequenceIndex(byte[] byteArray, byte[] sequence)
+    {
+        for (int i = 0; i <= byteArray.Length - sequence.Length; i++)
+        {
+            if (byteArray.Skip(i).Take(sequence.Length).SequenceEqual(sequence))
+            {
+                return i;
+            }
+        }
+        return 0;
     }
 
 }
