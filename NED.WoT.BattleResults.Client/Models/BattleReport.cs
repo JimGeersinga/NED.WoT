@@ -32,7 +32,7 @@ public class BattleReport
         get
         {
             var duration = string.Empty;
-            if(MatchDuration.HasValue)
+            if (MatchDuration.HasValue)
             {
                 var time = new TimeSpan(MatchDuration.Value * TimeSpan.TicksPerSecond);
                 var minutes = time.Minutes.ToString();
@@ -108,6 +108,11 @@ public class BattleReport
 
     public bool IsLose(Settings settings)
     {
+        if (IsDraw())
+        {
+            return false;
+        }
+
         if (Team1.IsOwnTeam(settings))
         {
             return Team1.IsWinner == false;
@@ -129,7 +134,7 @@ public class Team
     public bool? IsWinner { get; set; }
     public Result Result { get; set; }
 
-    public string  ResultDisplay
+    public string ResultDisplay
     {
         get
         {
