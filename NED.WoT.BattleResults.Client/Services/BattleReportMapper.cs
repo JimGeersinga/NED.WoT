@@ -59,17 +59,17 @@ namespace NED.WoT.BattleResults.Client.Data
                     MapPlayerData(game, playerData, vehicleData);
                 }
             }
-
+            
             var mostMentionedClanTeam1 = game.Team1.Players.Where(x => !string.IsNullOrEmpty(x.Clan)).Select(x => x.Clan).GroupBy(x => x).MaxBy(x => x.Count());
             if (mostMentionedClanTeam1 != null)
             {
-                game.Team1.Abbreviation = mostMentionedClanTeam1.Count() >= game.Team1.Players.Count / 2 ? mostMentionedClanTeam1.Key : "?";
+                game.Team1.Abbreviation = mostMentionedClanTeam1.Count() >= Math.Max(game.Team1.Players.Count / 2, 4) ? mostMentionedClanTeam1.Key : "?";
             }
 
             var mostMentionedClanTeam2 = game.Team2.Players.Where(x => !string.IsNullOrEmpty(x.Clan)).Select(x => x.Clan).GroupBy(x => x).MaxBy(x => x.Count());
             if (mostMentionedClanTeam2 != null)
             {
-                game.Team2.Abbreviation = mostMentionedClanTeam2.Count() >= game.Team2.Players.Count / 2 ? mostMentionedClanTeam2.Key : "?";
+                game.Team2.Abbreviation = mostMentionedClanTeam2.Count() >= Math.Max(game.Team2.Players.Count / 2, 4) ? mostMentionedClanTeam2.Key : "?";
             }
 
             game.Team1.Result = GetResult(game.Team1.IsWinner, game.Team2.IsWinner);

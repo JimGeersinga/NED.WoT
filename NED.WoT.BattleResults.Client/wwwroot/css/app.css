@@ -236,14 +236,14 @@ a, .btn-link {
     position: sticky;
     top: 39px;
     background-color: #f5f5f5;
-    z-index: 3;
+    z-index: 4;
 }
 
 .match-info {
     position: sticky;
     top: 80px;
     background-color: #ffffff;
-    z-index: 3;
+    z-index: 4;
 }
 
     .match-info.selected {
@@ -254,7 +254,7 @@ a, .btn-link {
     }
 
 .mud-table-sticky-footer * .mud-table-root .mud-table-foot {
-    z-index: 4;
+    z-index: 5;
 }
 
 .versus-column .versus-info span {
