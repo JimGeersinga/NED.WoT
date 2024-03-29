@@ -3,7 +3,7 @@
         <MudList Clickable="false">
             @if (MapNameResolver.UndefinedMapNames.Count > 0)
             {
-                <MudListSubheader>Undefined Map Names</MudListSubheader>
+                <MudListSubheader>Onbekende map namen</MudListSubheader>
                 @foreach (var name in MapNameResolver.UndefinedMapNames)
                 {
                     <MudListItem>@name</MudListItem>
@@ -12,7 +12,7 @@
             }
             @if (TankNameResolver.UndefinedTankNames.Count > 0)
             {
-                <MudListSubheader>Undefined Tank Names</MudListSubheader>
+                <MudListSubheader>Onbekende tank namen</MudListSubheader>
                 @foreach (var name in TankNameResolver.UndefinedTankNames)
                 {
                     <MudListItem>@name</MudListItem>
@@ -21,7 +21,7 @@
         </MudList>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel">Close</MudButton>
+        <MudButton OnClick="Cancel">Sluiten</MudButton>
     </DialogActions>
 </MudDialog>
 @code {

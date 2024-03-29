@@ -11,12 +11,20 @@
     <MudGrid Justify="Justify.SpaceBetween">
         <MudItem sm="4" Class="d-flex align-center">
             <MudText Typo="Typo.subtitle1">Gevechten sinds @SettingService.Settings.LoadBattlesSince?.ToString("dd/MM/yyyy")</MudText>
+
+            <MudButton Size="Size.Small" Class="ml-4" OnClick="OpenClanMembersDialog" Style="min-width: unset;" title="Clan leden">
+                <MudImage Src="images/crew.png" Height="30" />
+            </MudButton>
+
             @if (TankNameResolver.UndefinedTankNames.Any() || MapNameResolver.UndefinedMapNames.Any())
             {
-                <MudIconButton Class="ml-4" Icon="@Icons.Material.Filled.Warning" Size="@Size.Small" Color="@Color.Warning" OnClick="OpenUndefinedNamesDialog"></MudIconButton>
+                <MudButton Size="Size.Small" Class="ml-4" OnClick="OpenUndefinedNamesDialog" Style="min-width: unset;" title="Onbekende mappen en tanks">
+                    <MudImage Src="images/CrewSkill_Commander_sixthSense.png" Height="30" />
+                </MudButton>
             }
         </MudItem>
         <MudItem sm="4" Class="d-flex align-center">
+            @* <MudImage *@
             <MudTextField @bind-Value="searchString" DebounceInterval="500" Placeholder="Zoek op speler naam of clan tag" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
         </MudItem>
         <MudItem sm="4" Class="d-flex align-center justify-end">
@@ -105,7 +113,7 @@
                 result = ownTeam.ResultDisplay;
             }
 
-            var id = $"Timestamp_{context.MatchStart.Ticks + context.MatchDuration.GetValueOrDefault()}_achor";
+            var id = $"Timestamp_{context.MatchStart.Ticks + context.MatchDuration.GetValueOrDefault()}_anchor";
 
             <MudTd Class="relative" @onclick="() => ToggleShowDetailsAsync(context)" Style="text-align:center;cursor: pointer">
                 @if (context.ShowDetails)
@@ -157,11 +165,10 @@
     <FooterContent>
         <MudTd colspan="8" Class="mud-background-gray">
             @{
-                var filteredReports = _reports.Where(x => TableFilter(x)).ToList();
-                var wins = filteredReports.Count(x => x.IsWin(SettingService.Settings));
-                var loses = filteredReports.Count(x => x.IsLose(SettingService.Settings));
-                var draws = filteredReports.Count(x => x.IsDraw());
-                var unknowns = filteredReports.Count(x => x.IsUnkown());
+                var wins = _filteredReports.Count(x => x.IsWin(SettingService.Settings));
+                var loses = _filteredReports.Count(x => x.IsLose(SettingService.Settings));
+                var draws = _filteredReports.Count(x => x.IsDraw());
+                var unknowns = _filteredReports.Count(x => x.IsUnkown());
 
                 var totalBattles = wins + loses + draws;
                 var winPercentage = 0m;
@@ -172,7 +179,7 @@
                 var percentage_color = winPercentage > 50 ? "Win" : winPercentage < 40 ? "Lose" : "Draw";
             }
             <div class="d-flex justify-space-between">
-                <MudText Typo="Typo.subtitle1" Class="d-inline text-bold">Totaal <b>@filteredReports.Count</b> gevechten  <span class="ml-2 @percentage_color">@winPercentage.ToString("0.00")%</span></MudText>
+                <MudText Typo="Typo.subtitle1" Class="d-inline text-bold">Totaal <b>@_filteredReports.Count</b> gevechten  <span class="ml-2 @percentage_color">@winPercentage.ToString("0.00")%</span></MudText>
                 <MudText Typo="Typo.subtitle1" Class="d-inline">
                     <b class="@Result.Win.ToString()">@wins</b> Gewonnen
                     <span class="mx-2 grey-text text-darken-1">|</span>
@@ -198,6 +205,7 @@
     private bool _showOnlyUnkown = false;
 
     private List<BattleReport> _reports = new List<BattleReport>();
+    private List<BattleReport> _filteredReports => _reports.Where(x => TableFilter(x)).ToList();
     private TableGroupDefinition<BattleReport> _groupDefinition = new()
         {
             Indentation = false,
@@ -287,7 +295,7 @@
         report.ShowDetails = !report.ShowDetails;
         if (report.ShowDetails)
         {
-            await JSRuntime.InvokeVoidAsync("scrollIntoView", $"Timestamp_{report.MatchStart.Ticks + report.MatchDuration.GetValueOrDefault()}_achor");
+            await JSRuntime.InvokeVoidAsync("scrollIntoView", $"Timestamp_{report.MatchStart.Ticks + report.MatchDuration.GetValueOrDefault()}_anchor");
         }
     }
 
@@ -299,5 +307,16 @@
     private void OpenUndefinedNamesDialog()
     {
         DialogService.Show<UndefinedNamesDialog>("Undefined Names", new DialogOptions { CloseOnEscapeKey = true });
+    }
+
+    private void OpenClanMembersDialog()
+    {
+        DialogService.Show<ClanMembersDialog>("Clan leden", 
+            new DialogParameters<ClanMembersDialog>() { { x => x.Reports, _filteredReports } }, 
+            new DialogOptions {
+                CloseOnEscapeKey = true,
+                FullWidth= true,
+                MaxWidth = MaxWidth.Small
+            });
     }
 }

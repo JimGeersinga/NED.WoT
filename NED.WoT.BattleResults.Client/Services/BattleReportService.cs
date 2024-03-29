@@ -134,7 +134,7 @@ public class BattleReportService
         _snackbar.Add($"Er is iets fout gegaan bij de file watcher: {e.GetException()}", Severity.Error);
     }
 
-    private static BattleReport GetBattleReport(FileInfo file)
+    private BattleReport GetBattleReport(FileInfo file)
     {
         BattleReport report = new();
 
@@ -152,7 +152,7 @@ public class BattleReportService
             }
             else
             {
-                 report = BattleReportMapper.Map(replay, stats);
+                 report = BattleReportMapper.Map(replay, stats, _settingService.Settings);
             }
         }
         catch (Exception ex)

@@ -12,7 +12,7 @@ namespace NED.WoT.BattleResults.Client.Data
 
         private static CultureInfo CultureInfo => CultureInfo.InvariantCulture;
 
-        public static BattleReport Map(JsonObject replay, JsonArray stats)
+        public static BattleReport Map(JsonObject replay, JsonArray stats, Settings settings)
         {
             var datetime = replay["dateTime"].GetValue<string>();
             if (!DateTime.TryParseExact(datetime, "dd.MM.yyyy HH:mm:ss", CultureInfo, DateTimeStyles.None, out DateTime matchStart))
@@ -47,7 +47,7 @@ namespace NED.WoT.BattleResults.Client.Data
                 {
                     var vehicleData = vehicle.Value.AsArray()[0].AsObject();
                     var playerData = stats[1][vehicle.Key].AsObject();
-                    MapPlayerData(game, playerData, vehicleData);
+                    MapPlayerData(game, playerData, vehicleData, settings);
                 }
             }
             else
@@ -56,7 +56,7 @@ namespace NED.WoT.BattleResults.Client.Data
                 {
                     var playerData = vehicle.Value.AsObject();
                     var vehicleData = stats?[0]?["vehicles"]?.AsObject()?[vehicle.Key]?[0]?.AsObject();
-                    MapPlayerData(game, playerData, vehicleData);
+                    MapPlayerData(game, playerData, vehicleData, settings);
                 }
             }
             
@@ -97,7 +97,7 @@ namespace NED.WoT.BattleResults.Client.Data
             }
         }
 
-        private static void MapPlayerData(BattleReport game, JsonObject playerData, JsonObject vehicleData)
+        private static void MapPlayerData(BattleReport game, JsonObject playerData, JsonObject vehicleData, Settings settings)
         {
             var clan = playerData["clanAbbrev"].GetValue<string>();
 
@@ -108,6 +108,7 @@ namespace NED.WoT.BattleResults.Client.Data
                 Name = playerData["name"].GetValue<string>(),
                 Clan = clan,
                 Vehicle = TankNameResolver.GetTankName(playerData["vehicleType"].GetValue<string>()),
+                IsClanMember = settings.ClanAbbreviation?.ToLower() == clan?.ToLower()
             };
 
             if (vehicleData != null)

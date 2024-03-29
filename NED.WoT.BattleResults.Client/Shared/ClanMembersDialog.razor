@@ -1,0 +1,37 @@
+﻿<MudDialog>
+    <DialogContent>
+        <MudTable Items="@GetClanMembers()" Hover="true" Breakpoint="Breakpoint.Sm" FixedHeader="true" Dense="false" Height="600px" Bordered="false">
+            <HeaderContent>
+                <MudTh>Speler</MudTh>
+                <MudTh Style="text-align:right;">Battles</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Speler">@context.Name</MudTd>
+                <MudTd DataLabel="Battles" Style="text-align:right;">@context.Battles</MudTd>
+            </RowTemplate>
+        </MudTable>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Sluiten</MudButton>
+    </DialogActions>
+</MudDialog>
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public List<BattleReport> Reports { get; set; } = [];
+
+
+    private IEnumerable<ClanMember> GetClanMembers()
+    {
+        return Reports
+        .SelectMany(x => x.Team1.Players.Concat(x.Team2.Players))
+        .Where(x => x.IsClanMember)
+        .GroupBy(x => x.Name)
+        .Select(x => new ClanMember(x.Key, x.Count()))
+        .OrderBy(x => x.Name).ThenByDescending(x => x.Battles);
+    }
+
+    void Cancel() => MudDialog.Close(DialogResult.Ok(true));
+
+    public record ClanMember(string Name, int Battles);
+}

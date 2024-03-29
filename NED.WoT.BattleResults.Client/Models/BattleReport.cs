@@ -198,5 +198,6 @@ public class Player
     public int? Shots { get; set; }
     public int? DirectHits { get; set; }
     public int? DeathReason { get; set; }
+    public bool IsClanMember { get; set; }
 }
 
