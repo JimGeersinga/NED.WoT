@@ -1465,6 +1465,11 @@
 
         public static string GetTankName(string key)
         {
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return key;
+            }
+
             string strippedKey = key[(key.IndexOf(':') + 1)..];
             if (_tankNames.TryGetValue(strippedKey, out var name))
             {
@@ -1476,11 +1481,8 @@
             {
                 return name;
             }
-
-            if (!string.IsNullOrWhiteSpace(key))
-            {
-                UndefinedTankNames.Add(key);
-            }
+           
+            UndefinedTankNames.Add(key);           
 
             return key;
         }
