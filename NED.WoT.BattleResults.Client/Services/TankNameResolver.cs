@@ -1437,13 +1437,42 @@
             {"J45_Mitsu_108","Mitsu 108" },
             {"G164_Kpz_Pr_68_P","Mittlerer Kpz. Pr. 68 (P)" },
             {"J35_Ho_Ri_3","Ho-Ri 3" },
-            {"J40_Type_71", "Type 71" }
+            {"J40_Type_71", "Type 71" },
+
+            {"Cz34_Vz_71_Tesak", "Vz. 71 Tesák"},
+            {"Cz28_LPT_67_Selma", "LPT-67 Šelma"},
+            {"A151_TS_60", "TS-60"},
+            {"J41_Type_68", "Type 68"},
+            {"Pl21_CS_63_OSP3", "Hurricane"},
+            {"Pl30_SDP_Wz58T", "SDP 58 Kilana"},
+            {"Cz24_Vz_64_Blesk", "Vz. 64 Blesk"},
+            {"GB145_Crusher_ASE_4", "Nergal"},
+            {"J33_Ho_Ri_2", "Ho-Ri 2"},
+            {"Pl27_SDP_Wz_66T", "SDP wz 66 Grom"},
+            {"R159_SU_130PM_DR", "Forest Spirit"},
+            {"A146_TL_7_120", "TL-7"},
+            {"A169_PattonIII_120", "Patton the Tank"},
+            {"G166_LKpz_70_K", "Leichter Kpz. 70 (K)"},
+            {"Pl24_56TP", "56TP"},
+            {"J31_Type_5_KaRi", "Type 5 Ka-Ri"},
+            {"F116_Bat_Chatillon_Bourrasque_DV", "Miel"},
+            {"G167_Tiger_Maus_120t", "Tiger-Maus"},
+            {"Pl28_SDP_Wz_60", "SDP 60 Gonkiewicza"},
+            {"Cz23_Skoda_T_17", "Škoda T 17"},
+            {"G171_E77", "E 77"},
+            {"GB123_GSOR_1006_v7", "GSOR 1006 Scheme 7"}
         };
 
         public static string GetTankName(string key)
         {
             string strippedKey = key[(key.IndexOf(':') + 1)..];
             if (_tankNames.TryGetValue(strippedKey, out var name))
+            {
+                return name;
+            }
+
+            strippedKey = strippedKey[..strippedKey.LastIndexOf('_')];
+            if (_tankNames.TryGetValue(strippedKey, out name))
             {
                 return name;
             }

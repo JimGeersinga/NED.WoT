@@ -36,7 +36,7 @@
     </MudGrid>
 </MudToolBar>
 
-<MudTable Items="@_reports" FixedHeader="true" FixedFooter="true" Dense="true" Hover="true" Virtualize="true" Bordered="true" Loading="@_loading" GroupHeaderStyle="background-color:var(--mud-palette-background-grey)" GroupHeaderClass="group-info"
+<MudTable Items="@_reports" FixedHeader="true" FixedFooter="true" Dense="true" Hover="true" Virtualize="true" Bordered="true" Loading="@_loading" GroupHeaderStyle="background-color:var(--mud-palette-background-gray)" GroupHeaderClass="group-info"
           RowClassFunc="@SelectedRowClass" Filter="new Func<BattleReport,bool>(TableFilter)" Height="calc(100vh - 128px);" Class="report-table" RowClass="@(SettingService.Settings.OnlyHighlistOwnMatches ? "highlight-own-result match-info" : "match-info")" GroupBy="@_groupDefinition" AllowUnsorted="false">
     <ColGroup>
         <col style="width: 50px" />
@@ -100,7 +100,6 @@
         }
         else
         {
-
             var group = _reports.Where(x => TableFilter(x)).GroupBy(x => x.Group).First(x => x.Any(i => i.FileName == context.FileName)).OrderBy(x => x.MatchStart).ToList();
             var index = group.FindIndex(x => x.FileName == context.FileName) + 1;
 
@@ -133,15 +132,13 @@
             <MudTd DataLabel="MapName">@context.MapName @mapBase</MudTd>
             <MudTd DataLabel="Versus" Class="versus-column">
                 <div class="versus-info">
-                    <span>
-                        <strong class="@context.Team1.Result.ToString() @(ownTeam?.Number == 1? "highlight" : "")">@context.Team1.Abbreviation</strong>
-                    </span>
-                    <span>
+                    <span class="team-name text-right @context.Team1.Result.ToString() @(ownTeam?.Number == 1? "highlight" : "")">@context.Team1.Abbreviation</span>
+                    <span class="death-count text-right">@context.Team2.Players.Count(x => x.DeathReason != -1)</span>                    
+                    <span class="versus-text">
                         vs
-                    </span>
-                    <span>
-                        <strong class="@context.Team2.Result.ToString() @(ownTeam?.Number == 2? "highlight" : "")">@context.Team2.Abbreviation</strong>
-                    </span>
+                    </span>                  
+                    <span class="death-count text-left">@context.Team1.Players.Count(x => x.DeathReason != -1)</span>
+                    <span class="team-name text-left @context.Team2.Result.ToString() @(ownTeam?.Number == 2? "highlight" : "")">@context.Team2.Abbreviation</span>
                 </div>
                 <MudIconButton Variant="Variant.Outlined" Color="Color.Default" Size="Size.Small" Icon="@Icons.Material.Filled.ContentCopy" OnClick="(e) => CopyResultAsync(context, ownTeam)" Style="float:right;" Disabled="(ownTeam == null)" />
             </MudTd>

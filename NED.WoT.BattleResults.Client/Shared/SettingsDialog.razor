@@ -22,13 +22,13 @@
             <MudTextField Label="Clan afkorting"
                           @bind-Value="@modal.ClanAbbreviation" For="(() => modal.ClanAbbreviation)" />
             <MudTextField Label="Speler naam"
-                          @bind-Value="@modal.PlayerName" For="(() => modal.PlayerName)" />          
+                          @bind-Value="@modal.PlayerName" For="(() => modal.PlayerName)" />
 
             <MudSwitch Label="Maximaal één battle resultaat open" Color="Color.Primary"
-                       @bind-Checked="@modal.SingleBattleResultOpenedOnly" For="(() => modal.SingleBattleResultOpenedOnly)" />
+                       @bind-Value="@modal.SingleBattleResultOpenedOnly" For="(() => modal.SingleBattleResultOpenedOnly)" />
 
             <MudSwitch Label="Alleen eigen match results highlighten" Color="Color.Primary"
-                @bind-Checked="@modal.OnlyHighlistOwnMatches" For="(() => modal.OnlyHighlistOwnMatches)" />
+                       @bind-Value="@modal.OnlyHighlistOwnMatches" For="(() => modal.OnlyHighlistOwnMatches)" />
         </DialogContent>
         <DialogActions>
             <MudButton OnClick="AppInfo.Current.ShowSettingsUI" Class="mr-auto">Ga naar app settings</MudButton>
@@ -59,7 +59,7 @@
                 ClanAbbreviation = SettingService.Settings.ClanAbbreviation,
                 PlayerName = SettingService.Settings.PlayerName,
                 SingleBattleResultOpenedOnly = SettingService.Settings.SingleBattleResultOpenedOnly,
-                OnlyHighlistOwnMatches = SettingService.Settings.OnlyHighlistOwnMatches                
+                OnlyHighlistOwnMatches = SettingService.Settings.OnlyHighlistOwnMatches
             };
     }
 

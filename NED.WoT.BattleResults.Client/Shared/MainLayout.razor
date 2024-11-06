@@ -5,8 +5,8 @@
 @inject NavigationManager NavigationManager
 @inject SettingService SettingService
 
-
 <MudThemeProvider @ref="@_mudThemeProvider" @bind-IsDarkMode="@_isDarkMode" />
+<MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
 
@@ -114,7 +114,7 @@
             {
                 MaxWidth = MaxWidth.Medium,
                 FullWidth = true,
-                DisableBackdropClick = true,
+                BackdropClick = false,
                 CloseButton = false
             });
     }

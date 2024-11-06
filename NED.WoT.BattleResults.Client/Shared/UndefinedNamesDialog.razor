@@ -1,6 +1,8 @@
-﻿<MudDialog>
+﻿@using Microsoft.AspNetCore.Components
+
+<MudDialog>
     <DialogContent>
-        <MudList Clickable="false">
+        <MudList T="string" ReadOnly>
             @if (MapNameResolver.UndefinedMapNames.Count > 0)
             {
                 <MudListSubheader>Onbekende map namen</MudListSubheader>

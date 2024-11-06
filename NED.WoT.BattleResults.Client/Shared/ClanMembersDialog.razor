@@ -2,8 +2,8 @@
     <DialogContent>
         <MudTable Items="@GetClanMembers()" Hover="true" Breakpoint="Breakpoint.Sm" FixedHeader="true" Dense="false" Height="600px" Bordered="false">
             <HeaderContent>
-                <MudTh>Speler</MudTh>
-                <MudTh Style="text-align:right;">Battles</MudTh>
+                <MudTh><MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<ClanMember, object>(x => x.Name)">Speler</MudTableSortLabel></MudTh>
+                <MudTh Style="text-align:right;"><MudTableSortLabel InitialDirection="SortDirection.Descending" SortBy="new Func<ClanMember, object>(x => x.Battles)">Battles</MudTableSortLabel></MudTh>
             </HeaderContent>
             <RowTemplate>
                 <MudTd DataLabel="Speler">@context.Name</MudTd>
