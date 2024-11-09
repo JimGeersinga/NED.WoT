@@ -61,6 +61,7 @@
         <MudTh Style="text-align: center">#</MudTh>
     </HeaderContent>
     <GroupHeaderTemplate>
+        
         <MudTh Class="mud-table-cell-custom-group " colspan="7">
             @{
                 var wins = context.Items.Count(x => x.IsWin(SettingService.Settings));
@@ -90,7 +91,7 @@
                         <span class="mx-2 grey-text text-darken-1">|</span>
                         <b>@unknowns</b> Onbekend
                     </MudText>
-                    <MudIconButton Variant="Variant.Outlined" Color="Color.Default" Size="Size.Small" Icon="@Icons.Material.Filled.ContentCopy" OnClick="(e) => CopyResultAsync(context.Items)" Style="float:right;" Disabled="(context.Items.Count() == 0)" />
+                    <MudIconButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small" Icon="@Icons.Material.Filled.ContentCopy" OnClick="(e) => CopyResultAsync(context.Items)" Style="float:right;" Disabled="(context.Items.Count() == 0)" />
                 </div>
             </div>
         </MudTh>
@@ -163,7 +164,7 @@
         }
     </ChildRowContent>
     <FooterContent>
-        <MudTd colspan="8" Class="mud-background-gray">
+        <MudTd colspan="7" Class="mud-background-gray">
             @{
                 var wins = _filteredReports.Count(x => x.IsWin(SettingService.Settings));
                 var loses = _filteredReports.Count(x => x.IsLose(SettingService.Settings));
@@ -180,7 +181,8 @@
             }
             <div class="d-flex justify-space-between">
                 <MudText Typo="Typo.subtitle1" Class="d-inline text-bold">Totaal <b>@_filteredReports.Count</b> gevechten  <span class="ml-2 @percentage_color">@winPercentage.ToString("0.00")%</span></MudText>
-                <MudText Typo="Typo.subtitle1" Class="d-inline">
+
+                <MudText Typo="Typo.subtitle1" Class="d-inline mr-12">
                     <b class="@Result.Win.ToString()">@wins</b> Gewonnen
                     <span class="mx-2 grey-text text-darken-1">|</span>
                     <b class="@Result.Draw.ToString()">@draws</b> Gelijkspel
@@ -191,7 +193,7 @@
                 </MudText>
             </div>
         </MudTd>
-        <MudTd Class="mud-background-gray"></MudTd>
+        <MudTd Class="mud-background-gray" colspan="2"></MudTd>
     </FooterContent>
 </MudTable>
 
