@@ -61,7 +61,7 @@
         <MudTh Style="text-align: center">#</MudTh>
     </HeaderContent>
     <GroupHeaderTemplate>
-        <MudTh Class="mud-table-cell-custom-group " colspan="8">
+        <MudTh Class="mud-table-cell-custom-group " colspan="7">
             @{
                 var wins = context.Items.Count(x => x.IsWin(SettingService.Settings));
                 var loses = context.Items.Count(x => x.IsLose(SettingService.Settings));
@@ -79,19 +79,22 @@
             }
             <div class="d-flex justify-space-between">
                 <MudText Typo="Typo.subtitle1" Class="d-inline"><b>@context.Key</b>, <b>@context.Items.Count()</b> gevechten <span class="ml-2 @percentage_color">@winPercentage.ToString("0.00")%</span> </MudText>
-                <MudText Typo="Typo.subtitle1" Class="d-inline">
+                <div>
+                    <MudText Typo="Typo.subtitle1" Class="d-inline mr-4">
 
-                    <b class="@Result.Win.ToString()">@wins</b> Gewonnen
-                    <span class="mx-2 grey-text text-darken-1">|</span>
-                    <b class="@Result.Draw.ToString()">@draws</b> Gelijkspel
-                    <span class="mx-2 grey-text text-darken-1">|</span>
-                    <b class="@Result.Lose.ToString()">@loses</b> Verloren
-                    <span class="mx-2 grey-text text-darken-1">|</span>
-                    <b>@unknowns</b> Onbekend
-                </MudText>
+                        <b class="@Result.Win.ToString()">@wins</b> Gewonnen
+                        <span class="mx-2 grey-text text-darken-1">|</span>
+                        <b class="@Result.Draw.ToString()">@draws</b> Gelijkspel
+                        <span class="mx-2 grey-text text-darken-1">|</span>
+                        <b class="@Result.Lose.ToString()">@loses</b> Verloren
+                        <span class="mx-2 grey-text text-darken-1">|</span>
+                        <b>@unknowns</b> Onbekend
+                    </MudText>
+                    <MudIconButton Variant="Variant.Outlined" Color="Color.Default" Size="Size.Small" Icon="@Icons.Material.Filled.ContentCopy" OnClick="(e) => CopyResultAsync(context.Items)" Style="float:right;" Disabled="(context.Items.Count() == 0)" />
+                </div>
             </div>
         </MudTh>
-        <MudTh></MudTh>
+        <MudTh colspan="2" />
     </GroupHeaderTemplate>
     <RowTemplate>
         @if (context.Error != null)
@@ -127,16 +130,16 @@
             </MudTd>
             <MudTd Style="text-align:center;">@index</MudTd>
             <MudTd Style="text-align:center;" DataLabel="MatchStart">@context.MatchStart.ToString("dd/MM/yyyy HH:mm")</MudTd>
-            <MudTd DataLabel="MatchEnd">@context.MatchEnd?.ToString("dd/MM/yyyy HH:mm")</MudTd>
+            <MudTd Style="text-align:center;" DataLabel="MatchEnd">@context.MatchEnd?.ToString("dd/MM/yyyy HH:mm")</MudTd>
             <MudTd DataLabel="Duration">@context.MatchDurationDisplay</MudTd>
             <MudTd DataLabel="MapName">@context.MapName @mapBase</MudTd>
             <MudTd DataLabel="Versus" Class="versus-column">
                 <div class="versus-info">
                     <span class="team-name text-right @context.Team1.Result.ToString() @(ownTeam?.Number == 1? "highlight" : "")">@context.Team1.Abbreviation</span>
-                    <span class="death-count text-right">@context.Team2.Players.Count(x => x.DeathReason != -1)</span>                    
+                    <span class="death-count text-right">@context.Team2.Players.Count(x => x.DeathReason != -1)</span>
                     <span class="versus-text">
                         vs
-                    </span>                  
+                    </span>
                     <span class="death-count text-left">@context.Team1.Players.Count(x => x.DeathReason != -1)</span>
                     <span class="team-name text-left @context.Team2.Result.ToString() @(ownTeam?.Number == 2? "highlight" : "")">@context.Team2.Abbreviation</span>
                 </div>
@@ -301,6 +304,30 @@
         await Clipboard.SetTextAsync(team.GetResult(report.MapName));
     }
 
+    private async Task CopyResultAsync(IEnumerable<BattleReport> reports)
+    {
+        List<string> results = reports.Select(x => x.GetOwnTeam(SettingService.Settings).GetResult(x.MapName)).ToList();
+        var splitResults = results
+             .Select(r => r.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries))
+             .ToList();
+
+        int maxLines = splitResults.Max(lines => lines.Length);
+
+        IEnumerable<string> outputLines = Enumerable.Range(0, maxLines)
+            .Select(i =>
+            {
+                var lineEntries = splitResults
+                    .Select(lines => i < lines.Length ? lines[i] : string.Empty)
+                    .ToArray();
+
+                return string.Join("\t\t", lineEntries);
+            });
+
+        string output = string.Join(Environment.NewLine, outputLines);
+
+        await Clipboard.SetTextAsync(output);
+    }
+
     private void OpenUndefinedNamesDialog()
     {
         DialogService.Show<UndefinedNamesDialog>("Undefined Names", new DialogOptions { CloseOnEscapeKey = true });
@@ -308,12 +335,13 @@
 
     private void OpenClanMembersDialog()
     {
-        DialogService.Show<ClanMembersDialog>("Clan leden", 
-            new DialogParameters<ClanMembersDialog>() { { x => x.Reports, _filteredReports } }, 
-            new DialogOptions {
-                CloseOnEscapeKey = true,
-                FullWidth= true,
-                MaxWidth = MaxWidth.Small
-            });
+        DialogService.Show<ClanMembersDialog>("Clan leden",
+            new DialogParameters<ClanMembersDialog>() { { x => x.Reports, _filteredReports } },
+            new DialogOptions
+                {
+                    CloseOnEscapeKey = true,
+                    FullWidth = true,
+                    MaxWidth = MaxWidth.Small
+                });
     }
 }
