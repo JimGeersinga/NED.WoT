@@ -64,7 +64,7 @@
                 clan = $"[{SettingService.Settings.ClanAbbreviation}] ";
             }
         }
-        <MudText Typo="Typo.h6">@(clan)WoT Gevecht Statistieken <span style="color: var(--mud-palette-grey-dark)">V@(AppInfo.VersionString)</span></MudText>
+        <MudText Typo="Typo.h6">@(clan)WoT Gevecht Statistieken</MudText>
         <MudSpacer />
         <MudIconButton Icon="@Icons.Material.Filled.Refresh" Color="Color.Inherit" OnClick="Refresh" />
         <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode: Icons.Material.Filled.DarkMode)" Color="Color.Inherit" @onclick="() => _isDarkMode = !_isDarkMode" />
