@@ -1,4 +1,6 @@
-﻿using MudBlazor.Services;
+﻿using Microsoft.Extensions.Logging;
+
+using MudBlazor.Services;
 
 using NED.WoT.BattleResults.Client.Services;
 
@@ -11,11 +13,16 @@ public static class MauiProgram
         var builder = MauiApp.CreateBuilder();
         builder
             .UseMauiApp<App>()
-            .ConfigureFonts(fonts => fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular"));
+            .ConfigureFonts(fonts =>
+            {
+                fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
+            });
 
         builder.Services.AddMauiBlazorWebView();
+
 #if DEBUG
         builder.Services.AddBlazorWebViewDeveloperTools();
+        builder.Logging.AddDebug();
 #endif
 
         builder.Services.AddMudServices();
