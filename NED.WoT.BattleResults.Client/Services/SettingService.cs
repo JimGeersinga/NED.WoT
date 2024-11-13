@@ -16,6 +16,7 @@ namespace NED.WoT.BattleResults.Client.Services
                 PlayerName = Preferences.Default.Get(nameof(Settings.PlayerName), string.Empty),
                 SingleBattleResultOpenedOnly = Preferences.Default.Get(nameof(Settings.SingleBattleResultOpenedOnly), false),
                 OnlyHighlistOwnMatches = Preferences.Default.Get(nameof(Settings.OnlyHighlistOwnMatches), false),
+                StartupUpdateOnEveryReport = Preferences.Default.Get(nameof(Settings.StartupUpdateOnEveryReport), false),
             };
         }
         public void Save(Settings settings)
@@ -28,6 +29,7 @@ namespace NED.WoT.BattleResults.Client.Services
             Preferences.Default.Set(nameof(Settings.PlayerName), Settings.PlayerName);
             Preferences.Default.Set(nameof(Settings.SingleBattleResultOpenedOnly), Settings.SingleBattleResultOpenedOnly);
             Preferences.Default.Set(nameof(Settings.OnlyHighlistOwnMatches), Settings.OnlyHighlistOwnMatches);
+            Preferences.Default.Set(nameof(Settings.StartupUpdateOnEveryReport), Settings.StartupUpdateOnEveryReport);
         }
     }
 }

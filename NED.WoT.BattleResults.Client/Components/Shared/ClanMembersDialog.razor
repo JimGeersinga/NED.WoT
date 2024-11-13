@@ -21,7 +21,7 @@
 @code {
     [CascadingParameter] MudDialogInstance MudDialog { get; set; }
 
-    [Parameter] public List<BattleReport> Reports { get; set; } = [];
+    [Parameter] public IEnumerable<BattleReport> Reports { get; set; } = [];
 
 
     private IEnumerable<ClanMember> GetClanMembers()

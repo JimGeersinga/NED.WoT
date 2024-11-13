@@ -31,13 +31,13 @@ public class BattleReport
     {
         get
         {
-            var duration = string.Empty;
+            string duration = string.Empty;
             if (MatchDuration.HasValue)
             {
-                var time = new TimeSpan(MatchDuration.Value * TimeSpan.TicksPerSecond);
-                var minutes = time.Minutes.ToString();
+                TimeSpan time = new TimeSpan(MatchDuration.Value * TimeSpan.TicksPerSecond);
+                string minutes = time.Minutes.ToString();
                 if (minutes.Length == 1) minutes = "&nbsp;&nbsp;" + minutes;
-                var seconds = time.Seconds.ToString();
+                string seconds = time.Seconds.ToString();
                 if (seconds.Length == 1) seconds = "&nbsp;&nbsp;" + seconds;
 
                 return (MarkupString)$"{minutes}m {seconds}s";
@@ -58,7 +58,7 @@ public class BattleReport
     {
         get
         {
-            var daysAgo = (DateTime.Now.Date - MatchStart.Date).Days;
+            int daysAgo = (DateTime.Now.Date - MatchStart.Date).Days;
             if (MatchStart.Hour <= 2)
             {
                 daysAgo += 1;
@@ -157,7 +157,7 @@ public class Team
 
     public string GetResult(string map)
     {
-        var lines = Players.Where(x => x.Name != null).OrderByDescending(x => x.ExperienceEarned).Select(x => x.Name).ToList();
+        List<string> lines = Players.Where(x => x.Name != null).OrderByDescending(x => x.ExperienceEarned).Select(x => x.Name).ToList();
         lines.Insert(0, $"{map} {(Number == 1 ? "I" : "II")}");
         lines.Insert(1, ResultDisplay);
 

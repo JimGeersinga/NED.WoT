@@ -1,13 +1,12 @@
-using MudBlazor;
-
-using NED.WoT.BattleResults.Client.Data;
-using NED.WoT.BattleResults.Client.Models;
-
-using System.Collections;
 using System.Collections.Concurrent;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+
+using MudBlazor;
+
+using NED.WoT.BattleResults.Client.Data;
+using NED.WoT.BattleResults.Client.Models;
 
 namespace NED.WoT.BattleResults.Client.Services;
 
@@ -18,6 +17,9 @@ public class BattleReportService
     private readonly ISnackbar _snackbar;
     private readonly SettingService _settingService;
     private FileSystemWatcher _watcher;
+
+    private static ReadOnlySpan<byte> ReplayStart => "{\"clientVersionFromXml\""u8;
+    private static ReadOnlySpan<byte> StatsStart => "[{\"personal\""u8;
 
     public ConcurrentDictionary<string, BattleReport> BattleReports { get; set; } = new ConcurrentDictionary<string, BattleReport>();
 
@@ -30,7 +32,6 @@ public class BattleReportService
     {
         PropertyNameCaseInsensitive = true
     };
-
 
     public BattleReportService(ISnackbar snackbar, SettingService settingService)
     {
@@ -48,16 +49,29 @@ public class BattleReportService
 
         LoadingBattleReportsStarted?.Invoke(this, new EventArgs());
 
-        var directoryInfo = new DirectoryInfo(_settingService.Settings.WotReplayDirectory);
-        var files = directoryInfo.GetFiles(SEARCH_PATTERN)
-            .Where(x => x.LastWriteTime > _settingService.Settings.LoadBattlesSince)
-            .Where(x => !IsTempFile(x.Name))
-            .OrderByDescending(x => x.CreationTime);
+        DirectoryInfo directoryInfo = new(_settingService.Settings.WotReplayDirectory);
+        List<FileInfo> files = directoryInfo
+            .EnumerateFiles(SEARCH_PATTERN)
+            .Where(x => x.LastWriteTime > _settingService.Settings.LoadBattlesSince && !IsTempFile(x.Name))
+            .OrderByDescending(x => x.CreationTime)
+            .ToList();
 
-        Parallel.ForEach(files, (file) =>
+        OrderablePartitioner<FileInfo> partitioner = Partitioner.Create(files);
+        Parallel.ForEach(partitioner, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, file =>
         {
-            var report = GetBattleReport(file);
-            AddBattleReport(file.Name, report);
+            try
+            {
+                BattleReport report = GetBattleReport(file);
+
+                AddBattleReport(file.Name, report, _settingService.Settings.StartupUpdateOnEveryReport);
+            }
+            catch (Exception ex)
+            {
+                BattleReport report = new()
+                {
+                    Error = $"Failed to process file {file.Name}: {ex.Message}"
+                };
+            }
         });
 
         LoadingBattleReportsFinished?.Invoke(this, new EventArgs());
@@ -105,7 +119,7 @@ public class BattleReportService
 
         LoadingBattleReportsStarted?.Invoke(this, new EventArgs());
 
-        var report = GetBattleReport(new FileInfo(e.FullPath));
+        BattleReport report = GetBattleReport(new FileInfo(e.FullPath));
         if (report != null)
         {
             AddBattleReport(e.Name, report);
@@ -119,10 +133,9 @@ public class BattleReportService
         LoadingBattleReportsFinished?.Invoke(this, new EventArgs());
     }
 
-
     private void OnDeleted(object sender, FileSystemEventArgs e)
     {
-        if (BattleReports.Remove(e.Name, out var report))
+        if (BattleReports.Remove(e.Name, out BattleReport report))
         {
             _snackbar.Add($"Replay bestand '{e.Name}' is verwijderd", Severity.Warning);
             BattleReportRemoved?.Invoke(this, new BattleReportRemovedEventArgs(report));
@@ -140,19 +153,19 @@ public class BattleReportService
 
         try
         {
-            byte[] fileData = File.ReadAllBytes(file.FullName);
+            ReadOnlySpan<byte> fileData = File.ReadAllBytes(file.FullName);
 
-            int startIndex = FindSequenceIndex(fileData, [(byte)'{', (byte)'"']);
-            var replay = GetJsonFromFile<JsonObject>(fileData, '{', '}', ref startIndex);
-            var stats = GetJsonFromFile<JsonArray>(fileData, '[', ']', ref startIndex);
-
+            int replayStartIndex = fileData.IndexOf(ReplayStart);
+            JsonObject replay = GetJsonFromFile<JsonObject>(fileData, '{', '}', replayStartIndex);
             if (replay?["dateTime"] == null)
             {
                 report.Error = $"Could not parse file: {file.Name}";
             }
             else
             {
-                 report = BattleReportMapper.Map(replay, stats, _settingService.Settings);
+                int statsStartIndex = fileData.IndexOf(StatsStart);
+                JsonArray stats = GetJsonFromFile<JsonArray>(fileData, '[', ']', statsStartIndex);
+                report = BattleReportMapper.Map(replay, stats, _settingService.Settings);
             }
         }
         catch (Exception ex)
@@ -165,22 +178,24 @@ public class BattleReportService
         return report;
     }
 
-    private static T GetJsonFromFile<T>(byte[] fileData, char start, char end, ref int startIndex)
+    private static T GetJsonFromFile<T>(ReadOnlySpan<byte> fileData, char start, char end, int startIndex)
     {
+        if (startIndex == -1)
+        {
+            return default;
+        }
+
         try
         {
             int jsonStarts = 0;
             int jsonEnds = 0;
+            int length = fileData.Length;
 
-            for (int i = startIndex; i < fileData.Length; i++)
+            for (int i = startIndex; i < length; i++)
             {
                 if (fileData[i] == start)
                 {
                     jsonStarts++;
-                    if (jsonStarts == 1)
-                    {
-                        startIndex = i;
-                    }
                 }
                 else if (fileData[i] == end && jsonStarts > jsonEnds)
                 {
@@ -189,16 +204,12 @@ public class BattleReportService
 
                 if (jsonStarts > 0 && jsonStarts == jsonEnds)
                 {
-                    string json = Encoding.UTF8.GetString(fileData, startIndex, i - startIndex + 1);
-
-                    // Update startindex for next json search
-                    startIndex = i;
-                                        
-                    return JsonSerializer.Deserialize<T>(json, _options);
+                    ReadOnlySpan<byte> jsonSpan = fileData.Slice(startIndex, i - startIndex + 1);
+                    return JsonSerializer.Deserialize<T>(jsonSpan, _options);
                 }
             }
         }
-        catch (Exception)
+        catch
         {
             return default;
         }
@@ -211,27 +222,16 @@ public class BattleReportService
         return fileName.Contains("temp");
     }
 
-    private void AddBattleReport(string name, BattleReport report)
+    private void AddBattleReport(string name, BattleReport report, bool notify = true)
     {
         if (!BattleReports.TryAdd(name, report))
         {
             _snackbar.Add($"Kan bestand '{name}' niet toevoegen", Severity.Error);
         }
 
-        BattleReportAdded?.Invoke(this, new BattleReportAddedEventArgs(report));
-    }
-
-    private static int FindSequenceIndex(byte[] byteArray, byte[] sequence)
-    {
-        for (int i = 0; i <= byteArray.Length - sequence.Length; i++)
+        if (notify)
         {
-            if (byteArray.Skip(i).Take(sequence.Length).SequenceEqual(sequence))
-            {
-                return i;
-            }
+            BattleReportAdded?.Invoke(this, new BattleReportAddedEventArgs(report));
         }
-        return 0;
     }
-
 }
-

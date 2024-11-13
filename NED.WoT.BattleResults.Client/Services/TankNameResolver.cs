@@ -1465,29 +1465,41 @@
 
         public static string GetTankName(string key)
         {
-            if (string.IsNullOrWhiteSpace(key))
+            if (string.IsNullOrEmpty(key))
             {
                 return key;
             }
 
-            string strippedKey = key[(key.IndexOf(':') + 1)..];
-            if (_tankNames.TryGetValue(strippedKey, out var name))
+            if (_tankNames.TryGetValue(key, out string name))
             {
                 return name;
             }
 
-            strippedKey = strippedKey[..strippedKey.LastIndexOf('_')];
-            if (_tankNames.TryGetValue(strippedKey, out name))
+            ReadOnlySpan<char> keySpan = key.AsSpan();
+
+            int semiColonIndex = keySpan.IndexOf(':');
+            if (semiColonIndex != -1)
             {
-                return name;
+                keySpan = keySpan[(semiColonIndex + 1)..];
+                if (_tankNames.TryGetValue(keySpan.ToString(), out name))
+                {
+                    return name;
+                }
+            }           
+
+            int underscoreIndex = keySpan.LastIndexOf('_');
+            if (underscoreIndex != -1)
+            {
+                keySpan = keySpan[..underscoreIndex];
+                if (_tankNames.TryGetValue(keySpan.ToString(), out name))
+                {
+                    return name;
+                }
             }
-           
-            UndefinedTankNames.Add(key);           
+
+            UndefinedTankNames.Add(key);
 
             return key;
         }
     }
 }
-
-
-

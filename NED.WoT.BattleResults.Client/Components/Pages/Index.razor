@@ -1,6 +1,7 @@
 ﻿@page "/"
 @using System.Collections.ObjectModel;
 @using System.Collections.Specialized;
+@using System.Diagnostics
 
 @inject BattleReportService BattleResultService;
 @inject SettingService SettingService;
@@ -61,7 +62,6 @@
         <MudTh Style="text-align: center">#</MudTh>
     </HeaderContent>
     <GroupHeaderTemplate>
-        
         <MudTh Class="mud-table-cell-custom-group " colspan="7">
             @{
                 var wins = context.Items.Count(x => x.IsWin(SettingService.Settings));
@@ -98,13 +98,19 @@
         <MudTh colspan="2" />
     </GroupHeaderTemplate>
     <RowTemplate>
-        @if (context.Error != null)
+        @if (_loading)
+        {
+            <MudTd colspan="9">
+                <MudSkeleton Animation="Animation.Wave" />
+            </MudTd>
+        }
+        else if (context.Error != null)
         {
             <MudTd colspan="7"><MudAlert Severity="Severity.Warning">@context.Error</MudAlert></MudTd>
         }
         else
         {
-            var group = _reports.Where(x => TableFilter(x)).GroupBy(x => x.Group).First(x => x.Any(i => i.FileName == context.FileName)).OrderBy(x => x.MatchStart).ToList();
+            var group = _filteredReports.GroupBy(x => x.Group).First(x => x.Any(i => i.FileName == context.FileName)).OrderBy(x => x.MatchStart).ToList();
             var index = group.FindIndex(x => x.FileName == context.FileName) + 1;
 
             Team ownTeam = context.GetOwnTeam(SettingService.Settings);
@@ -180,7 +186,9 @@
                 var percentage_color = winPercentage > 50 ? "Win" : winPercentage < 40 ? "Lose" : "Draw";
             }
             <div class="d-flex justify-space-between">
-                <MudText Typo="Typo.subtitle1" Class="d-inline text-bold">Totaal <b>@_filteredReports.Count</b> gevechten  <span class="ml-2 @percentage_color">@winPercentage.ToString("0.00")%</span></MudText>
+                <MudText Typo="Typo.subtitle1" Class="d-inline text-bold">Totaal <b>@_filteredReports.Count()</b> gevechten  <span class="ml-2 @percentage_color">@winPercentage.ToString("0.00")%</span></MudText>
+
+
 
                 <MudText Typo="Typo.subtitle1" Class="d-inline mr-12">
                     <b class="@Result.Win.ToString()">@wins</b> Gewonnen
@@ -193,7 +201,12 @@
                 </MudText>
             </div>
         </MudTd>
-        <MudTd Class="mud-background-gray" colspan="2"></MudTd>
+        <MudTd Class="mud-background-gray text-right" colspan="2">
+            @if (_loadingTime != TimeSpan.Zero)
+            {
+                <MudText Typo="Typo.subtitle2"> @_loadingTime.ToString(@"hh\:mm\:ss\.fff")</MudText>
+            }
+        </MudTd>
     </FooterContent>
 </MudTable>
 
@@ -203,11 +216,12 @@
     private bool _loading = true;
     private string searchString = "";
     private bool _hideNormalMatchMaking = true;
+    private TimeSpan _loadingTime = TimeSpan.Zero;
 
     private bool _showOnlyUnkown = false;
 
     private List<BattleReport> _reports = new List<BattleReport>();
-    private List<BattleReport> _filteredReports => _reports.Where(x => TableFilter(x)).ToList();
+    private IEnumerable<BattleReport> _filteredReports => _reports.Where(x => TableFilter(x));
     private TableGroupDefinition<BattleReport> _groupDefinition = new()
         {
             Indentation = false,
@@ -217,32 +231,48 @@
 
     protected override async Task OnInitializedAsync()
     {
+        long timestamp = 0;
+
         BattleResultService.LoadingBattleReportsStarted += async (s, e) =>
         {
             await InvokeAsync(() =>
             {
                 _reports = new List<BattleReport>();
                 _loading = true;
+                timestamp = Stopwatch.GetTimestamp();
                 StateHasChanged();
             });
         };
 
-        BattleResultService.BattleReportAdded += (s, e) =>
+        BattleResultService.BattleReportAdded += async (s, e) =>
         {
-            _reports.Add(e.Report);
+            await InvokeAsync(() =>
+            {
+                _reports.Add(e.Report);
+                if (_loading)
+                {
+                    _loadingTime = Stopwatch.GetElapsedTime(timestamp);
+                }
+                StateHasChanged();
+            });
         };
 
-        BattleResultService.BattleReportRemoved += (s, e) =>
+        BattleResultService.BattleReportRemoved += async (s, e) =>
        {
-           _reports.Remove(e.Report);
+           await InvokeAsync(() =>
+            {
+                _reports.Remove(e.Report);
+                StateHasChanged();
+            });
        };
 
         BattleResultService.LoadingBattleReportsFinished += async (s, e) =>
         {
             await InvokeAsync(() =>
             {
-                _reports = BattleResultService.BattleReports.OrderByDescending(x => x.Value.MatchStart).Select(x => x.Value).ToList();
+                _reports = BattleResultService.BattleReports.Select(x => x.Value).OrderByDescending(x => x.MatchStart).ToList();
                 _loading = false;
+                _loadingTime = Stopwatch.GetElapsedTime(timestamp);
                 StateHasChanged();
             });
         };
