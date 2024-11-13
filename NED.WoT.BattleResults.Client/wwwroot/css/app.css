@@ -191,6 +191,10 @@ a, .btn-link {
     color: var(--mud-palette-info);
 }
 
+.mud-table.report-table * .mud-table-row .mud-table-cell:not(.details) {
+    padding-inline: 1rem !important;
+}
+
 
 
 .mud-table-head .header-centered th {

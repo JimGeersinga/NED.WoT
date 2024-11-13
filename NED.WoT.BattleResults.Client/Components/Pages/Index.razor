@@ -44,7 +44,7 @@
         <col style="width: 50px" />
         <col style="width: 150px;" />
         <col style="width: 150px;" />
-        <col style="width: 50px;" />
+        <col style="width: 100px;" />
         <col style="width: 200px;" />
         <col />
         <col style="width: 100px;" />
@@ -106,7 +106,7 @@
         }
         else if (context.Error != null)
         {
-            <MudTd colspan="7"><MudAlert Severity="Severity.Warning">@context.Error</MudAlert></MudTd>
+            <MudTd colspan="9"><MudAlert Severity="Severity.Warning">@context.Error</MudAlert></MudTd>
         }
         else
         {
@@ -160,7 +160,7 @@
         @if (context.ShowDetails)
         {
             <MudTr>
-                <td colspan="9" class="pa-4 mud-table-cell relative">
+                <td colspan="9" class="pa-4 mud-table-cell relative details">
                     <MudGrid Spacing="1">
                         <TeamStats Team="@context.Team1" Map="@context.MapName" />
                         <TeamStats Team="@context.Team2" Map="@context.MapName" />
@@ -235,12 +235,18 @@
 
         BattleResultService.LoadingBattleReportsStarted += async (s, e) =>
         {
-            await InvokeAsync(() =>
+            await InvokeAsync(async () =>
             {
                 _reports = new List<BattleReport>();
                 _loading = true;
                 timestamp = Stopwatch.GetTimestamp();
                 StateHasChanged();
+
+                while (_loading && SettingService.Settings.UpdateScreeenWhileLoading)
+                {
+                    await Task.Delay(500);
+                    StateHasChanged();
+                }
             });
         };
 
@@ -253,18 +259,17 @@
                 {
                     _loadingTime = Stopwatch.GetElapsedTime(timestamp);
                 }
-                StateHasChanged();
             });
         };
 
         BattleResultService.BattleReportRemoved += async (s, e) =>
-       {
+        {
            await InvokeAsync(() =>
             {
                 _reports.Remove(e.Report);
                 StateHasChanged();
             });
-       };
+        };
 
         BattleResultService.LoadingBattleReportsFinished += async (s, e) =>
         {

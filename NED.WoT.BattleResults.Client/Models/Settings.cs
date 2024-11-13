@@ -9,6 +9,6 @@
         public bool ShowCopyNamesOnlyWhenClanMatches { get; set; }
         public bool SingleBattleResultOpenedOnly { get; set; }
         public bool OnlyHighlistOwnMatches { get; set; }
-        public bool StartupUpdateOnEveryReport { get; set; }
+        public bool UpdateScreeenWhileLoading { get; set; }
     }
 }

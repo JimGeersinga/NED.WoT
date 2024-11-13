@@ -18,8 +18,8 @@ public class BattleReportService
     private readonly SettingService _settingService;
     private FileSystemWatcher _watcher;
 
-    private static ReadOnlySpan<byte> ReplayStart => "{\"clientVersionFromXml\""u8;
-    private static ReadOnlySpan<byte> StatsStart => "[{\"personal\""u8;
+    private static ReadOnlySpan<byte> ReplayIdentifier => "\"clientVersionFromXml\""u8;
+    private static ReadOnlySpan<byte> StatsIdentifier => "\"personal\""u8;
 
     public ConcurrentDictionary<string, BattleReport> BattleReports { get; set; } = new ConcurrentDictionary<string, BattleReport>();
 
@@ -63,12 +63,13 @@ public class BattleReportService
             {
                 BattleReport report = GetBattleReport(file);
 
-                AddBattleReport(file.Name, report, _settingService.Settings.StartupUpdateOnEveryReport);
+                AddBattleReport(file.Name, report, _settingService.Settings.UpdateScreeenWhileLoading);
             }
             catch (Exception ex)
             {
                 BattleReport report = new()
                 {
+                    MatchStart = file.CreationTime,
                     Error = $"Failed to process file {file.Name}: {ex.Message}"
                 };
             }
@@ -155,21 +156,23 @@ public class BattleReportService
         {
             ReadOnlySpan<byte> fileData = File.ReadAllBytes(file.FullName);
 
-            int replayStartIndex = fileData.IndexOf(ReplayStart);
+            int replayStartIndex = fileData.IndexOf(ReplayIdentifier);
             JsonObject replay = GetJsonFromFile<JsonObject>(fileData, '{', '}', replayStartIndex);
             if (replay?["dateTime"] == null)
             {
+                report.MatchStart = file.CreationTime;
                 report.Error = $"Could not parse file: {file.Name}";
             }
             else
             {
-                int statsStartIndex = fileData.IndexOf(StatsStart);
+                int statsStartIndex = fileData.IndexOf(StatsIdentifier);
                 JsonArray stats = GetJsonFromFile<JsonArray>(fileData, '[', ']', statsStartIndex);
                 report = BattleReportMapper.Map(replay, stats, _settingService.Settings);
             }
         }
         catch (Exception ex)
         {
+            report.MatchStart = file.CreationTime;
             report.Error = ex.Message;
         }
 
@@ -178,15 +181,25 @@ public class BattleReportService
         return report;
     }
 
-    private static T GetJsonFromFile<T>(ReadOnlySpan<byte> fileData, char start, char end, int startIndex)
+    private static T GetJsonFromFile<T>(ReadOnlySpan<byte> fileData, char start, char end, int identifyIndex)
     {
-        if (startIndex == -1)
+        if (identifyIndex == -1)
         {
             return default;
         }
 
         try
         {
+            int startIndex = 0;
+            for (int i = identifyIndex; i > 0; i--)
+            {
+                if (fileData[i] == start)
+                {
+                    startIndex = i;
+                    break;
+                }
+            }
+
             int jsonStarts = 0;
             int jsonEnds = 0;
             int length = fileData.Length;

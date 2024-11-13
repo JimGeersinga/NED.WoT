@@ -30,8 +30,8 @@
             <MudSwitch Label="Alleen eigen match results highlighten" Color="Color.Primary"
                        @bind-Value="@modal.OnlyHighlistOwnMatches" For="(() => modal.OnlyHighlistOwnMatches)" />
 
-            <MudSwitch Label="Update het scherm voor ieder rapport bij opstarten" Color="Color.Primary"
-                       @bind-Value="@modal.StartupUpdateOnEveryReport" For="(() => modal.StartupUpdateOnEveryReport)" />
+            <MudSwitch Label="Update het scherm tijdens laden" Color="Color.Primary"
+                       @bind-Value="@modal.UpdateScreeenWhileLoading" For="(() => modal.UpdateScreeenWhileLoading)" />
         </DialogContent>
         <DialogActions>
             <MudButton OnClick="AppInfo.Current.ShowSettingsUI" Class="mr-auto">Ga naar app settings</MudButton>
@@ -63,7 +63,7 @@
                 PlayerName = SettingService.Settings.PlayerName,
                 SingleBattleResultOpenedOnly = SettingService.Settings.SingleBattleResultOpenedOnly,
                 OnlyHighlistOwnMatches = SettingService.Settings.OnlyHighlistOwnMatches,
-                StartupUpdateOnEveryReport = SettingService.Settings.StartupUpdateOnEveryReport
+                UpdateScreeenWhileLoading = SettingService.Settings.UpdateScreeenWhileLoading
             };
     }
 
@@ -81,7 +81,7 @@
         settings.PlayerName = modal.PlayerName;
         settings.SingleBattleResultOpenedOnly = modal.SingleBattleResultOpenedOnly;
         settings.OnlyHighlistOwnMatches = modal.OnlyHighlistOwnMatches;
-        settings.StartupUpdateOnEveryReport = modal.StartupUpdateOnEveryReport;
+        settings.UpdateScreeenWhileLoading = modal.UpdateScreeenWhileLoading;
 
         SettingService.Save(settings);
 
@@ -108,6 +108,6 @@
 
         public bool OnlyHighlistOwnMatches { get; set; }
 
-        public bool StartupUpdateOnEveryReport { get; set; }
+        public bool UpdateScreeenWhileLoading { get; set; }
     }
 }
