@@ -5,7 +5,6 @@ using System.Text.Json.Nodes;
 
 using MudBlazor;
 
-using NED.WoT.BattleResults.Client.Data;
 using NED.WoT.BattleResults.Client.Models;
 
 namespace NED.WoT.BattleResults.Client.Services;

@@ -1477,11 +1477,13 @@
 
             ReadOnlySpan<char> keySpan = key.AsSpan();
 
+            Dictionary<string, string>.AlternateLookup<ReadOnlySpan<char>> lookup = _tankNames.GetAlternateLookup<ReadOnlySpan<char>>();
+
             int semiColonIndex = keySpan.IndexOf(':');
             if (semiColonIndex != -1)
             {
                 keySpan = keySpan[(semiColonIndex + 1)..];
-                if (_tankNames.TryGetValue(keySpan.ToString(), out name))
+                if (lookup.TryGetValue(keySpan, out name))
                 {
                     return name;
                 }
@@ -1491,7 +1493,7 @@
             if (underscoreIndex != -1)
             {
                 keySpan = keySpan[..underscoreIndex];
-                if (_tankNames.TryGetValue(keySpan.ToString(), out name))
+                if (lookup.TryGetValue(keySpan, out name))
                 {
                     return name;
                 }

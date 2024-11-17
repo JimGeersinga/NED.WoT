@@ -3,9 +3,8 @@ using System.Runtime.InteropServices;
 using System.Text.Json.Nodes;
 
 using NED.WoT.BattleResults.Client.Models;
-using NED.WoT.BattleResults.Client.Services;
 
-namespace NED.WoT.BattleResults.Client.Data;
+namespace NED.WoT.BattleResults.Client.Services;
 
 public class BattleReportMapper
 {
@@ -75,7 +74,7 @@ public class BattleReportMapper
         string mostMentionedClan = "?";
         int maxMentions = 0;
         int mentionThreshold = Math.Max(team.Players.Count / 2, 4);
-      
+
         foreach (var player in team.Players)
         {
             if (string.IsNullOrEmpty(player.Clan))
@@ -91,7 +90,7 @@ public class BattleReportMapper
                 mostMentionedClan = player.Clan;
                 maxMentions = count;
             }
-        }    
+        }
 
         return maxMentions >= mentionThreshold ? mostMentionedClan : "?";
     }

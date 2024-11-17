@@ -2,7 +2,7 @@
 
 public static class MapNameResolver
 {
-    public static HashSet<string> UndefinedMapNames = [];
+    public static readonly HashSet<string> UndefinedMapNames = [];
 
     private static readonly Dictionary<string, string> _mapNames = new()
     {
@@ -86,15 +86,17 @@ public static class MapNameResolver
 
         ReadOnlySpan<char> keySpan = key.AsSpan();
 
+        Dictionary<string, string>.AlternateLookup<ReadOnlySpan<char>> lookup = _mapNames.GetAlternateLookup<ReadOnlySpan<char>>();
+
         int semiColonIndex = keySpan.IndexOf(':');
         if (semiColonIndex != -1)
         {
             ReadOnlySpan<char> strippedKey = keySpan[(semiColonIndex + 1)..];
-            if (_mapNames.TryGetValue(strippedKey.ToString(), out name))
+            if (lookup.TryGetValue(strippedKey, out name))
             {
                 return name;
             }
-        }       
+        }
 
         UndefinedMapNames.Add(key);
 

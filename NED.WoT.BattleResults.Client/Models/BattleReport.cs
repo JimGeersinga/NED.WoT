@@ -64,16 +64,12 @@ public class BattleReport
                 daysAgo += 1;
             }
 
-            if (daysAgo == 0)
+            return daysAgo switch
             {
-                return "Vandaag";
-            }
-            else if (daysAgo == 1)
-            {
-                return "Gisteren";
-            }
-
-            return $"{daysAgo} dagen geleden";
+                0 => "Vandaag",
+                1 => "Gisteren",
+                _ => $"{daysAgo} dagen geleden",
+            };
         }
     }
 

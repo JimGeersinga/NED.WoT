@@ -343,8 +343,8 @@
 
     private async Task CopyResultAsync(IEnumerable<BattleReport> reports)
     {
-        List<string> results = reports.Select(x => x.GetOwnTeam(SettingService.Settings).GetResult(x.MapName)).ToList();
-        var splitResults = results
+        List<string> results = reports.Select(x => x.GetOwnTeam(SettingService.Settings).GetResult(x.MapName)).Reverse().ToList();
+        var splitResults = results            
              .Select(r => r.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries))
              .ToList();
 
