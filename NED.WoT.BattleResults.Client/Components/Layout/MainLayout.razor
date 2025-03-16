@@ -64,7 +64,7 @@
                 clan = $"[{SettingService.Settings.ClanAbbreviation}] ";
             }
         }
-        <MudText Typo="Typo.h6">@(clan)WoT Gevecht Statistieken</MudText>
+        <MudText Typo="Typo.h6"><span style="color: var(--mud-palette-primary)">@(clan)</span>WoT Gevecht Statistieken</MudText>
         <MudSpacer />
         <MudIconButton Icon="@Icons.Material.Filled.Refresh" Color="Color.Inherit" OnClick="Refresh" />
         <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode: Icons.Material.Filled.DarkMode)" Color="Color.Inherit" @onclick="() => _isDarkMode = !_isDarkMode" />
@@ -87,7 +87,7 @@
 
             await Task.Delay(500);
 
-            OpenSettings(false);
+            await OpenSettings(false);
         }
     }
 
@@ -105,9 +105,9 @@
         NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
     }
 
-    private void OpenSettings(bool canCancel = true)
+    private async Task OpenSettings(bool canCancel = true)
     {
-        DialogService.Show<SettingsDialog>("Instellingen", new DialogParameters()
+        await DialogService.ShowAsync<SettingsDialog>("Instellingen", new DialogParameters()
             {
                 ["canCancel"] = canCancel
             }, new DialogOptions()

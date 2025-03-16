@@ -53,6 +53,14 @@
                 elem.scrollIntoView();
             }
         }
+
+        function openOwnTeam(selector) {
+            console.log('openOwnTeam', selector);
+            var elements = document.querySelectorAll(selector);
+            if (elements.length === 1) {
+                elements[0].click();
+            }
+        }
     </script>
 </body>
 

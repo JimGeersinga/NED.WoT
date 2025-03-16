@@ -1,8 +1,6 @@
 using Microsoft.AspNetCore.Components;
 
 namespace NED.WoT.BattleResults.Client.Models;
-
-
 public enum Result
 {
     Win,
@@ -18,11 +16,7 @@ public class BattleReport
     {
         get
         {
-            if (MatchDuration.HasValue)
-            {
-                return MatchStart.AddSeconds(MatchDuration.Value);
-            }
-            return null;
+            return MatchDuration.HasValue ? MatchStart.AddSeconds(MatchDuration.Value) : null;
         }
     }
     public string ReplayVersion { get; set; }
@@ -34,14 +28,22 @@ public class BattleReport
             string duration = string.Empty;
             if (MatchDuration.HasValue)
             {
-                TimeSpan time = new TimeSpan(MatchDuration.Value * TimeSpan.TicksPerSecond);
+                TimeSpan time = new(MatchDuration.Value * TimeSpan.TicksPerSecond);
                 string minutes = time.Minutes.ToString();
-                if (minutes.Length == 1) minutes = "&nbsp;&nbsp;" + minutes;
+                if (minutes.Length == 1)
+                {
+                    minutes = "&nbsp;&nbsp;" + minutes;
+                }
+
                 string seconds = time.Seconds.ToString();
-                if (seconds.Length == 1) seconds = "&nbsp;&nbsp;" + seconds;
+                if (seconds.Length == 1)
+                {
+                    seconds = "&nbsp;&nbsp;" + seconds;
+                }
 
                 return (MarkupString)$"{minutes}m {seconds}s";
             }
+
             return (MarkupString)duration;
         }
     }
@@ -75,10 +77,9 @@ public class BattleReport
 
     public Team GetOwnTeam(Settings settings)
     {
-        if (Team1.IsOwnTeam(settings)) return Team1;
-        if (Team2.IsOwnTeam(settings)) return Team2;
-        return default;
+        return Team1.IsOwnTeam(settings) ? Team1 : Team2.IsOwnTeam(settings) ? Team2 : default;
     }
+
     public bool IsDraw()
     {
         return Team1.IsWinner == false && Team2.IsWinner == false;
@@ -99,6 +100,7 @@ public class BattleReport
         {
             return Team2.IsWinner == true;
         }
+
         return false;
     }
 
@@ -117,10 +119,10 @@ public class BattleReport
         {
             return Team2.IsWinner == false;
         }
+
         return false;
     }
 }
-
 
 public class Team
 {
@@ -129,6 +131,15 @@ public class Team
     public int? Health { get; set; }
     public bool? IsWinner { get; set; }
     public Result Result { get; set; }
+
+    public int HitsReceived => Players.Sum(x => x.HitsReceived ?? 0);
+    public int ShotsReceived => Players.Sum(x => x.ShotsReceived ?? 0);
+    public int DirectHits => Players.Sum(x => x.DirectHits ?? 0);
+    public int Piercings => Players.Sum(x => x.Piercings ?? 0);
+
+    public int HitRatio => HitsReceived == 0 ? 0 : (int)(100m / HitsReceived * DirectHits);
+    public int PenRatio => DirectHits == 0 ? 0 : (int)(100m / DirectHits * Piercings);
+    public int BlockRatio => ShotsReceived == 0 ? 0 : (int)(100m / ShotsReceived * (ShotsReceived - HitsReceived));
 
     public string ResultDisplay
     {
@@ -164,19 +175,10 @@ public class Team
 public class Player
 {
     public int Number { get; set; }
+    public Team Team { get; set; }
     public string Name { get; set; }
     public string Clan { get; set; }
-    public string DisplayName
-    {
-        get
-        {
-            if (!string.IsNullOrEmpty(Clan))
-            {
-                return $"[{Clan}] {Name}";
-            }
-            return $"{Name}";
-        }
-    }
+    public string DisplayName => !string.IsNullOrEmpty(Clan) ? $"[{Clan}] {Name}" : $"{Name}";
     public string Vehicle { get; set; }
     public int? MaxHealth { get; set; }
     public bool? IsTeamKiller { get; set; }
@@ -186,6 +188,8 @@ public class Player
     public int? DamageBlocked { get; set; }
     public int? DamageDealt { get; set; }
     public int? Piercings { get; set; }
+    public int? HitsReceived { get; set; }
+    public int? ShotsReceived { get; set; }
     public int? ExperienceEarned { get; set; }
     public int? CreditsEarned { get; set; }
     public int? Health { get; set; }
@@ -195,5 +199,9 @@ public class Player
     public int? DirectHits { get; set; }
     public int? DeathReason { get; set; }
     public bool IsClanMember { get; set; }
+    public int ShotsBlocked => (ShotsReceived ?? 0) - (HitsReceived ?? 0);
+    public int HitRatio => HitsReceived == 0 ? 0 : (int)(100m / Shots * DirectHits);
+    public int PenRatio => DirectHits == 0 ? 0 : (int)(100m / DirectHits * Piercings);
+    public int BlockRatio => ShotsReceived == 0 ? 0 : (int)(100m / ShotsReceived * ShotsBlocked);
 }
 

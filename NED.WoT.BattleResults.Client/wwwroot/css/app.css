@@ -172,14 +172,18 @@ a, .btn-link {
     z-index: 3;
 }
 
-.mud-table.player-table .mud-table-cell:not(.sticky-left) {
+/*.mud-table.player-table .mud-table-cell:not(.sticky-left) {
     text-align: right;
+}*/
+
+.mud-table.report-table [data-label='Versus'] .versus-info .highlight {
 }
 
-.mud-table.report-table [data-label='Versus'] .highlight {
+.mud-table.report-table .highlight-own-result [data-label='Versus'] .versus-info :not(.highlight) {
+    color: inherit !important;
 }
 
-.mud-table.report-table .highlight-own-result [data-label='Versus'] :not(.highlight) {
+.mud-table.report-table .highlight-own-result .mud-table.player-table .mud-table-cell-custom-group :not(.highlight) {
     color: inherit !important;
 }
 
