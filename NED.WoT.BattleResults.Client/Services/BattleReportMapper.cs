@@ -147,6 +147,7 @@ public class BattleReportMapper
             player.LifeTime = vehicleData["lifeTime"]?.GetValue<int>();
             player.MaxHealth = vehicleData["maxHealth"]?.GetValue<int>();
             player.DeathReason = vehicleData["deathReason"]?.GetValue<int>();
+            player.ShotsBlocked = vehicleData["noDamageDirectHitsReceived"]?.GetValue<int>();
         }
 
         team.Players.Add(player);

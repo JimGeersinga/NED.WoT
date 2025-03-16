@@ -16,13 +16,13 @@
         </TitleContent>
         <DialogContent>
             <MudTextField Label="WOT Replay File Path"
-                          @bind-Value="@modal.WotReplayDirectory" For="(() => modal.WotReplayDirectory)" />
+                          @bind-Value="@modal.WotReplayDirectory" For="(() => modal.WotReplayDirectory)" Class="mb-3" />
             <MudDatePicker Label="Laad battles sinds"
-                           @bind-Date="@modal.LoadBattlesSince" For="(() => modal.LoadBattlesSince)" />
+                           @bind-Date="@modal.LoadBattlesSince" For="(() => modal.LoadBattlesSince)" Class="mb-3" />
             <MudTextField Label="Clan afkorting"
-                          @bind-Value="@modal.ClanAbbreviation" For="(() => modal.ClanAbbreviation)" />
+                          @bind-Value="@modal.ClanAbbreviation" For="(() => modal.ClanAbbreviation)" Class="mb-3" />
             <MudTextField Label="Speler naam"
-                          @bind-Value="@modal.PlayerName" For="(() => modal.PlayerName)" />
+                          @bind-Value="@modal.PlayerName" For="(() => modal.PlayerName)" Class="mb-3" />
 
             <MudSwitch Label="Maximaal één battle resultaat open" Color="Color.Primary"
                        @bind-Value="@modal.SingleBattleResultOpenedOnly" For="(() => modal.SingleBattleResultOpenedOnly)" />

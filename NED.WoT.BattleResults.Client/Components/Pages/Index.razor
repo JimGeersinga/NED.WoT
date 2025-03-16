@@ -25,43 +25,81 @@
             }
         </MudItem>
         <MudItem sm="4" Class="d-flex align-center">
-            <MudAutocomplete @bind-Value="searchString"
-            SearchFunc="Search"
-            DebounceInterval="500"
-            Placeholder="Zoek op speler naam of clan tag"
-            Adornment="Adornment.Start"
-            AdornmentIcon="@Icons.Material.Filled.Search"
-            IconSize="Size.Medium"
-            Clearable="true"
-            Class="mt-0"></MudAutocomplete>
+            <MudAutocomplete T="SearchValue"
+                             @bind-Value="_search"
+                             SearchFunc="SearchAllAsync"
+                             ToStringFunc="@(e=> e == null ? null : $"{e.Value} ({e.Type})")"
+                             DebounceInterval="500"
+                             Placeholder="Zoek op speler naam of clan tag"
+                             Adornment="Adornment.Start"
+                             AdornmentIcon="@Icons.Material.Filled.Search"
+                             IconSize="Size.Medium"
+                             Clearable="true"
+                             Class="mt-0">
+                <ItemTemplate Context="e">
+                    <div class="d-flex justify-space-between align-center">
+                        <MudText Typo="Typo.inherit">@e.Value</MudText>
+                        <MudText Typo="Typo.caption">@e.Type</MudText>
+                    </div>
+                </ItemTemplate>
+            </MudAutocomplete>
         </MudItem>
-        <MudItem sm="4" Class="d-flex align-center justify-end">
-            <MudCheckBox @bind-Value="@_showDetailedInfo" Label="Extra info"></MudCheckBox>
-            <MudCheckBox @bind-Value="@_showOnlyUnkown" Label="Onbekende matches"></MudCheckBox>
-            <MudButton Variant="Variant.Filled" Class="ml-4" Color="Color.Primary" OnClick="() => _hideNormalMatchMaking = !_hideNormalMatchMaking">
-                @(_hideNormalMatchMaking ? "Clan" : "Alle") gevechten
-            </MudButton>
+        <MudItem sm="4" Class="d-flex align-center justify-end gap-3">
+            @if (_showDetailedInfo)
+            {
+                <div style="width: auto">
+                    <MudAutocomplete @bind-Value="_detailedInfoForPlayer"
+                                     SearchFunc="SearchPlayerAsync"
+                                     DebounceInterval="500"
+                                     Placeholder="Zoek speler"
+                                     Adornment="Adornment.Start"
+                                     AdornmentIcon="@Icons.Material.Filled.AutoGraph"
+                                     AdornmentColor="Color.Primary"
+                                     IconSize="Size.Medium"
+                                     Dense="true"
+                                     Margin="Margin.Dense"
+                                     Clearable="true"
+                                     FullWidth="false"
+                                     Variant="Variant.Outlined"
+                                     OnAdornmentClick="() => _showDetailedInfo = false"
+                                     Class="mt-1"></MudAutocomplete>
+                </div>
+            }
+            else
+            {
+                <MudIconButton Icon="@Icons.Material.Filled.AutoGraph" Color="Color.Default" OnClick="() => _showDetailedInfo = true" />
+            }
+
+            <MudButtonGroup Color="Color.Primary" Variant="Variant.Filled">
+                <MudButton>@_matchType.ToString()</MudButton>
+                <MudMenu Icon="@Icons.Material.Filled.ArrowDropDown" Style="align-self: auto;">
+                    @foreach (var matchType in Enum.GetValues<MatchType>())
+                    {
+                        <MudMenuItem OnClick="() => _matchType = matchType">@matchType.ToString()</MudMenuItem>
+                    }
+                </MudMenu>
+            </MudButtonGroup>
         </MudItem>
     </MudGrid>
 </MudToolBar>
 
 <MudTable Items="@_reports"
-FixedHeader="true"
-FixedFooter="true"
-Dense="true"
-Hover="true"
-Virtualize="true"
-Bordered="true"
-Loading="@_loading"
-GroupHeaderStyle="background-color:var(--mud-palette-background-gray)"
-GroupHeaderClass="group-info"
-RowClassFunc="@SelectedRowClass"
-Filter="new Func<BattleReport,bool>(TableFilter)"
-Height="calc(100vh - 128px);"
-Class="report-table"
-RowClass="@(SettingService.Settings.OnlyHighlistOwnMatches ? "highlight-own-result match-info" : "match-info")"
-GroupBy="@_groupDefinition"
-AllowUnsorted="false">
+          FixedHeader="true"
+          FixedFooter="true"
+          Dense="true"
+          Hover="true"
+          Virtualize="true"
+          Bordered="true"
+          Loading="@_loading"
+          GroupHeaderStyle="background-color:var(--mud-palette-background-gray)"
+          GroupHeaderClass="group-info"
+          RowClassFunc="@SelectedRowClass"
+          Filter="new Func<BattleReport,bool>(TableFilter)"
+          Height="calc(100vh - 128px);"
+          Class="report-table"
+          RowClass="@(SettingService.Settings.OnlyHighlistOwnMatches ? "highlight-own-result match-info" : "match-info")"
+          GroupBy="@_groupDefinition"
+          AllowUnsorted="false">
     <ColGroup>
         <col style="width: 50px" />
         <col style="width: 50px" />
@@ -92,7 +130,7 @@ AllowUnsorted="false">
             <MudTh Style="text-align: center">Shots</MudTh>
             <MudTh Style="text-align: center">Hits</MudTh>
             <MudTh Style="text-align: center">Pens</MudTh>
-            <MudTh Style="text-align: center">Block</MudTh>
+            <MudTh Style="text-align: center">Blocks</MudTh>
         }
         <MudTh Style="text-align: center">#</MudTh>
     </HeaderContent>
@@ -105,15 +143,10 @@ AllowUnsorted="false">
                 var unknowns = context.Items.Count(x => x.IsUnkown());
 
                 var totalBattles = wins + loses + draws;
-                var winPercentage = 0m;
-                if (totalBattles > 0)
-                {
-                    winPercentage = 100m / totalBattles * wins;
-                }
-                var percentage_color = winPercentage > 50 ? "Win" : winPercentage < 40 ? "Lose" : "Draw";
+                var winPercentage = totalBattles > 0 ? (100m * wins / totalBattles) : 0m;
             }
-            <div class="d-flex justify-space-between">
-                <MudText Typo="Typo.subtitle1" Class="d-inline"><b>@context.Key</b>, <b>@context.Items.Count()</b> gevechten <span class="ml-2 @percentage_color">@winPercentage.ToString("0.00")%</span> </MudText>
+            <div class="d-flex justify-space-between text-nowrap flex-nowrap">
+                <MudText Typo="Typo.subtitle1" Class="d-inline"><b>@context.Key</b>, <b>@context.Items.Count()</b> gevechten <span class="ml-2 @winPercentage.GetWinRatioColor()">@winPercentage.ToString("0.00")%</span> </MudText>
                 <div>
                     <MudText Typo="Typo.subtitle1" Class="d-inline mr-4">
                         <b class="@Result.Win.ToString()">@wins</b> Gewonnen
@@ -133,6 +166,11 @@ AllowUnsorted="false">
         {
             var players = context.Items.SelectMany(x => x.GetOwnTeam(SettingService.Settings).Players).ToList();
 
+            if (!string.IsNullOrEmpty(_detailedInfoForPlayer))
+            {
+                players = players.Where(x => x.Name?.Equals(_detailedInfoForPlayer, StringComparison.OrdinalIgnoreCase) ?? false).ToList();
+            }
+
             var totalShots = players.Sum(x => x.Shots);
             var totalHits = players.Sum(x => x.DirectHits);
             var totalPens = players.Sum(x => x.Piercings);
@@ -140,13 +178,30 @@ AllowUnsorted="false">
             var totalBlocked = players.Sum(x => x.ShotsBlocked);
 
             var hitRatio = totalShots == 0 ? 0 : (int)(100m / totalShots * totalHits);
-            var penRatio = totalShots == 0 ? 0 : (int)(100m / totalShots * totalPens);
+            var penRatio = totalHits == 0 ? 0 : (int)(100m / totalHits * totalPens);
             var blockRatio = totalShotsReceived == 0 ? 0 : (int)(100m / totalShotsReceived * totalBlocked);
 
-            <MudTh Style="white-space:nowrap;text-align:right;">@totalShots</MudTh>
-            <MudTh Style="white-space:nowrap;text-align:right;">@totalHits <span style="color: @GetColor(hitRatio) !important">@hitRatio%</span></MudTh>
-            <MudTh Style="white-space:nowrap;text-align:right;">@totalPens <span style="color: @GetColor(penRatio) !important">@penRatio%</span></MudTh>
-            <MudTh Style="white-space:nowrap;text-align:right;">@totalShotsReceived / @totalBlocked <span style="color: @GetColor(blockRatio) !important">@blockRatio%</span></MudTh>
+            <MudTh Class="text-right">@totalShots</MudTh>
+            <MudTh>
+                <div class="d-flex justify-space-between gap-1 text-nowrap">
+                    <span>@totalHits</span>
+                    <span style="color: @hitRatio.GetHitRatioColor() !important">@hitRatio%</span>
+                </div>
+            </MudTh>
+            <MudTh>
+                <div class="d-flex justify-space-between gap-1 text-nowrap">
+                    <span>@totalPens</span>
+                    <span style="color: @penRatio.GetPenRatioColor() !important">@penRatio%</span>
+                </div>
+            </MudTh>
+            <MudTh>
+                <div class="gap-1 text-nowrap" style="display: grid; grid-template-columns: 1fr auto 1fr 40px">
+                    <span class="text-right">@totalBlocked</span>
+                    <span class="mx-2 grey-text text-darken-1">/</span>
+                    <span>@totalShotsReceived</span>
+                    <span class="text-right" style="color: @blockRatio.GetBlockedRatioColor() !important">@blockRatio%</span>
+                </div>
+            </MudTh>
         }
         <MudTh />
     </GroupHeaderTemplate>
@@ -167,13 +222,7 @@ AllowUnsorted="false">
             var index = group.FindIndex(x => x.FileName == context.FileName) + 1;
 
             Team ownTeam = context.GetOwnTeam(SettingService.Settings);
-            var mapBase = ownTeam == null ? string.Empty : ownTeam.Number == 1 ? "I" : "II";
-
-            var result = "Onbekend";
-            if (ownTeam != null)
-            {
-                result = ownTeam.ResultDisplay;
-            }
+            var result = ownTeam?.ResultDisplay ?? "Onbekend";
 
             var id = $"Timestamp_{context.MatchStart.Ticks + context.MatchDuration.GetValueOrDefault()}_anchor";
 
@@ -192,44 +241,70 @@ AllowUnsorted="false">
             <MudTd Style="text-align:center;" DataLabel="MatchStart">@context.MatchStart.ToString("dd/MM/yyyy HH:mm")</MudTd>
             <MudTd Style="text-align:center;" DataLabel="MatchEnd">@context.MatchEnd?.ToString("dd/MM/yyyy HH:mm")</MudTd>
             <MudTd DataLabel="Duration">@context.MatchDurationDisplay</MudTd>
-            <MudTd DataLabel="MapName">@context.MapName @mapBase</MudTd>
+            <MudTd DataLabel="MapName">@context.MapName @ownTeam.Base</MudTd>
             <MudTd DataLabel="Versus" Class="versus-column">
-                <div class="versus-info">
-                    <span class="team-name text-right @context.Team1.Result.ToString() @(ownTeam?.Number == 1? "highlight" : "")">@context.Team1.Abbreviation</span>
-                    <span class="death-count text-right">@context.Team2.Players.Count(x => x.DeathReason != -1)</span>
-                    <span class="versus-text">
-                        vs
-                    </span>
-                    <span class="death-count text-left">@context.Team1.Players.Count(x => x.DeathReason != -1)</span>
-                    <span class="team-name text-left @context.Team2.Result.ToString() @(ownTeam?.Number == 2? "highlight" : "")">@context.Team2.Abbreviation</span>
-                </div>
-                <div class="align-center" style="float:right; display: flex; gap: 1rem;">
-                    <span class="@ownTeam?.Result.ToString()">@result</span>
-                    <MudIconButton Variant="Variant.Outlined"
-                    Color="Color.Default"
-                    Size="Size.Small"
-                    Icon="@Icons.Material.Filled.ContentCopy"
-                    OnClick="(e) => CopyResultAsync(context, ownTeam)"
-                    Disabled="(ownTeam == null)" />
+                <div class="d-flex justify-space-between text-nowrap gap-2 mud-width-full">
+                    <div class="versus-info">
+                        <span class="team-name text-right @context.Team1.Result.ToString() @(ownTeam?.Number == 1? "highlight" : "")">@context.Team1.Abbreviation</span>
+                        <span class="death-count text-right">@context.Team2.Players.Count(x => x.DeathReason != -1)</span>
+                        <span class="versus-text">
+                            vs
+                        </span>
+                        <span class="death-count text-left">@context.Team1.Players.Count(x => x.DeathReason != -1)</span>
+                        <span class="team-name text-left @context.Team2.Result.ToString() @(ownTeam?.Number == 2? "highlight" : "")">@context.Team2.Abbreviation</span>
+                    </div>
+                    <div class="align-center d-flex gap-2">
+                        <span class="@ownTeam?.Result.ToString()">@result</span>
+                        <MudIconButton Variant="Variant.Outlined"
+                                       Color="Color.Default"
+                                       Size="Size.Small"
+                                       Icon="@Icons.Material.Filled.ContentCopy"
+                                       OnClick="(e) => CopyResultAsync(context, ownTeam)"
+                                       Disabled="(ownTeam == null)" />
+                    </div>
                 </div>
             </MudTd>
 
             @if (_showDetailedInfo)
             {
-                var totalShots = ownTeam.Players.Sum(x => x.Shots);
-                var totalHits = ownTeam.Players.Sum(x => x.DirectHits);
-                var totalPens = ownTeam.Players.Sum(x => x.Piercings);
-                var totalShotsReceived = ownTeam.Players.Sum(x => x.ShotsReceived);
-                var totalBlocked = ownTeam.Players.Sum(x => x.ShotsBlocked);
+                var players = ownTeam.Players;
+
+                if (!string.IsNullOrEmpty(_detailedInfoForPlayer))
+                {
+                    players = players.Where(x => x.Name?.Equals(_detailedInfoForPlayer, StringComparison.OrdinalIgnoreCase) ?? false).ToList();
+                }
+
+                var totalShots = players.Sum(x => x.Shots);
+                var totalHits = players.Sum(x => x.DirectHits);
+                var totalPens = players.Sum(x => x.Piercings);
+                var totalShotsReceived = players.Sum(x => x.ShotsReceived);
+                var totalBlocked = players.Sum(x => x.ShotsBlocked);
 
                 var hitRatio = totalShots == 0 ? 0 : (int)(100m / totalShots * totalHits);
-                var penRatio = totalShots == 0 ? 0 : (int)(100m / totalShots * totalPens);
+                var penRatio = totalHits == 0 ? 0 : (int)(100m / totalHits * totalPens);
                 var blockRatio = totalShotsReceived == 0 ? 0 : (int)(100m / totalShotsReceived * totalBlocked);
 
-                <MudTd Style="white-space:nowrap;text-align:right;">@totalShots</MudTd>
-                <MudTd Style="white-space:nowrap;text-align:right;">@totalHits <span style="color: @GetColor(hitRatio) !important">@hitRatio%</span></MudTd>
-                <MudTd Style="white-space:nowrap;text-align:right;">@totalPens <span style="color: @GetColor(penRatio) !important">@penRatio%</span></MudTd>
-                <MudTd Style="white-space:nowrap;text-align:right;">@totalShotsReceived / @totalBlocked <span style="color: @GetColor(blockRatio) !important">@blockRatio%</span></MudTd>
+                <MudTd Class="text-right">@totalShots</MudTd>
+                <MudTd>
+                    <div class="d-flex justify-space-between gap-1 text-nowrap">
+                        <span>@totalHits</span>
+                        <span style="color: @hitRatio.GetHitRatioColor() !important">@hitRatio%</span>
+                    </div>
+                </MudTd>
+                <MudTd>
+                    <div class="d-flex justify-space-between gap-1 text-nowrap">
+                        <span>@totalPens</span>
+                        <span style="color: @penRatio.GetPenRatioColor() !important">@penRatio%</span>
+                    </div>
+                </MudTd>
+                <MudTd>
+                    <div class="gap-1 text-nowrap" style="display: grid; grid-template-columns: 1fr auto 1fr 40px">
+                        <span class="text-right">@totalBlocked</span>
+                        <span class="mx-2 grey-text text-darken-1">/</span>
+                        <span>@totalShotsReceived</span>
+                        <span class="text-right" style="color: @blockRatio.GetBlockedRatioColor() !important">@blockRatio%</span>
+                    </div>
+                </MudTd>
             }
             <MudTd Style="text-align:center;">@index</MudTd>
         }
@@ -239,7 +314,7 @@ AllowUnsorted="false">
         {
             string classes = "pa-4 mud-table-cell relative details ";
             classes += SettingService.Settings.OnlyHighlistOwnMatches ? "highlight-own-result" : string.Empty;
-            
+
             <MudTr>
                 <MudTd colspan="@(_showDetailedInfo ? 12 : 8)" class="@classes" data-report="@context.FileName">
                     <Details Report="@context" />
@@ -248,7 +323,7 @@ AllowUnsorted="false">
         }
     </ChildRowContent>
     <FooterContent>
-        <MudTd colspan="@(_showDetailedInfo ? 11 : 7)" Class="mud-background-gray">
+        <MudTh colspan="7" Class="mud-background-gray">
             @{
                 var wins = _filteredReports.Count(x => x.IsWin(SettingService.Settings));
                 var loses = _filteredReports.Count(x => x.IsLose(SettingService.Settings));
@@ -256,15 +331,10 @@ AllowUnsorted="false">
                 var unknowns = _filteredReports.Count(x => x.IsUnkown());
 
                 var totalBattles = wins + loses + draws;
-                var winPercentage = 0m;
-                if (totalBattles > 0)
-                {
-                    winPercentage = 100m / totalBattles * wins;
-                }
-                var percentage_color = winPercentage > 50 ? "Win" : winPercentage < 40 ? "Lose" : "Draw";
+                var winPercentage = totalBattles > 0 ? (100m * wins / totalBattles) : 0m;
             }
             <div class="d-flex justify-space-between align-center">
-                <MudText Typo="Typo.subtitle1" Class="d-inline text-bold">Totaal <b>@_filteredReports.Count()</b> gevechten  <span class="ml-2 @percentage_color">@winPercentage.ToString("0.00")%</span></MudText>
+                <MudText Typo="Typo.subtitle1" Class="d-inline text-bold">Totaal <b>@_filteredReports.Count()</b> gevechten  <span class="ml-2 @winPercentage.GetWinRatioColor()">@winPercentage.ToString("0.00")%</span></MudText>
                 @if (_loadingTime != TimeSpan.Zero)
                 {
                     <MudText Typo="Typo.subtitle2"> @_loadingTime.ToString(@"hh\:mm\:ss\.fff")</MudText>
@@ -279,21 +349,70 @@ AllowUnsorted="false">
                     <b>@unknowns</b> Onbekend
                 </MudText>
             </div>
-        </MudTd>
-        <MudTd colspan="@(_showDetailedInfo ? 1 : 5)" Class="mud-background-gray" />
+        </MudTh>
+
+        @if (_showDetailedInfo)
+        {
+            var players = _filteredReports.SelectMany(x => x.GetOwnTeam(SettingService.Settings).Players);
+
+            if (!string.IsNullOrEmpty(_detailedInfoForPlayer))
+            {
+                players = players.Where(x => x.Name?.Equals(_detailedInfoForPlayer, StringComparison.OrdinalIgnoreCase) ?? false).ToList();
+            }
+
+            var totalShots = players.Sum(x => x.Shots);
+            var totalHits = players.Sum(x => x.DirectHits);
+            var totalPens = players.Sum(x => x.Piercings);
+            var totalShotsReceived = players.Sum(x => x.ShotsReceived);
+            var totalBlocked = players.Sum(x => x.ShotsBlocked);
+
+            var hitRatio = totalShots == 0 ? 0 : (int)(100m / totalShots * totalHits);
+            var penRatio = totalHits == 0 ? 0 : (int)(100m / totalHits * totalPens);
+            var blockRatio = totalShotsReceived == 0 ? 0 : (int)(100m / totalShotsReceived * totalBlocked);
+
+            <MudTh Class="text-right mud-background-gray">@totalShots</MudTh>
+            <MudTh Class="mud-background-gray">
+                <div class="d-flex justify-space-between gap-1 text-nowrap">
+                    <span>@totalHits</span>
+                    <span style="color: @hitRatio.GetHitRatioColor() !important">@hitRatio%</span>
+                </div>
+            </MudTh>
+            <MudTh Class="mud-background-gray">
+                <div class="d-flex justify-space-between gap-1 text-nowrap">
+                    <span>@totalPens</span>
+                    <span style="color: @penRatio.GetPenRatioColor() !important">@penRatio%</span>
+                </div>
+            </MudTh>
+            <MudTh Class="mud-background-gray">
+                <div class="gap-1 text-nowrap" style="display: grid; grid-template-columns: 1fr auto 1fr 40px">
+                    <span class="text-right">@totalBlocked</span>
+                    <span class="mx-2 grey-text text-darken-1">/</span>
+                    <span>@totalShotsReceived</span>
+                    <span class="text-right" style="color: @blockRatio.GetBlockedRatioColor() !important">@blockRatio%</span>
+                </div>
+            </MudTh>
+        }
+        <MudTh colspan="1" Class="mud-background-gray" />
     </FooterContent>
 </MudTable>
 
-
-
 @code {
+
+    public enum MatchType
+    {
+        All,
+        Normal,
+        Clan,
+        Unknown
+    }
+
     private bool _loading = true;
-    private string searchString = "";
-    private bool _hideNormalMatchMaking = true;
+    private SearchValue _search = null;
+    private MatchType _matchType = MatchType.Clan;
     private TimeSpan _loadingTime = TimeSpan.Zero;
 
-    private bool _showOnlyUnkown = false;
     private bool _showDetailedInfo = false;
+    private string _detailedInfoForPlayer = string.Empty;
 
     private List<BattleReport> _reports = new List<BattleReport>();
     private IEnumerable<BattleReport> _filteredReports => _reports.Where(x => TableFilter(x));
@@ -370,35 +489,61 @@ AllowUnsorted="false">
     private bool TableFilter(BattleReport report)
     {
         bool show = false;
-        if (_hideNormalMatchMaking && (report.Team1.Abbreviation == null || report.Team1.Abbreviation == "?")
-                                   && (report.Team2.Abbreviation == null || report.Team2.Abbreviation == "?"))
-            show = false;
-        else if (string.IsNullOrWhiteSpace(searchString))
-            show = true;
-        else if (report.Team1.Abbreviation?.Equals(searchString, StringComparison.OrdinalIgnoreCase) ?? false)
-            show = true;
-        else if (report.Team2.Abbreviation?.Equals(searchString, StringComparison.OrdinalIgnoreCase) ?? false)
-            show = true;
-        else if (report.Team1.Players.Any(x => x.Name?.Equals(searchString, StringComparison.OrdinalIgnoreCase) ?? false))
-            show = true;
-        else if (report.Team2.Players.Any(x => x.Name?.Equals(searchString, StringComparison.OrdinalIgnoreCase) ?? false))
-            show = true;
 
-        show = show && (!_showOnlyUnkown || report.IsUnkown());
+        var isNormalMatch = (report.Team1.Abbreviation == null || report.Team1.Abbreviation == "?") &&
+                            (report.Team2.Abbreviation == null || report.Team2.Abbreviation == "?");
+
+        if (_matchType is MatchType.Clan && isNormalMatch)
+            show = false;
+        else if (_matchType is MatchType.Normal && !isNormalMatch)
+            show = false;
+        else if (_matchType is MatchType.Unknown && !report.IsUnkown())
+            show = false;
+        else if (string.IsNullOrWhiteSpace(_search?.Value))
+            show = true;
+        else if (report.Team1.Abbreviation?.Equals(_search?.Value, StringComparison.OrdinalIgnoreCase) ?? false)
+            show = true;
+        else if (report.Team2.Abbreviation?.Equals(_search?.Value, StringComparison.OrdinalIgnoreCase) ?? false)
+            show = true;
+        else if (report.Team1.Players.Any(x => x.Name?.Equals(_search?.Value, StringComparison.OrdinalIgnoreCase) ?? false))
+            show = true;
+        else if (report.Team2.Players.Any(x => x.Name?.Equals(_search?.Value, StringComparison.OrdinalIgnoreCase) ?? false))
+            show = true;
 
         return show;
     }
 
-    private async Task<IEnumerable<string>> Search(string value, CancellationToken token)
+    private Task<IEnumerable<SearchValue>> SearchAllAsync(string value, CancellationToken token)
     {
-        var playerNames = _reports.SelectMany(x => x.Team1.Players.Concat(x.Team2.Players)).Select(x => x.Name).Distinct();
-        var teamNames = _reports.SelectMany(x => new[] { x.Team1.Abbreviation, x.Team2.Abbreviation }).Distinct();
+        var playerNames = _reports
+        .SelectMany(x => x.Team1.Players.Concat(x.Team2.Players))
+        .Select(x => new SearchValue(x.Name, "Speler"))
+        .Distinct();
+
+        var teamNames = _reports
+        .SelectMany(x => new[] { x.Team1.Abbreviation, x.Team2.Abbreviation })
+        .Select(x => new SearchValue(x, "Team"))
+        .Distinct();
+
         var names = teamNames.Concat(playerNames);
 
         if (string.IsNullOrEmpty(value))
-            return names;
+        {
+            return Task.FromResult(names);
+        }
 
-        return names.Where(x => x?.Contains(value, StringComparison.InvariantCultureIgnoreCase) ?? false);
+        return Task.FromResult(names.Where(x => x?.Value?.Contains(value, StringComparison.InvariantCultureIgnoreCase) ?? false));
+    }
+
+    private Task<IEnumerable<string>> SearchPlayerAsync(string value, CancellationToken token)
+    {
+        var playerNames = _reports.SelectMany(x => x.Team1.Players.Concat(x.Team2.Players)).Select(x => x.Name).Distinct();
+        if (string.IsNullOrEmpty(value))
+        {
+            return Task.FromResult(playerNames);
+        }
+
+        return Task.FromResult(playerNames.Where(x => x?.Contains(value, StringComparison.InvariantCultureIgnoreCase) ?? false));
     }
 
     private void CollapseAllBattleReports()
@@ -469,12 +614,5 @@ AllowUnsorted="false">
                 });
     }
 
-
-
-    private static string GetColor(int value) => value switch
-    {
-        <= 50 => "red",
-        <= 75 => "orange",
-        _ => "green"
-    };
+    public record SearchValue(string Value, string Type);
 }

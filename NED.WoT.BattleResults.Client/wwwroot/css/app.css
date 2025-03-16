@@ -4,7 +4,7 @@
     --mud-palette-primary: #ff8800 !important;
     --mud-palette-primary-darken: #cd6e01 !important;
     --mud-palette-primary-hover: rgba(254,135,0,0.058823529411764705) !important;
-    --mud-palette-primary-lighten: #ffab4b;
+    --mud-palette-primary-lighten: #ffab4b !important;
 }
 
 .progress-bar__progress {
@@ -301,4 +301,8 @@ a, .btn-link {
 
 .text-left {
     text-align: left;
+}
+
+.text-nowrap {
+    white-space: nowrap;
 }

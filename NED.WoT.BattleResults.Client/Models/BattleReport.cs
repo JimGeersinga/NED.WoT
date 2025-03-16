@@ -75,9 +75,9 @@ public class BattleReport
         }
     }
 
-    public Team GetOwnTeam(Settings settings)
+    public Team? GetOwnTeam(Settings settings)
     {
-        return Team1.IsOwnTeam(settings) ? Team1 : Team2.IsOwnTeam(settings) ? Team2 : default;
+        return Team1.IsOwnTeam(settings) ? Team1 : Team2.IsOwnTeam(settings) ? Team2 : null;
     }
 
     public bool IsDraw()
@@ -127,6 +127,7 @@ public class BattleReport
 public class Team
 {
     public int Number { get; set; }
+    public string Base => Number == 1 ? "I" : "II";
     public string Abbreviation { get; set; }
     public int? Health { get; set; }
     public bool? IsWinner { get; set; }
@@ -190,6 +191,7 @@ public class Player
     public int? Piercings { get; set; }
     public int? HitsReceived { get; set; }
     public int? ShotsReceived { get; set; }
+    public int? ShotsBlocked { get; set; }
     public int? ExperienceEarned { get; set; }
     public int? CreditsEarned { get; set; }
     public int? Health { get; set; }
@@ -199,7 +201,6 @@ public class Player
     public int? DirectHits { get; set; }
     public int? DeathReason { get; set; }
     public bool IsClanMember { get; set; }
-    public int ShotsBlocked => (ShotsReceived ?? 0) - (HitsReceived ?? 0);
     public int HitRatio => HitsReceived == 0 ? 0 : (int)(100m / Shots * DirectHits);
     public int PenRatio => DirectHits == 0 ? 0 : (int)(100m / DirectHits * Piercings);
     public int BlockRatio => ShotsReceived == 0 ? 0 : (int)(100m / ShotsReceived * ShotsBlocked);
