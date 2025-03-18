@@ -106,46 +106,48 @@ public partial class BattleReportService
         _watcher.Error += OnError;
 
         _timer?.Dispose();
-        _timer = new Timer(async (state) =>
+        _timer = new Timer(async _ => await TempFileWatcherAsync(), null, TimeSpan.Zero, TimeSpan.FromSeconds(2));
+    }
+
+    private async Task TempFileWatcherAsync()
+    {
+        FileInfo tempFile = new(Path.Combine(_settingService.Settings.WotReplayDirectory ?? string.Empty, "temp.wotreplay"));
+        if (tempFile.Exists)
         {
-            FileInfo tempFile = new(Path.Combine(_settingService.Settings.WotReplayDirectory, "test", "temp.wotreplay"));
-            if (tempFile.Exists)
+            int currentLine = 0;
+
+            (string, string)? clanMatch = null;
+
+            using (FileStream fs = new(tempFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (StreamReader reader = new(fs))
             {
-                int currentLine = 0;
-
-                (string, string)? clanMatch = null;
-
-                using (FileStream fs = new(tempFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-                using (StreamReader reader = new(fs))
+                while (!reader.EndOfStream)
                 {
-                    while (!reader.EndOfStream)
+                    string? line = await reader.ReadLineAsync();
+
+                    currentLine++;
+                    if (currentLine < 6)
                     {
-                        string? line = await reader.ReadLineAsync();
-
-                        currentLine++;
-                        if (currentLine < 6)
-                        {
-                            continue;
-                        }
-
-                        var clan1Line = await reader.ReadLineAsync() ?? string.Empty;
-                        string clan1 = ClanMatchRegex().Match(clan1Line)?.Value ?? string.Empty;
-                        var clan2Line = await reader.ReadLineAsync() ?? string.Empty;
-                        string clan2 = ClanMatchRegex().Match(clan2Line)?.Value ?? string.Empty;
-                        clanMatch = (clan1, clan2);
-                        break;
+                        continue;
                     }
-                }
 
-                if (!_clanMatch.Equals(clanMatch) && clanMatch.HasValue)
-                {
-                    _clanMatch = clanMatch;
-
-                    _snackbar.Add($"Match gestart tussen {_clanMatch.Value.Item1} en {_clanMatch.Value.Item2}", Severity.Info);
-                    ClanMatchStarted?.Invoke(this, clanMatch.Value);
+                    var clan1Line = await reader.ReadLineAsync() ?? string.Empty;
+                    string clan1 = ClanMatchRegex().Match(clan1Line)?.Value ?? string.Empty;
+                    var clan2Line = await reader.ReadLineAsync() ?? string.Empty;
+                    string clan2 = ClanMatchRegex().Match(clan2Line)?.Value ?? string.Empty;
+                    clanMatch = (clan1, clan2);
+                    break;
                 }
             }
-        }, null, TimeSpan.Zero, TimeSpan.FromSeconds(2));
+
+            if (!_clanMatch.Equals(clanMatch) && clanMatch.HasValue)
+            {
+                _clanMatch = clanMatch;
+
+                _snackbar.Add($"Match gestart tussen {_clanMatch.Value.Item1} en {_clanMatch.Value.Item2}", Severity.Info);
+                ClanMatchStarted?.Invoke(this, clanMatch.Value);
+            }
+        }
     }
 
     private void OnRenamed(object sender, RenamedEventArgs e) => OnCreated(sender, e);
