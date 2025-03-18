@@ -28,7 +28,7 @@
 </MudDialog>
 @code {
     [CascadingParameter] 
-    public IMudDialogInstance MudDialog { get; set; }
+    public required IMudDialogInstance MudDialog { get; set; }
 
     void Cancel() => MudDialog.Close(DialogResult.Ok(true));
 }

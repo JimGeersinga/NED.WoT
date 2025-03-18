@@ -17,24 +17,25 @@
             --mud-palette-table-striped: rgba(0,0,0,.14);
         }
 
-        .mud-table.player-table .mud-table-cell.sticky-left {
-            background-color: none;
-        }
-        .mud-table.player-table .mud-table-body .mud-table-cell.sticky-left {
-            background-color: var(--mud-palette-background-grey);
-        }
+            .mud-table.player-table .mud-table-cell.sticky-left {
+                background-color: none;
+            }
 
-        .mud-table.player-table .mud-table-head .mud-table-cell.sticky-left {
-            background-color: #373740;
-        }
+            .mud-table.player-table .mud-table-body .mud-table-cell.sticky-left {
+                background-color: var(--mud-palette-background-grey);
+            }
 
-        .mud-table.player-table .mud-table-body .mud-table-row:nth-of-type(odd) .mud-table-cell.sticky-left {
-            background-color: #2f2f37;
-        }
+            .mud-table.player-table .mud-table-head .mud-table-cell.sticky-left {
+                background-color: #373740;
+            }
 
-        .mud-table.player-table .mud-table-body .mud-table-row:nth-of-type(even) .mud-table-cell.sticky-left {
-            background-color: #373740;
-        }
+            .mud-table.player-table .mud-table-body .mud-table-row:nth-of-type(odd) .mud-table-cell.sticky-left {
+                background-color: #2f2f37;
+            }
+
+            .mud-table.player-table .mud-table-body .mud-table-row:nth-of-type(even) .mud-table-cell.sticky-left {
+                background-color: #373740;
+            }
 
         .group-info {
             background-color: #27272f;
@@ -77,7 +78,7 @@
 
 @code {
     private bool _isDarkMode = true;
-    private MudThemeProvider _mudThemeProvider;
+    private MudThemeProvider? _mudThemeProvider;
 
     protected override async Task OnInitializedAsync()
     {
@@ -95,8 +96,11 @@
     {
         if (firstRender)
         {
-            _isDarkMode = await _mudThemeProvider.GetSystemPreference();
-            StateHasChanged();
+            if (_mudThemeProvider is not null)
+            {
+                _isDarkMode = await _mudThemeProvider.GetSystemPreference();
+                StateHasChanged();
+            }
         }
     }
 

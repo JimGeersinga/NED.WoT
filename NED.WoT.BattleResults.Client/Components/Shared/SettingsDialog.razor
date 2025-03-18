@@ -32,6 +32,9 @@
 
             <MudSwitch Label="Update het scherm tijdens laden" Color="Color.Primary"
                        @bind-Value="@modal.UpdateScreeenWhileLoading" For="(() => modal.UpdateScreeenWhileLoading)" />
+
+            <MudSwitch Label="Automatisch clan opzoeken tijdens opstarten battle" Color="Color.Primary"
+                       @bind-Value="@modal.AutoClanLookup" For="(() => modal.AutoClanLookup)" />
         </DialogContent>
         <DialogActions>
             <MudButton OnClick="AppInfo.Current.ShowSettingsUI" Class="mr-auto">Ga naar app settings</MudButton>
@@ -46,7 +49,7 @@
 @code {
 
     [CascadingParameter]
-    private IMudDialogInstance MudDialog { get; set; }
+    public required IMudDialogInstance MudDialog { get; set; }
 
     [Parameter]
     public bool canCancel { get; set; } = true;
@@ -63,7 +66,8 @@
                 PlayerName = SettingService.Settings.PlayerName,
                 SingleBattleResultOpenedOnly = SettingService.Settings.SingleBattleResultOpenedOnly,
                 OnlyHighlistOwnMatches = SettingService.Settings.OnlyHighlistOwnMatches,
-                UpdateScreeenWhileLoading = SettingService.Settings.UpdateScreeenWhileLoading
+                UpdateScreeenWhileLoading = SettingService.Settings.UpdateScreeenWhileLoading,
+                AutoClanLookup = SettingService.Settings.AutoClanLookup
             };
     }
 
@@ -82,6 +86,7 @@
         settings.SingleBattleResultOpenedOnly = modal.SingleBattleResultOpenedOnly;
         settings.OnlyHighlistOwnMatches = modal.OnlyHighlistOwnMatches;
         settings.UpdateScreeenWhileLoading = modal.UpdateScreeenWhileLoading;
+        settings.AutoClanLookup = modal.AutoClanLookup;
 
         SettingService.Save(settings);
 
@@ -95,19 +100,21 @@
     {
         [Required(ErrorMessage = "WoT replay path is verplicht!")]
         [DirectoryExists(ErrorMessage = "WoT replay path is niet geldig!")]
-        public string WotReplayDirectory { get; set; }
+        public string? WotReplayDirectory { get; set; }
 
         [Required(ErrorMessage = "Datum is verplicht!")]
         public DateTime? LoadBattlesSince { get; set; }
 
-        public string ClanAbbreviation { get; set; }
+        public string? ClanAbbreviation { get; set; }
 
-        public string PlayerName { get; set; }
+        public string? PlayerName { get; set; }
 
         public bool SingleBattleResultOpenedOnly { get; set; }
 
         public bool OnlyHighlistOwnMatches { get; set; }
 
         public bool UpdateScreeenWhileLoading { get; set; }
+
+        public bool AutoClanLookup { get; set; }
     }
 }

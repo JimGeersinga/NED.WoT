@@ -2,7 +2,7 @@
 {
     public static class TankNameResolver
     {
-        public static HashSet<string> UndefinedTankNames = [];
+        public static readonly HashSet<string> UndefinedTankNames = [];
 
         private static readonly Dictionary<string, string> _tankNames = new()
         {
@@ -1463,14 +1463,14 @@
             {"GB123_GSOR_1006_v7", "GSOR 1006 Scheme 7"}
         };
 
-        public static string GetTankName(string key)
+        public static string? GetTankName(string? key)
         {
             if (string.IsNullOrEmpty(key))
             {
                 return key;
             }
 
-            if (_tankNames.TryGetValue(key, out string name))
+            if (_tankNames.TryGetValue(key, out string? name))
             {
                 return name;
             }

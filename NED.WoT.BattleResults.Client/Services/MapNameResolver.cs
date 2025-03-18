@@ -72,14 +72,14 @@ public static class MapNameResolver
         {"Empire's Border", "Empire's Border"}
     };
 
-    public static string GetMapName(string key)
+    public static string? GetMapName(string? key)
     {
         if (string.IsNullOrEmpty(key))
         {
             return key;
         }
 
-        if (_mapNames.TryGetValue(key, out string name))
+        if (_mapNames.TryGetValue(key, out string? name))
         {
             return name;
         }

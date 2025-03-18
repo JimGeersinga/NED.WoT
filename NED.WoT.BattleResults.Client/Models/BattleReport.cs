@@ -10,7 +10,9 @@ public enum Result
 }
 public class BattleReport
 {
-    public string MapName { get; set; }
+    public string? FileName { get; set; }
+    public string? MapName { get; set; }
+    public string? ReplayVersion { get; set; }
     public DateTime MatchStart { get; set; }
     public DateTime? MatchEnd
     {
@@ -19,7 +21,6 @@ public class BattleReport
             return MatchDuration.HasValue ? MatchStart.AddSeconds(MatchDuration.Value) : null;
         }
     }
-    public string ReplayVersion { get; set; }
     public int? MatchDuration { get; set; }
     public MarkupString MatchDurationDisplay
     {
@@ -50,10 +51,7 @@ public class BattleReport
     public Team Team1 { get; set; } = new Team();
     public Team Team2 { get; set; } = new Team();
     public int? FinishReason { get; set; }
-    public string Error { get; internal set; }
-
-    public string FileName { get; set; }
-
+    public string? Error { get; internal set; }
     public bool ShowDetails { get; set; }
 
     public string Group
@@ -128,7 +126,7 @@ public class Team
 {
     public int Number { get; set; }
     public string Base => Number == 1 ? "I" : "II";
-    public string Abbreviation { get; set; }
+    public string? Abbreviation { get; set; }
     public int? Health { get; set; }
     public bool? IsWinner { get; set; }
     public Result Result { get; set; }
@@ -163,9 +161,9 @@ public class Team
         return Abbreviation?.ToLower() == settings.ClanAbbreviation?.ToLower() || Players.Any(x => x.Name?.ToLower() == settings.PlayerName?.ToLower());
     }
 
-    public string GetResult(string map)
+    public string GetResult(string? map)
     {
-        List<string> lines = Players.Where(x => x.Name != null).OrderByDescending(x => x.ExperienceEarned).Select(x => x.Name).ToList();
+        List<string?> lines = Players.Where(x => x.Name != null).OrderByDescending(x => x.ExperienceEarned).Select(x => x.Name).ToList();
         lines.Insert(0, $"{map} {(Number == 1 ? "I" : "II")}");
         lines.Insert(1, ResultDisplay);
 
@@ -173,15 +171,16 @@ public class Team
     }
 }
 
-public class Player
+public class Player(Team team)
 {
+    public Team Team { get; set; } = team;
     public int Number { get; set; }
-    public Team Team { get; set; }
-    public string Name { get; set; }
-    public string Clan { get; set; }
+    public string? Name { get; set; }
+    public string? Clan { get; set; }
     public string DisplayName => !string.IsNullOrEmpty(Clan) ? $"[{Clan}] {Name}" : $"{Name}";
-    public string Vehicle { get; set; }
+    public string? Vehicle { get; set; }
     public int? MaxHealth { get; set; }
+    public int? TeamNumber { get; set; }
     public bool? IsTeamKiller { get; set; }
     public int? Spotted { get; set; }
     public int? CapturePoints { get; set; }
@@ -201,8 +200,8 @@ public class Player
     public int? DirectHits { get; set; }
     public int? DeathReason { get; set; }
     public bool IsClanMember { get; set; }
-    public int HitRatio => HitsReceived == 0 ? 0 : (int)(100m / Shots * DirectHits);
-    public int PenRatio => DirectHits == 0 ? 0 : (int)(100m / DirectHits * Piercings);
-    public int BlockRatio => ShotsReceived == 0 ? 0 : (int)(100m / ShotsReceived * ShotsBlocked);
+    public int HitRatio => HitsReceived.GetValueOrDefault() == 0 ? 0 : (int)(100m / Shots.GetValueOrDefault() * DirectHits.GetValueOrDefault());
+    public int PenRatio => DirectHits.GetValueOrDefault() == 0 ? 0 : (int)(100m / DirectHits.GetValueOrDefault() * Piercings.GetValueOrDefault());
+    public int BlockRatio => ShotsReceived.GetValueOrDefault() == 0 ? 0 : (int)(100m / ShotsReceived.GetValueOrDefault() * ShotsBlocked.GetValueOrDefault());
 }
 

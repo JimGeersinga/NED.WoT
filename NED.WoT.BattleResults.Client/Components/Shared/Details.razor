@@ -3,22 +3,21 @@
 
 <MudPaper Elevation="4" Outlined="true">
     <MudTable @ref="_tableRef"
-              Items="@players"
-              RowClassFunc="@HighlightPlayerClassFunc"
-              GroupBy="@_groupDefinition"
-              SortLabel="Sort By"
-              GroupHeaderClass="teams"
-              GroupHeaderStyle="background-color:var(--mud-palette-background-gray)"
-              Class="player-table"
-              Striped="true"
-              Dense="true"
-              Bordered="true"
-              CustomHeader="true"
-              AllowUnsorted="false">
+    Items="@players"
+    RowClassFunc="@HighlightPlayerClassFunc"
+    GroupBy="@_groupDefinition"
+    SortLabel="Sort By"
+    GroupHeaderClass="teams"
+    GroupHeaderStyle="background-color:var(--mud-palette-background-gray)"
+    Class="player-table"
+    Striped="true"
+    Dense="true"
+    Bordered="true"
+    CustomHeader="true"
+    AllowUnsorted="false">
         <ColGroup>
             <col style="width: 60px;" />
             <col style="width: 50px" />
-            <col />
             <col />
             <col />
             <col />
@@ -38,39 +37,45 @@
                 <MudTh colspan="3">Prestatie</MudTh>
                 <MudTh colspan="3">Schade</MudTh>
                 <MudTh colspan="3">Schoten</MudTh>
-                <MudTh colspan="1">Overig</MudTh>
             </MudTHeadRow>
             <MudTHeadRow>
                 <MudTh Class="sticky-left" />
                 <MudTh Class="sticky-left" Style="text-align: center">#</MudTh>
                 <MudTh Class="sticky-left name"><MudTableSortLabel SortBy="new Func<Player, object>(x=>x.DisplayName)">Naam</MudTableSortLabel></MudTh>
-                <MudTh Class="sticky-left vehicle"><MudTableSortLabel SortBy="new Func<Player, object>(x=>x.Vehicle)">Tank</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel InitialDirection="SortDirection.Descending" SortBy="new Func<Player, object>(x=>x.ExperienceEarned)">XP</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<Player, object>(x=>x.CreditsEarned)">Credits</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<Player, object>(x=>x.Kills)">Kills</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<Player, object>(x=>x.DamageDealt)">Gedaan</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<Player, object>(x=>x.DamageBlocked)">Geblokt</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<Player, object>(x=>x.DamageReceived)">Ontvangen</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<Player, object>(x=>x.Shots)">Gelost</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<Player, object>(x=>x.DirectHits)">Geraakt</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<Player, object>(x=>x.Piercings)">Gepierced</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<Player, object>(x=>x.Health)">HP</MudTableSortLabel></MudTh>
+                <MudTh Class="sticky-left vehicle"><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.Vehicle)">Tank</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel InitialDirection="SortDirection.Descending" SortBy="new Func<Player, object?>(x=>x.ExperienceEarned)">XP</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.CreditsEarned)">Credits</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.Kills)">Kills</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.DamageDealt)">Gedaan</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.DamageBlocked)">Geblokt</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.DamageReceived)">Ontvangen</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.Shots)">Gelost</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.DirectHits)">Geraakt</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.Piercings)">Gepierced</MudTableSortLabel></MudTh>
             </MudTHeadRow>
         </HeaderContent>
         <GroupHeaderTemplate>
             @{
-                Team team = context.Key as Team;
+                Team? team = context.Key as Team;
                 string classes = $"d-inline {team?.Result} ";
                 classes += Report.GetOwnTeam(SettingService.Settings)?.Number == team?.Number ? "highlight" : string.Empty;
+                bool isOwnTeam = team?.IsOwnTeam(SettingService.Settings) ?? false;
             }
-            <MudTh colspan="14" Class="mud-table-cell-custom-group" data-ownteam="@team.IsOwnTeam(SettingService.Settings).ToString()">
-                <MudText Typo="Typo.subtitle1" Class="@classes"><b>@team.Abbreviation</b></MudText>
+            <MudTh colspan="14" Class="mud-table-cell-custom-group" data-ownteam="@isOwnTeam.ToString()">
+                <MudText Typo="Typo.subtitle1" Class="@classes"><b>@(team?.Abbreviation ?? "?")</b></MudText>
             </MudTh>
         </GroupHeaderTemplate>
         <RowTemplate>
+            @{
+                decimal hpPercentage = Math.Round(context.MaxHealth.HasValue 
+                    ? 100m / context.MaxHealth.GetValueOrDefault() * context.Health.GetValueOrDefault()
+                    : 0, 0);
+                string style = context.DeathReason.HasValue && context.DeathReason != -1
+                ? "background: #ff838340"
+                : $"background: linear-gradient(90deg, #8cff8570 {hpPercentage}%, transparent 0%)";
+            }
             <MudTd DataLabel="Number" Class="sticky-left" Style="text-align: center">@context.Number</MudTd>
-            <MudTd DataLabel="Name" Class="no-break sticky-left name">
-                <i class="fa-solid fa-skull mr-2 @(context.DeathReason != -1 ? string.Empty : "invisible")"></i>
+            <MudTd DataLabel="Name" Class="no-break sticky-left name" Style="@style" title="@($"{context.Health} / {context.MaxHealth} HP")">
                 @context.DisplayName
             </MudTd>
             <MudTd DataLabel="Vehicle" Class="no-break sticky-left vehicle">@context.Vehicle</MudTd>
@@ -80,43 +85,49 @@
             <MudTd DataLabel="DamageDealt">@context.DamageDealt</MudTd>
             <MudTd DataLabel="DamageBlocked">
                 <div class="text-nowrap d-flex justify-space-between gap-1">
-                    <div>@context.DamageBlocked</div>
-                    <div class="gap-1" style="display: grid; grid-template-columns: 1fr auto 1fr 40px">
-                        <span>@context.ShotsBlocked</span>
-                        <span class="mx-2 grey-text text-darken-1">/</span>
-                        <span>@context.ShotsReceived</span>
-                        <span class="text-right" style="color: @context.BlockRatio.GetBlockedRatioColor() !important">@context.BlockRatio%</span>
-                    </div>
+                    @if (context.DamageBlocked.HasValue)
+                    {
+                        <div>@context.DamageBlocked</div>
+                        <div class="gap-1" style="display: grid; grid-template-columns: 1fr auto 1fr 40px">
+                            <span>@context.ShotsBlocked</span>
+                            <span class="mx-2 grey-text text-darken-1">/</span>
+                            <span>@context.ShotsReceived</span>
+                            <span class="text-right" style="color: @context.BlockRatio.GetBlockedRatioColor() !important">@context.BlockRatio%</span>
+                        </div>
+                    }
                 </div>
             </MudTd>
             <MudTd DataLabel="DamageReceived">@context.DamageReceived</MudTd>
             <MudTd DataLabel="Shots">@context.Shots</MudTd>
             <MudTd DataLabel="DirectHits">
                 <div class="d-flex justify-space-between gap-1 text-nowrap">
-                    <span>@context.DirectHits</span>
-                    <span style="color: @context.HitRatio.GetHitRatioColor() !important">@(context.HitRatio)%</span>
+                    @if (context.DirectHits.HasValue)
+                    {
+                        <span>@context.DirectHits</span>
+                        <span style="color: @context.HitRatio.GetHitRatioColor() !important">@(context.HitRatio)%</span>
+                    }
                 </div>
             </MudTd>
             <MudTd DataLabel="Piercings">
                 <div class="d-flex justify-space-between gap-1 text-nowrap">
-                    <span>@context.Piercings</span>
-                    <span style="color: @context.PenRatio.GetPenRatioColor() !important">@(context.PenRatio)%</span>
+                    @if (context.Piercings.HasValue)
+                    {
+                        <span>@context.Piercings</span>
+                        <span style="color: @context.PenRatio.GetPenRatioColor() !important">@(context.PenRatio)%</span>
+                    }
                 </div>
             </MudTd>
-            <MudTd DataLabel="Health">@context.Health</MudTd>
         </RowTemplate>
     </MudTable>
 </MudPaper>
 
 @code {
     [Parameter]
-    public BattleReport Report { get; set; }
+    public required BattleReport Report { get; set; }
 
-    private MudTable<Player> _tableRef;
+    private MudTable<Player>? _tableRef;
 
     private IEnumerable<Player> players => Report.Team1.Players.Concat(Report.Team2.Players).OrderBy(x => x.Team?.Number);
-
-    private string t => SettingService.Settings.ClanAbbreviation;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {

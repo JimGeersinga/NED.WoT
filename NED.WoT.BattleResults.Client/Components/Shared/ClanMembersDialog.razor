@@ -5,7 +5,7 @@
     <DialogContent>
         <MudTable Items="@GetClanMembers()" Hover="true" Breakpoint="Breakpoint.Sm" FixedHeader="true" Dense="false" Height="600px" Bordered="false">
             <HeaderContent>
-                <MudTh><MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<ClanMember, object>(x => x.Name)">Speler</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<ClanMember, object?>(x => x.Name)">Speler</MudTableSortLabel></MudTh>
                 <MudTh Style="text-align:right;"><MudTableSortLabel InitialDirection="SortDirection.Descending" SortBy="new Func<ClanMember, object>(x => x.Battles)">Battles</MudTableSortLabel></MudTh>
             </HeaderContent>
             <RowTemplate>
@@ -19,10 +19,11 @@
     </DialogActions>
 </MudDialog>
 @code {
-    [CascadingParameter] public IMudDialogInstance MudDialog { get; set; }
+    [CascadingParameter] 
+    public required IMudDialogInstance MudDialog { get; set; }
 
-    [Parameter] public IEnumerable<BattleReport> Reports { get; set; } = [];
-
+    [Parameter] 
+    public IEnumerable<BattleReport> Reports { get; set; } = [];
 
     private IEnumerable<ClanMember> GetClanMembers()
     {
@@ -36,5 +37,5 @@
 
     void Cancel() => MudDialog.Close(DialogResult.Ok(true));
 
-    public record ClanMember(string Name, int Battles);
+    public record ClanMember(string? Name, int Battles);
 }

@@ -4,9 +4,9 @@ namespace NED.WoT.BattleResults.Client.Attributes
 {
     public class DirectoryExistsAttribute : ValidationAttribute
     {
-        public override bool IsValid(object value)
+        public override bool IsValid(object? value)
         {
-            return !string.IsNullOrWhiteSpace(value.ToString()) && Directory.Exists(value.ToString());
+            return !string.IsNullOrWhiteSpace(value?.ToString()) && Directory.Exists(value.ToString());
         }
     }
 }

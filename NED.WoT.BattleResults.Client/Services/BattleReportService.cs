@@ -1,31 +1,33 @@
-using System.Collections.Concurrent;
-using System.Text;
-using System.Text.Json;
-using System.Text.Json.Nodes;
-
 using MudBlazor;
 
 using NED.WoT.BattleResults.Client.Models;
 
+using System.Collections.Concurrent;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
+
 namespace NED.WoT.BattleResults.Client.Services;
 
-public class BattleReportService
+public partial class BattleReportService
 {
     private const string SEARCH_PATTERN = "*.wotreplay";
 
     private readonly ISnackbar _snackbar;
     private readonly SettingService _settingService;
-    private FileSystemWatcher _watcher;
-
+    private FileSystemWatcher? _watcher;
+    private Timer? _timer;
+    private (string, string)? _clanMatch;
     private static ReadOnlySpan<byte> ReplayIdentifier => "\"clientVersionFromXml\""u8;
     private static ReadOnlySpan<byte> StatsIdentifier => "\"personal\""u8;
 
     public ConcurrentDictionary<string, BattleReport> BattleReports { get; set; } = new ConcurrentDictionary<string, BattleReport>();
 
-    public event EventHandler LoadingBattleReportsStarted;
-    public event EventHandler LoadingBattleReportsFinished;
-    public event EventHandler<BattleReportAddedEventArgs> BattleReportAdded;
-    public event EventHandler<BattleReportRemovedEventArgs> BattleReportRemoved;
+    public event EventHandler? LoadingBattleReportsStarted;
+    public event EventHandler? LoadingBattleReportsFinished;
+    public event EventHandler<BattleReportAddedEventArgs>? BattleReportAdded;
+    public event EventHandler<BattleReportRemovedEventArgs>? BattleReportRemoved;
+    public event EventHandler<(string, string)>? ClanMatchStarted;
 
     private static readonly JsonSerializerOptions _options = new()
     {
@@ -83,11 +85,8 @@ public class BattleReportService
         {
             return;
         }
-        else
-        {
-            _watcher?.Dispose();
-        }
 
+        _watcher?.Dispose();
         _watcher = new FileSystemWatcher(_settingService.Settings.WotReplayDirectory)
         {
             NotifyFilter = NotifyFilters.Attributes
@@ -105,12 +104,55 @@ public class BattleReportService
         _watcher.Renamed += OnRenamed;
         _watcher.Deleted += OnDeleted;
         _watcher.Error += OnError;
+
+        _timer?.Dispose();
+        _timer = new Timer(async (state) =>
+        {
+            FileInfo tempFile = new(Path.Combine(_settingService.Settings.WotReplayDirectory, "test", "temp.wotreplay"));
+            if (tempFile.Exists)
+            {
+                int currentLine = 0;
+
+                (string, string)? clanMatch = null;
+
+                using (FileStream fs = new(tempFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                using (StreamReader reader = new(fs))
+                {
+                    while (!reader.EndOfStream)
+                    {
+                        string? line = await reader.ReadLineAsync();
+
+                        currentLine++;
+                        if (currentLine < 6)
+                        {
+                            continue;
+                        }
+
+                        var clan1Line = await reader.ReadLineAsync() ?? string.Empty;
+                        string clan1 = ClanMatchRegex().Match(clan1Line)?.Value ?? string.Empty;
+                        var clan2Line = await reader.ReadLineAsync() ?? string.Empty;
+                        string clan2 = ClanMatchRegex().Match(clan2Line)?.Value ?? string.Empty;
+                        clanMatch = (clan1, clan2);
+                        break;
+                    }
+                }
+
+                if (!_clanMatch.Equals(clanMatch) && clanMatch.HasValue)
+                {
+                    _clanMatch = clanMatch;
+
+                    _snackbar.Add($"Match gestart tussen {_clanMatch.Value.Item1} en {_clanMatch.Value.Item2}", Severity.Info);
+                    ClanMatchStarted?.Invoke(this, clanMatch.Value);
+                }
+            }
+        }, null, TimeSpan.Zero, TimeSpan.FromSeconds(2));
     }
 
     private void OnRenamed(object sender, RenamedEventArgs e) => OnCreated(sender, e);
+
     private void OnCreated(object sender, FileSystemEventArgs e)
     {
-        if (IsTempFile(e.Name))
+        if (e.Name is null || IsTempFile(e.Name))
         {
             return;
         }
@@ -135,7 +177,7 @@ public class BattleReportService
 
     private void OnDeleted(object sender, FileSystemEventArgs e)
     {
-        if (BattleReports.Remove(e.Name, out BattleReport report))
+        if (BattleReports.Remove(e.Name!, out BattleReport? report))
         {
             _snackbar.Add($"Replay bestand '{e.Name}' is verwijderd", Severity.Warning);
             BattleReportRemoved?.Invoke(this, new BattleReportRemovedEventArgs(report));
@@ -156,7 +198,7 @@ public class BattleReportService
             ReadOnlySpan<byte> fileData = File.ReadAllBytes(file.FullName);
 
             int replayStartIndex = fileData.IndexOf(ReplayIdentifier);
-            JsonObject replay = GetJsonFromFile<JsonObject>(fileData, '{', '}', replayStartIndex);
+            JsonObject? replay = GetJsonFromFile<JsonObject>(fileData, '{', '}', replayStartIndex);
             if (replay?["dateTime"] == null)
             {
                 report.MatchStart = file.CreationTime;
@@ -165,7 +207,7 @@ public class BattleReportService
             else
             {
                 int statsStartIndex = fileData.IndexOf(StatsIdentifier);
-                JsonArray stats = GetJsonFromFile<JsonArray>(fileData, '[', ']', statsStartIndex);
+                JsonArray? stats = GetJsonFromFile<JsonArray>(fileData, '[', ']', statsStartIndex);
                 report = BattleReportMapper.Map(replay, stats, _settingService.Settings);
             }
         }
@@ -180,7 +222,21 @@ public class BattleReportService
         return report;
     }
 
-    private static T GetJsonFromFile<T>(ReadOnlySpan<byte> fileData, char start, char end, int identifyIndex)
+    private void AddBattleReport(string name, BattleReport report, bool notify = true)
+    {
+        if (!BattleReports.TryAdd(name, report))
+        {
+            _snackbar.Add($"Kan bestand '{name}' niet toevoegen", Severity.Error);
+        }
+
+        if (notify)
+        {
+            _clanMatch = null;
+            BattleReportAdded?.Invoke(this, new BattleReportAddedEventArgs(report));
+        }
+    }
+
+    private static T? GetJsonFromFile<T>(ReadOnlySpan<byte> fileData, char start, char end, int identifyIndex)
     {
         if (identifyIndex == -1)
         {
@@ -234,16 +290,6 @@ public class BattleReportService
         return fileName.Contains("temp");
     }
 
-    private void AddBattleReport(string name, BattleReport report, bool notify = true)
-    {
-        if (!BattleReports.TryAdd(name, report))
-        {
-            _snackbar.Add($"Kan bestand '{name}' niet toevoegen", Severity.Error);
-        }
-
-        if (notify)
-        {
-            BattleReportAdded?.Invoke(this, new BattleReportAddedEventArgs(report));
-        }
-    }
+    [GeneratedRegex(@"(?<=[\u0000-\uFFFF])[A-Z0-9-_]+(?=\s|[^A-Z0-9-])")]
+    private static partial Regex ClanMatchRegex();
 }

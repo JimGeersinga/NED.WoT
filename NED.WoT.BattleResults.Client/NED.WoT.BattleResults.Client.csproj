@@ -38,6 +38,7 @@
     <DefaultLanguage>nl-NL</DefaultLanguage>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <LangVersion>preview</LangVersion>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
@@ -67,7 +68,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="9.0.50" />
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.3" />
     <PackageReference Include="Microsoft.Extensions.Localization" Version="9.0.3" />
-    <PackageReference Include="MudBlazor" Version="8.3.0" />
+    <PackageReference Include="MudBlazor" Version="8.4.0" />
     <PackageReference Include="System.Numerics.Tensors" Version="9.0.3" />
     <PackageReference Include="System.Text.Json" Version="9.0.3" />
   </ItemGroup>

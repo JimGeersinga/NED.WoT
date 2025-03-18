@@ -12,16 +12,16 @@ public class BattleReportMapper
 
     private static CultureInfo CultureInfo => CultureInfo.InvariantCulture;
 
-    public static BattleReport Map(JsonObject replay, JsonArray stats, Settings settings)
+    public static BattleReport Map(JsonObject replay, JsonArray? stats, Settings settings)
     {
-        if (!DateTime.TryParseExact(replay["dateTime"].GetValue<string>(), "dd.MM.yyyy HH:mm:ss", CultureInfo, DateTimeStyles.None, out DateTime matchStart))
+        if (!DateTime.TryParseExact(replay["dateTime"]?.GetValue<string>(), "dd.MM.yyyy HH:mm:ss", CultureInfo, DateTimeStyles.None, out DateTime matchStart))
         {
-            throw new Exception($"Could not parse match datetime '{replay["dateTime"].GetValue<string>()}' with culture '{CultureInfo.Name}'. Current culture is '{CultureInfo.CurrentCulture.Name}'.");
+            throw new Exception($"Could not parse match datetime '{replay["dateTime"]?.GetValue<string>()}' with culture '{CultureInfo.Name}'. Current culture is '{CultureInfo.CurrentCulture.Name}'.");
         }
 
         BattleReport game = new()
         {
-            MapName = MapNameResolver.GetMapName(replay["mapDisplayName"].GetValue<string>()),
+            MapName = MapNameResolver.GetMapName(replay["mapDisplayName"]?.GetValue<string>()),
             MatchStart = matchStart,
             Team1 = new Team { Number = 1 },
             Team2 = new Team { Number = 2 }
@@ -29,24 +29,26 @@ public class BattleReportMapper
 
         if (stats != null)
         {
-            JsonNode commonStats = stats[0]["common"];
-            game.FinishReason = commonStats["finishReason"].GetValue<int>();
-            game.MatchDuration = commonStats["duration"].GetValue<int>();
-            game.Team1.Health = commonStats["teamHealth"]["1"].GetValue<int>();
-            game.Team1.IsWinner = commonStats["winnerTeam"].GetValue<int>() == game.Team1.Number;
-            game.Team2.Health = commonStats["teamHealth"]["2"].GetValue<int>();
-            game.Team2.IsWinner = commonStats["winnerTeam"].GetValue<int>() == game.Team2.Number;
+            JsonNode? commonStats = stats[0]?["common"];
+            game.FinishReason = commonStats?["finishReason"]?.GetValue<int>();
+            game.MatchDuration = commonStats?["duration"]?.GetValue<int>();
+            game.Team1.Health = commonStats?["teamHealth"]?["1"]?.GetValue<int>();
+            game.Team1.IsWinner = commonStats?["winnerTeam"]?.GetValue<int>() == game.Team1.Number;
+            game.Team2.Health = commonStats?["teamHealth"]?["2"]?.GetValue<int>();
+            game.Team2.IsWinner = commonStats?["winnerTeam"]?.GetValue<int>() == game.Team2.Number;
 
-            foreach (KeyValuePair<string, JsonNode> vehicle in stats[0]["vehicles"].AsObject())
+            var vehicles = stats[0]?["vehicles"]?.AsObject() ?? [];
+            foreach (KeyValuePair<string, JsonNode?> vehicle in vehicles)
             {
-                MapPlayerData(game, stats[1][vehicle.Key].AsObject(), vehicle.Value.AsArray()[0].AsObject(), settings);
+                MapPlayerData(game, stats[1]?[vehicle.Key]?.AsObject(), vehicle.Value?.AsArray()[0]?.AsObject(), settings);
             }
         }
         else
         {
-            foreach (KeyValuePair<string, JsonNode> vehicle in replay["vehicles"].AsObject())
+            var vehicles = replay["vehicles"]?.AsObject() ?? [];
+            foreach (KeyValuePair<string, JsonNode?> vehicle in vehicles)
             {
-                MapPlayerData(game, vehicle.Value.AsObject(), stats?[0]?["vehicles"]?.AsObject()?[vehicle.Key]?[0]?.AsObject(), settings);
+                MapPlayerData(game, vehicle.Value?.AsObject(), stats?[0]?["vehicles"]?.AsObject()?[vehicle.Key]?[0]?.AsObject(), settings);
             }
         }
 
@@ -100,7 +102,7 @@ public class BattleReportMapper
         int playersToAdd = playerCount - team.Players.Count;
         if (playersToAdd > 0)
         {
-            team.Players.AddRange(Enumerable.Repeat(new Player(), playersToAdd));
+            team.Players.AddRange(Enumerable.Repeat(new Player(team), playersToAdd));
         }
 
         Span<Player> playersSpan = CollectionsMarshal.AsSpan(team.Players);
@@ -112,23 +114,22 @@ public class BattleReportMapper
         }
     }
 
-    private static void MapPlayerData(BattleReport game, JsonObject playerData, JsonObject vehicleData, Settings settings)
+    private static void MapPlayerData(BattleReport game, JsonObject? playerData, JsonObject? vehicleData, Settings settings)
     {
-        string clan = playerData["clanAbbrev"].GetValue<string>();
+        string? clan = playerData?["clanAbbrev"]?.GetValue<string>();
 
-        Team team = playerData["team"].GetValue<int>() == game.Team1.Number ? game.Team1 : game.Team2;
+        Team team = playerData?["team"]?.GetValue<int>() == game.Team1.Number ? game.Team1 : game.Team2;
 
-        Player player = new()
+        Player player = new(team)
         {
-            Name = playerData["name"].GetValue<string>(),
+            Name = playerData?["name"]?.GetValue<string>(),
             Clan = clan,
-            Vehicle = TankNameResolver.GetTankName(playerData["vehicleType"].GetValue<string>()),
+            Vehicle = TankNameResolver.GetTankName(playerData?["vehicleType"]?.GetValue<string>()),
             IsClanMember = settings.ClanAbbreviation?.ToLower() == clan?.ToLower()
         };
 
         if (vehicleData != null)
         {
-            player.Team = team;
             player.DamageDealt = vehicleData["damageDealt"]?.GetValue<int>();
             player.DamageReceived = vehicleData["damageReceived"]?.GetValue<int>();
             player.DamageBlocked = vehicleData["damageBlockedByArmor"]?.GetValue<int>();

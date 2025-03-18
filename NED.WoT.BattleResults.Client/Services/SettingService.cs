@@ -17,6 +17,7 @@ namespace NED.WoT.BattleResults.Client.Services
                 SingleBattleResultOpenedOnly = Preferences.Default.Get(nameof(Settings.SingleBattleResultOpenedOnly), false),
                 OnlyHighlistOwnMatches = Preferences.Default.Get(nameof(Settings.OnlyHighlistOwnMatches), false),
                 UpdateScreeenWhileLoading = Preferences.Default.Get(nameof(Settings.UpdateScreeenWhileLoading), true),
+                AutoClanLookup = Preferences.Default.Get(nameof(Settings.AutoClanLookup), false),
             };
         }
         public void Save(Settings settings)
@@ -30,6 +31,7 @@ namespace NED.WoT.BattleResults.Client.Services
             Preferences.Default.Set(nameof(Settings.SingleBattleResultOpenedOnly), Settings.SingleBattleResultOpenedOnly);
             Preferences.Default.Set(nameof(Settings.OnlyHighlistOwnMatches), Settings.OnlyHighlistOwnMatches);
             Preferences.Default.Set(nameof(Settings.UpdateScreeenWhileLoading), Settings.UpdateScreeenWhileLoading);
+            Preferences.Default.Set(nameof(Settings.AutoClanLookup), Settings.AutoClanLookup);
         }
     }
 }
