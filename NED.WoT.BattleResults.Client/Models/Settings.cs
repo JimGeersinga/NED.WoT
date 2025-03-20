@@ -11,5 +11,6 @@
         public bool OnlyHighlistOwnMatches { get; set; }
         public bool UpdateScreeenWhileLoading { get; set; }
         public bool AutoClanLookup { get; set; }
+        public bool IsDarkMode { get; set; }
     }
 }

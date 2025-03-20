@@ -114,8 +114,6 @@ public partial class BattleReportService
         FileInfo tempFile = new(Path.Combine(_settingService.Settings.WotReplayDirectory ?? string.Empty, "temp.wotreplay"));
         if (tempFile.Exists)
         {
-            int currentLine = 0;
-
             (string, string)? clanMatch = null;
 
             using (FileStream fs = new(tempFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
@@ -124,23 +122,26 @@ public partial class BattleReportService
                 while (!reader.EndOfStream)
                 {
                     string? line = await reader.ReadLineAsync();
-
-                    currentLine++;
-                    if (currentLine < 6)
+                    Match clan1Match = ClanMatchRegex().Match(line ?? string.Empty);
+                    if (clan1Match.Success)
                     {
-                        continue;
-                    }
+                        line = await reader.ReadLineAsync();
+                        Match clan2Match = ClanMatchRegex().Match(line ?? string.Empty);
+                        if (clan2Match.Success)
+                        {
+                            _clanMatch = (clan1Match.Value, clan2Match.Value);
+                        }
 
-                    var clan1Line = await reader.ReadLineAsync() ?? string.Empty;
-                    string clan1 = ClanMatchRegex().Match(clan1Line)?.Value ?? string.Empty;
-                    var clan2Line = await reader.ReadLineAsync() ?? string.Empty;
-                    string clan2 = ClanMatchRegex().Match(clan2Line)?.Value ?? string.Empty;
-                    clanMatch = (clan1, clan2);
-                    break;
+                        break;
+                    }
                 }
             }
 
-            if (!_clanMatch.Equals(clanMatch) && clanMatch.HasValue)
+            if (!_clanMatch.Equals(clanMatch) && clanMatch.HasValue &&
+                _settingService.Settings.ClanAbbreviation is not null && (
+                _settingService.Settings.ClanAbbreviation.Equals(clanMatch.Value.Item1, StringComparison.OrdinalIgnoreCase) ||
+                _settingService.Settings.ClanAbbreviation.Equals(clanMatch.Value.Item1, StringComparison.OrdinalIgnoreCase)
+                ))
             {
                 _clanMatch = clanMatch;
 
@@ -292,6 +293,6 @@ public partial class BattleReportService
         return fileName.Contains("temp");
     }
 
-    [GeneratedRegex(@"(?<=[\u0000-\uFFFF])[A-Z0-9-_]+(?=\s|[^A-Z0-9-])")]
+    [GeneratedRegex(@"(?<=U[\u0000-\uFFFF])[A-Z0-9-_]+(?=s)")]
     private static partial Regex ClanMatchRegex();
 }

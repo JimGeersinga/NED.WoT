@@ -171,17 +171,29 @@
                 players = players.Where(x => x.Name?.Equals(_detailedInfoForPlayer, StringComparison.OrdinalIgnoreCase) ?? false).ToList();
             }
 
+            var totalLifeTime = players.Sum(x => x.LifeTime);
             var totalShots = players.Sum(x => x.Shots);
             var totalHits = players.Sum(x => x.DirectHits);
             var totalPens = players.Sum(x => x.Piercings);
             var totalShotsReceived = players.Sum(x => x.ShotsReceived);
             var totalBlocked = players.Sum(x => x.ShotsBlocked);
 
+            var shotRatio = totalShots == 0 ? 0 : totalShots.GetValueOrDefault() / (totalLifeTime.GetValueOrDefault() / 60m);
             var hitRatio = totalShots == 0 ? 0 : (int)(100m / totalShots.GetValueOrDefault() * totalHits.GetValueOrDefault());
             var penRatio = totalHits == 0 ? 0 : (int)(100m / totalHits.GetValueOrDefault() * totalPens.GetValueOrDefault());
             var blockRatio = totalShotsReceived == 0 ? 0 : (int)(100m / totalShotsReceived.GetValueOrDefault() * totalBlocked.GetValueOrDefault());
 
-            <MudTh Class="text-right">@totalShots</MudTh>
+            <MudTd Class="text-right">
+                <div class="d-flex justify-space-between gap-1 text-nowrap">
+                    @if (totalShots.HasValue)
+                    {
+                        var roundedRatio = Math.Round(shotRatio);
+
+                        <span>@totalShots</span>
+                        <span style="color: cornflowerblue">@(shotRatio < roundedRatio ? " < " : " > ") @roundedRatio p/m</span>
+                    }
+                </div>
+            </MudTd>
             <MudTh>
                 <div class="d-flex justify-space-between gap-1 text-nowrap">
                     <span>@totalHits</span>
@@ -274,17 +286,29 @@
                     players = players.Where(x => x.Name?.Equals(_detailedInfoForPlayer, StringComparison.OrdinalIgnoreCase) ?? false).ToList();
                 }
 
+                var totalLifeTime = players.Sum(x => x.LifeTime);
                 var totalShots = players.Sum(x => x.Shots);
                 var totalHits = players.Sum(x => x.DirectHits);
                 var totalPens = players.Sum(x => x.Piercings);
                 var totalShotsReceived = players.Sum(x => x.ShotsReceived);
                 var totalBlocked = players.Sum(x => x.ShotsBlocked);
 
+                var shotRatio = totalShots == 0 ? 0 : totalShots.GetValueOrDefault() / (totalLifeTime.GetValueOrDefault() / 60m);
                 var hitRatio = totalShots == 0 ? 0 : (int)(100m / totalShots.GetValueOrDefault() * totalHits.GetValueOrDefault());
                 var penRatio = totalHits == 0 ? 0 : (int)(100m / totalHits.GetValueOrDefault() * totalPens.GetValueOrDefault());
                 var blockRatio = totalShotsReceived == 0 ? 0 : (int)(100m / totalShotsReceived.GetValueOrDefault() * totalBlocked.GetValueOrDefault());
 
-                <MudTd Class="text-right">@totalShots</MudTd>
+                <MudTd Class="text-right">
+                    <div class="d-flex justify-space-between gap-1 text-nowrap">
+                        @if (totalShots.HasValue)
+                        {
+                            var roundedRatio = Math.Round(shotRatio);
+
+                            <span>@totalShots</span>
+                            <span style="color: cornflowerblue">@(shotRatio < roundedRatio ? " < " : " > ") @roundedRatio p/m</span>
+                        }
+                    </div>
+                </MudTd>
                 <MudTd>
                     <div class="d-flex justify-space-between gap-1 text-nowrap">
                         <span>@totalHits</span>
@@ -360,17 +384,30 @@
                 players = players.Where(x => x.Name?.Equals(_detailedInfoForPlayer, StringComparison.OrdinalIgnoreCase) ?? false).ToList();
             }
 
+            var totalLifeTime = players.Sum(x => x.LifeTime);
             var totalShots = players.Sum(x => x.Shots);
             var totalHits = players.Sum(x => x.DirectHits);
             var totalPens = players.Sum(x => x.Piercings);
             var totalShotsReceived = players.Sum(x => x.ShotsReceived);
             var totalBlocked = players.Sum(x => x.ShotsBlocked);
 
+            var shotRatio = totalShots == 0 ? 0 : totalShots.GetValueOrDefault() / (totalLifeTime.GetValueOrDefault() / 60m);
             var hitRatio = totalShots == 0 ? 0 : (int)(100m / totalShots.GetValueOrDefault() * totalHits.GetValueOrDefault());
             var penRatio = totalHits == 0 ? 0 : (int)(100m / totalHits.GetValueOrDefault() * totalPens.GetValueOrDefault());
             var blockRatio = totalShotsReceived == 0 ? 0 : (int)(100m / totalShotsReceived.GetValueOrDefault() * totalBlocked.GetValueOrDefault());
 
-            <MudTh Class="text-right mud-background-gray">@totalShots</MudTh>
+            <MudTh Class="text-right mud-background-gray">
+                <div class="d-flex justify-space-between gap-1 text-nowrap">
+                    @if (totalShots.HasValue)
+                    {
+                        var roundedRatio = Math.Round(shotRatio);
+
+                        <span>@totalShots</span>
+                        <span style="color: cornflowerblue">@(shotRatio < roundedRatio ? " < " : " > ") @roundedRatio p/m</span>
+                    }
+                </div>
+            </MudTh>
+
             <MudTh Class="mud-background-gray">
                 <div class="d-flex justify-space-between gap-1 text-nowrap">
                     @if (totalHits.HasValue)

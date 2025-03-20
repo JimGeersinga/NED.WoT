@@ -14,44 +14,44 @@
 {
     <style>
         .mud-table.player-table {
-            --mud-palette-table-striped: rgba(0,0,0,.14);
+        --mud-palette-table-striped: rgba(0,0,0,.14);
         }
 
-            .mud-table.player-table .mud-table-cell.sticky-left {
-                background-color: none;
-            }
+        .mud-table.player-table .mud-table-cell.sticky-left {
+        background-color: none;
+        }
 
-            .mud-table.player-table .mud-table-body .mud-table-cell.sticky-left {
-                background-color: var(--mud-palette-background-grey);
-            }
+        .mud-table.player-table .mud-table-body .mud-table-cell.sticky-left {
+        background-color: var(--mud-palette-background-grey);
+        }
 
-            .mud-table.player-table .mud-table-head .mud-table-cell.sticky-left {
-                background-color: #373740;
-            }
+        .mud-table.player-table .mud-table-head .mud-table-cell.sticky-left {
+        background-color: #373740;
+        }
 
-            .mud-table.player-table .mud-table-body .mud-table-row:nth-of-type(odd) .mud-table-cell.sticky-left {
-                background-color: #2f2f37;
-            }
+        .mud-table.player-table .mud-table-body .mud-table-row:nth-of-type(odd) .mud-table-cell.sticky-left {
+        background-color: #2f2f37;
+        }
 
-            .mud-table.player-table .mud-table-body .mud-table-row:nth-of-type(even) .mud-table-cell.sticky-left {
-                background-color: #373740;
-            }
+        .mud-table.player-table .mud-table-body .mud-table-row:nth-of-type(even) .mud-table-cell.sticky-left {
+        background-color: #373740;
+        }
 
         .group-info {
-            background-color: #27272f;
+        background-color: #27272f;
         }
 
         .match-info {
-            background-color: #373740;
+        background-color: #373740;
         }
 
-            .match-info:not(.selected):hover {
-                background-color: #35353d !important;
-            }
+        .match-info:not(.selected):hover {
+        background-color: #35353d !important;
+        }
 
-            .match-info.selected {
-                background-color: #292930 !important;
-            }
+        .match-info.selected {
+        background-color: #292930 !important;
+        }
 
     </style>
 }
@@ -68,7 +68,7 @@
         <MudText Typo="Typo.h6"><span style="color: var(--mud-palette-primary)">@(clan)</span>WoT Gevecht Statistieken</MudText>
         <MudSpacer />
         <MudIconButton Icon="@Icons.Material.Filled.Refresh" Color="Color.Inherit" OnClick="Refresh" />
-        <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode: Icons.Material.Filled.DarkMode)" Color="Color.Inherit" @onclick="() => _isDarkMode = !_isDarkMode" />
+        <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode: Icons.Material.Filled.DarkMode)" Color="Color.Inherit" @onclick="SwitchDarkMode" />
         <MudIconButton Icon="@Icons.Material.Filled.Settings" Color="Color.Inherit" OnClick="(e) => OpenSettings(true)" />
     </MudAppBar>
     <MudMainContent>
@@ -92,16 +92,20 @@
         }
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override void OnAfterRender(bool firstRender)
     {
         if (firstRender)
-        {
-            if (_mudThemeProvider is not null)
-            {
-                _isDarkMode = await _mudThemeProvider.GetSystemPreference();
-                StateHasChanged();
-            }
+        {           
+            _isDarkMode = SettingService.Settings.IsDarkMode;
+            StateHasChanged();
         }
+    }
+
+    private void SwitchDarkMode()
+    {
+        _isDarkMode = !_isDarkMode;
+        SettingService.Settings.IsDarkMode = _isDarkMode;
+        SettingService.Save(SettingService.Settings);
     }
 
     private void Refresh()

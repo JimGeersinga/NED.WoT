@@ -50,7 +50,7 @@
             console.log('scrollIntoView', elementId);
             var elem = document.getElementById(elementId);
             if (elem) {
-                elem.scrollIntoView();
+                setTimeout(() => elem.scrollIntoView({ behavior: 'smooth'}), 50);
             }
         }
 

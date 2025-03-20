@@ -3,18 +3,18 @@
 
 <MudPaper Elevation="4" Outlined="true">
     <MudTable @ref="_tableRef"
-    Items="@players"
-    RowClassFunc="@HighlightPlayerClassFunc"
-    GroupBy="@_groupDefinition"
-    SortLabel="Sort By"
-    GroupHeaderClass="teams"
-    GroupHeaderStyle="background-color:var(--mud-palette-background-gray)"
-    Class="player-table"
-    Striped="true"
-    Dense="true"
-    Bordered="true"
-    CustomHeader="true"
-    AllowUnsorted="false">
+              Items="@players"
+              RowClassFunc="@HighlightPlayerClassFunc"
+              GroupBy="@_groupDefinition"
+              SortLabel="Sort By"
+              GroupHeaderClass="teams"
+              GroupHeaderStyle="background-color:var(--mud-palette-background-gray)"
+              Class="player-table"
+              Striped="true"
+              Dense="true"
+              Bordered="true"
+              CustomHeader="true"
+              AllowUnsorted="false">
         <ColGroup>
             <col style="width: 60px;" />
             <col style="width: 50px" />
@@ -33,8 +33,8 @@
         </ColGroup>
         <HeaderContent>
             <MudTHeadRow Class="header-centered">
-                <MudTh colspan="4" Class="sticky-left"></MudTh>
-                <MudTh colspan="3">Prestatie</MudTh>
+                <MudTh colspan="5" Class="sticky-left"></MudTh>
+                <MudTh colspan="2">Prestatie</MudTh>
                 <MudTh colspan="3">Schade</MudTh>
                 <MudTh colspan="3">Schoten</MudTh>
             </MudTHeadRow>
@@ -43,8 +43,8 @@
                 <MudTh Class="sticky-left" Style="text-align: center">#</MudTh>
                 <MudTh Class="sticky-left name"><MudTableSortLabel SortBy="new Func<Player, object>(x=>x.DisplayName)">Naam</MudTableSortLabel></MudTh>
                 <MudTh Class="sticky-left vehicle"><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.Vehicle)">Tank</MudTableSortLabel></MudTh>
+                <MudTh Class="sticky-left lifetime"><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.LifeTime)">Speeltijd</MudTableSortLabel></MudTh>
                 <MudTh><MudTableSortLabel InitialDirection="SortDirection.Descending" SortBy="new Func<Player, object?>(x=>x.ExperienceEarned)">XP</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.CreditsEarned)">Credits</MudTableSortLabel></MudTh>
                 <MudTh><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.Kills)">Kills</MudTableSortLabel></MudTh>
                 <MudTh><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.DamageDealt)">Gedaan</MudTableSortLabel></MudTh>
                 <MudTh><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.DamageBlocked)">Geblokt</MudTableSortLabel></MudTh>
@@ -67,20 +67,42 @@
         </GroupHeaderTemplate>
         <RowTemplate>
             @{
-                decimal hpPercentage = Math.Round(context.MaxHealth.HasValue 
-                    ? 100m / context.MaxHealth.GetValueOrDefault() * context.Health.GetValueOrDefault()
-                    : 0, 0);
+                decimal hpPercentage = Math.Round(context.MaxHealth.HasValue
+                ? 100m / context.MaxHealth.GetValueOrDefault() * context.Health.GetValueOrDefault()
+                : 0, 0);
                 string style = context.DeathReason.HasValue && context.DeathReason != -1
                 ? "background: #ff838340"
                 : $"background: linear-gradient(90deg, #8cff8570 {hpPercentage}%, transparent 0%)";
             }
             <MudTd DataLabel="Number" Class="sticky-left" Style="text-align: center">@context.Number</MudTd>
-            <MudTd DataLabel="Name" Class="no-break sticky-left name" Style="@style" title="@($"{context.Health} / {context.MaxHealth} HP")">
+            <MudTd DataLabel="Name" Class="no-break sticky-left name" Style="@style" title="@($"{context.Health} / {context.MaxHealth} HP | Alive: {context.LifeTime} seconds")">
                 @context.DisplayName
             </MudTd>
             <MudTd DataLabel="Vehicle" Class="no-break sticky-left vehicle">@context.Vehicle</MudTd>
+            <MudTd DataLabel="LifeTime" Class="no-break sticky-left lifetime text-right">
+                @{
+                    string duration = string.Empty;
+                    if (context.LifeTime.HasValue)
+                    {
+                        TimeSpan time = new(context.LifeTime.Value * TimeSpan.TicksPerSecond);
+                        string minutes = time.Minutes.ToString();
+                        if (minutes.Length == 1)
+                        {
+                            minutes = "&nbsp;&nbsp;" + minutes;
+                        }
+
+                        string seconds = time.Seconds.ToString();
+                        if (seconds.Length == 1)
+                        {
+                            seconds = "&nbsp;&nbsp;" + seconds;
+                        }
+
+                        duration = $"{minutes}m {seconds}s";
+                    }
+                }
+                @((MarkupString)duration)
+            </MudTd>
             <MudTd DataLabel="ExperienceEarned">@context.ExperienceEarned</MudTd>
-            <MudTd DataLabel="CreditsEarned">@context.CreditsEarned</MudTd>
             <MudTd DataLabel="Kills">@context.Kills</MudTd>
             <MudTd DataLabel="DamageDealt">@context.DamageDealt</MudTd>
             <MudTd DataLabel="DamageBlocked">
@@ -98,7 +120,17 @@
                 </div>
             </MudTd>
             <MudTd DataLabel="DamageReceived">@context.DamageReceived</MudTd>
-            <MudTd DataLabel="Shots">@context.Shots</MudTd>
+            <MudTd DataLabel="Shots">
+                <div class="d-flex justify-space-between gap-1 text-nowrap">
+                    @if (context.Shots.HasValue)
+                    {
+                        var roundedRatio = Math.Round(context.ShotRatio);
+
+                        <span>@context.Shots</span>
+                        <span style="color: cornflowerblue">@(context.ShotRatio < roundedRatio ? " < " : " > ") @roundedRatio p/m</span>
+                    }
+                </div>
+            </MudTd>
             <MudTd DataLabel="DirectHits">
                 <div class="d-flex justify-space-between gap-1 text-nowrap">
                     @if (context.DirectHits.HasValue)

@@ -18,6 +18,7 @@ namespace NED.WoT.BattleResults.Client.Services
                 OnlyHighlistOwnMatches = Preferences.Default.Get(nameof(Settings.OnlyHighlistOwnMatches), false),
                 UpdateScreeenWhileLoading = Preferences.Default.Get(nameof(Settings.UpdateScreeenWhileLoading), true),
                 AutoClanLookup = Preferences.Default.Get(nameof(Settings.AutoClanLookup), false),
+                IsDarkMode = Preferences.Default.Get(nameof(Settings.IsDarkMode), true),
             };
         }
         public void Save(Settings settings)
@@ -32,6 +33,7 @@ namespace NED.WoT.BattleResults.Client.Services
             Preferences.Default.Set(nameof(Settings.OnlyHighlistOwnMatches), Settings.OnlyHighlistOwnMatches);
             Preferences.Default.Set(nameof(Settings.UpdateScreeenWhileLoading), Settings.UpdateScreeenWhileLoading);
             Preferences.Default.Set(nameof(Settings.AutoClanLookup), Settings.AutoClanLookup);
+            Preferences.Default.Set(nameof(Settings.IsDarkMode), Settings.IsDarkMode);
         }
     }
 }
