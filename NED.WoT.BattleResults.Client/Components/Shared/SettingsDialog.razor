@@ -100,23 +100,12 @@
     }
 
     private async Task UpdateCheck()
-    {
-        var package = Windows.ApplicationModel.Package.Current;
-        var packageManager = new PackageManager();
+    {    
 
-        var result = await packageManager.RequestAddPackageByAppInstallerFileAsync(
-            new Uri("https://ned-wot.azurewebsites.net/NED.WoT.BattleResults.Client_x64.appinstaller"),
-            AddPackageByAppInstallerOptions.ForceTargetAppShutdown,
-            packageManager.GetDefaultPackageVolume());
-
-        if (result.IsRegistered)
-        {
-            Snackbar.Add("App has been updated successfully!", Severity.Success);
-        }
-        else
-        {
-            Snackbar.Add("Your app is already up-to-date.", Severity.Info);
-        }
+        var r = await Windows.ApplicationModel.Package.Current.CheckUpdateAvailabilityAsync();
+       
+            Snackbar.Add(r.Availability.ToString(), Severity.Success);
+       
     }
 
     public class SettingsForm
