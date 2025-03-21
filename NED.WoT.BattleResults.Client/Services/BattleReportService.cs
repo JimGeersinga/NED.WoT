@@ -129,7 +129,7 @@ public partial class BattleReportService
                         Match clan2Match = ClanMatchRegex().Match(line ?? string.Empty);
                         if (clan2Match.Success)
                         {
-                            _clanMatch = (clan1Match.Value, clan2Match.Value);
+                            clanMatch = (clan1Match.Value, clan2Match.Value);
                         }
 
                         break;
@@ -140,7 +140,7 @@ public partial class BattleReportService
             if (!_clanMatch.Equals(clanMatch) && clanMatch.HasValue &&
                 _settingService.Settings.ClanAbbreviation is not null && (
                 _settingService.Settings.ClanAbbreviation.Equals(clanMatch.Value.Item1, StringComparison.OrdinalIgnoreCase) ||
-                _settingService.Settings.ClanAbbreviation.Equals(clanMatch.Value.Item1, StringComparison.OrdinalIgnoreCase)
+                _settingService.Settings.ClanAbbreviation.Equals(clanMatch.Value.Item2, StringComparison.OrdinalIgnoreCase)
                 ))
             {
                 _clanMatch = clanMatch;
