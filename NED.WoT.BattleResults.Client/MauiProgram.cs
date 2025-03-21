@@ -4,6 +4,9 @@ using MudBlazor.Services;
 
 using NED.WoT.BattleResults.Client.Services;
 
+using Windows.ApplicationModel.Store.Preview.InstallControl;
+using Windows.Management.Deployment;
+
 namespace NED.WoT.BattleResults.Client;
 
 public static class MauiProgram
