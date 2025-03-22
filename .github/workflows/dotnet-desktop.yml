@@ -45,7 +45,7 @@ jobs:
     - name: Update .appinstaller file
       run: |        
         sed -i 's|http://schemas.microsoft.com/appx/appinstaller/2017/2|http://schemas.microsoft.com/appx/appinstaller/2021|' 'NED.WoT.BattleResults.Client/bin/Release/net9.0-windows10.0.19041.0/win10-x64/AppPackages/NED.WoT.BattleResults.Client_x64.appinstaller'
-        sed -i 's|HoursBetweenUpdateChecks="0"|HoursBetweenUpdateChecks="0" ShowPrompt="true" UpdateBlocksActivation="true"|' 'NED.WoT.BattleResults.Client/bin/Release/net9.0-windows10.0.19041.0/win10-x64/AppPackages/NED.WoT.BattleResults.Client_x64.appinstaller'
+        sed -i 's|HoursBetweenUpdateChecks="0"|HoursBetweenUpdateChecks="0" ShowPrompt="true"|' 'NED.WoT.BattleResults.Client/bin/Release/net9.0-windows10.0.19041.0/win10-x64/AppPackages/NED.WoT.BattleResults.Client_x64.appinstaller'
 
 
     - name: Deploy to Azure webapp
