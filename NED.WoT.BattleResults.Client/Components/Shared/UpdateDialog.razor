@@ -1,0 +1,41 @@
+﻿@using System.Diagnostics
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Update" Class="mr-3 mb-n1" />
+            Update
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudText Typo="Typo.body1">Er is een nieuwe versie van de applicatie beschikbaar.</MudText>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Negeren</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Restart" >Herstarten</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    public required IMudDialogInstance MudDialog { get; set; }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private void Restart()
+    {
+        string? exePath = Process.GetCurrentProcess().MainModule?.FileName;
+
+        Process.Start(new ProcessStartInfo
+            {
+                FileName = exePath,
+                UseShellExecute = true,
+                WorkingDirectory = Environment.CurrentDirectory
+            });
+
+        Application.Current?.Quit();
+    }
+}

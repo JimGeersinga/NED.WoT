@@ -18,30 +18,29 @@
         </TitleContent>
         <DialogContent>
             <MudTextField Label="WOT Replay File Path"
-            @bind-Value="@modal.WotReplayDirectory" For="(() => modal.WotReplayDirectory)" Class="mb-3" />
+                          @bind-Value="@modal.WotReplayDirectory" For="(() => modal.WotReplayDirectory)" Class="mb-3" />
             <MudDatePicker Label="Laad battles sinds"
-            @bind-Date="@modal.LoadBattlesSince" For="(() => modal.LoadBattlesSince)" Class="mb-3" />
+                           @bind-Date="@modal.LoadBattlesSince" For="(() => modal.LoadBattlesSince)" Class="mb-3" />
             <MudTextField Label="Clan afkorting"
-            @bind-Value="@modal.ClanAbbreviation" For="(() => modal.ClanAbbreviation)" Class="mb-3" />
+                          @bind-Value="@modal.ClanAbbreviation" For="(() => modal.ClanAbbreviation)" Class="mb-3" />
             <MudTextField Label="Speler naam"
-            @bind-Value="@modal.PlayerName" For="(() => modal.PlayerName)" Class="mb-3" />
+                          @bind-Value="@modal.PlayerName" For="(() => modal.PlayerName)" Class="mb-3" />
 
             <MudSwitch Label="Maximaal één battle resultaat open" Color="Color.Primary"
-            @bind-Value="@modal.SingleBattleResultOpenedOnly" For="(() => modal.SingleBattleResultOpenedOnly)" />
+                       @bind-Value="@modal.SingleBattleResultOpenedOnly" For="(() => modal.SingleBattleResultOpenedOnly)" />
 
             <MudSwitch Label="Alleen eigen match results highlighten" Color="Color.Primary"
-            @bind-Value="@modal.OnlyHighlistOwnMatches" For="(() => modal.OnlyHighlistOwnMatches)" />
+                       @bind-Value="@modal.OnlyHighlistOwnMatches" For="(() => modal.OnlyHighlistOwnMatches)" />
 
             <MudSwitch Label="Update het scherm tijdens laden" Color="Color.Primary"
-            @bind-Value="@modal.UpdateScreeenWhileLoading" For="(() => modal.UpdateScreeenWhileLoading)" />
+                       @bind-Value="@modal.UpdateScreeenWhileLoading" For="(() => modal.UpdateScreeenWhileLoading)" />
 
             <MudSwitch Label="Automatisch clan opzoeken tijdens opstarten battle" Color="Color.Primary"
-            @bind-Value="@modal.AutoClanLookup" For="(() => modal.AutoClanLookup)" />
+                       @bind-Value="@modal.AutoClanLookup" For="(() => modal.AutoClanLookup)" />
         </DialogContent>
         <DialogActions>
             <MudButton OnClick="AppInfo.Current.ShowSettingsUI" Class="mr-2">Ga naar app settings</MudButton>
-            <MudButton OnClick="UpdateCheck" Class="mr-auto">Check voor update</MudButton>
-            @if (canCancel)
+            @if (CanCancel)
             {
                 <MudButton OnClick="Cancel">Annuleren</MudButton>
             }
@@ -55,13 +54,13 @@
     public required IMudDialogInstance MudDialog { get; set; }
 
     [Parameter]
-    public bool canCancel { get; set; } = true;
+    public bool CanCancel { get; set; } = true;
 
-    private SettingsForm modal = new SettingsForm();
+    private Settings modal = new Settings();
 
     protected override void OnInitialized()
     {
-        modal = new SettingsForm
+        modal = new Settings
             {
                 WotReplayDirectory = SettingService.Settings.WotReplayDirectory,
                 LoadBattlesSince = SettingService.Settings.LoadBattlesSince,
@@ -70,7 +69,8 @@
                 SingleBattleResultOpenedOnly = SettingService.Settings.SingleBattleResultOpenedOnly,
                 OnlyHighlistOwnMatches = SettingService.Settings.OnlyHighlistOwnMatches,
                 UpdateScreeenWhileLoading = SettingService.Settings.UpdateScreeenWhileLoading,
-                AutoClanLookup = SettingService.Settings.AutoClanLookup
+                AutoClanLookup = SettingService.Settings.AutoClanLookup,
+                IsDarkMode = SettingService.Settings.IsDarkMode
             };
     }
 
@@ -81,52 +81,13 @@
 
     private void OnValidSubmit(EditContext context)
     {
-        var settings = SettingService.Settings;
-        settings.WotReplayDirectory = modal.WotReplayDirectory;
-        settings.LoadBattlesSince = modal.LoadBattlesSince;
-        settings.ClanAbbreviation = modal.ClanAbbreviation;
-        settings.PlayerName = modal.PlayerName;
-        settings.SingleBattleResultOpenedOnly = modal.SingleBattleResultOpenedOnly;
-        settings.OnlyHighlistOwnMatches = modal.OnlyHighlistOwnMatches;
-        settings.UpdateScreeenWhileLoading = modal.UpdateScreeenWhileLoading;
-        settings.AutoClanLookup = modal.AutoClanLookup;
+        SettingService.Settings = modal;
 
-        SettingService.Save(settings);
+        SettingService.Save();
 
         NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
 
         Snackbar.Add("Settings succevol opgeslagen", Severity.Success);
         MudDialog.Close(DialogResult.Ok(SettingService.Settings));
-    }
-
-    private async Task UpdateCheck()
-    {    
-
-        var r = await Windows.ApplicationModel.Package.Current.CheckUpdateAvailabilityAsync();
-       
-            Snackbar.Add(r.Availability.ToString(), Severity.Success);
-       
-    }
-
-    public class SettingsForm
-    {
-        [Required(ErrorMessage = "WoT replay path is verplicht!")]
-        [DirectoryExists(ErrorMessage = "WoT replay path is niet geldig!")]
-        public string? WotReplayDirectory { get; set; }
-
-        [Required(ErrorMessage = "Datum is verplicht!")]
-        public DateTime? LoadBattlesSince { get; set; }
-
-        public string? ClanAbbreviation { get; set; }
-
-        public string? PlayerName { get; set; }
-
-        public bool SingleBattleResultOpenedOnly { get; set; }
-
-        public bool OnlyHighlistOwnMatches { get; set; }
-
-        public bool UpdateScreeenWhileLoading { get; set; }
-
-        public bool AutoClanLookup { get; set; }
     }
 }

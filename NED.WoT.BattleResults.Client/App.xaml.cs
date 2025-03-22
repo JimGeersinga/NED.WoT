@@ -1,11 +1,10 @@
-﻿
-namespace NED.WoT.BattleResults.Client;
+﻿namespace NED.WoT.BattleResults.Client;
 
 public partial class App : Application
 {
-	public App()
-	{
-		InitializeComponent();
+    public App()
+    {
+        InitializeComponent();
     }
 
     protected override Window CreateWindow(IActivationState? activationState)

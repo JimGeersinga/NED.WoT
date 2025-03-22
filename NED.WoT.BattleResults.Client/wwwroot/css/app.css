@@ -303,6 +303,17 @@ a, .btn-link {
     text-align: left;
 }
 
+.text-center {
+    text-align: center;
+}
+
 .text-nowrap {
     white-space: nowrap;
+}
+
+.justify-content-center {
+    justify-content: center;
+}
+.align-items-center {
+    align-items: center;
 }

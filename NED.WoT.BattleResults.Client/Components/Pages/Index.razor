@@ -26,16 +26,16 @@
         </MudItem>
         <MudItem sm="4" Class="d-flex align-center">
             <MudAutocomplete T="SearchValue"
-                             @bind-Value="_search"
-                             SearchFunc="SearchAllAsync"
-                             ToStringFunc="@(e=> e == null ? null : $"{e.Value} ({e.Type})")"
-                             DebounceInterval="500"
-                             Placeholder="Zoek op speler naam of clan tag"
-                             Adornment="Adornment.Start"
-                             AdornmentIcon="@Icons.Material.Filled.Search"
-                             IconSize="Size.Medium"
-                             Clearable="true"
-                             Class="mt-0">
+            @bind-Value="_search"
+            SearchFunc="SearchAllAsync"
+            ToStringFunc="@(e=> e == null ? null : $"{e.Value} ({e.Type})")"
+            DebounceInterval="500"
+            Placeholder="Zoek op speler naam of clan tag"
+            Adornment="Adornment.Start"
+            AdornmentIcon="@Icons.Material.Filled.Search"
+            IconSize="Size.Medium"
+            Clearable="true"
+            Class="mt-0">
                 <ItemTemplate Context="e">
                     <div class="d-flex justify-space-between align-center">
                         <MudText Typo="Typo.inherit">@e.Value</MudText>
@@ -45,31 +45,33 @@
             </MudAutocomplete>
         </MudItem>
         <MudItem sm="4" Class="d-flex align-center justify-end gap-3">
-            @if (_showDetailedInfo)
+            @if (SettingService.Settings.ShowBattleStats)
             {
-                <div style="width: auto">
-                    <MudAutocomplete @bind-Value="_detailedInfoForPlayer"
-                                     SearchFunc="SearchPlayerAsync"
-                                     DebounceInterval="500"
-                                     Placeholder="Zoek speler"
-                                     Adornment="Adornment.Start"
-                                     AdornmentIcon="@Icons.Material.Filled.AutoGraph"
-                                     AdornmentColor="Color.Primary"
-                                     IconSize="Size.Medium"
-                                     Dense="true"
-                                     Margin="Margin.Dense"
-                                     Clearable="true"
-                                     FullWidth="false"
-                                     Variant="Variant.Outlined"
-                                     OnAdornmentClick="() => _showDetailedInfo = false"
-                                     Class="mt-1"></MudAutocomplete>
-                </div>
+                @if (_showDetailedInfo)
+                {
+                    <div style="width: auto">
+                        <MudAutocomplete @bind-Value="_detailedInfoForPlayer"
+                        SearchFunc="SearchPlayerAsync"
+                        DebounceInterval="500"
+                        Placeholder="Zoek speler"
+                        Adornment="Adornment.Start"
+                        AdornmentIcon="@Icons.Material.Filled.AutoGraph"
+                        AdornmentColor="Color.Primary"
+                        IconSize="Size.Medium"
+                        Dense="true"
+                        Margin="Margin.Dense"
+                        Clearable="true"
+                        FullWidth="false"
+                        Variant="Variant.Outlined"
+                        OnAdornmentClick="() => _showDetailedInfo = false"
+                        Class="mt-1"></MudAutocomplete>
+                    </div>
+                }
+                else
+                {
+                    <MudIconButton Icon="@Icons.Material.Filled.AutoGraph" Color="Color.Default" OnClick="() => _showDetailedInfo = true" />
+                }
             }
-            else
-            {
-                <MudIconButton Icon="@Icons.Material.Filled.AutoGraph" Color="Color.Default" OnClick="() => _showDetailedInfo = true" />
-            }
-
             <MudButtonGroup Color="Color.Primary" Variant="Variant.Filled">
                 <MudButton>@_matchType.ToString()</MudButton>
                 <MudMenu Icon="@Icons.Material.Filled.ArrowDropDown" Style="align-self: auto;">
@@ -460,6 +462,8 @@
     private bool _showDetailedInfo = false;
     private string _detailedInfoForPlayer = string.Empty;
 
+    private IDialogReference? _clanMatchDialog;
+
     private List<BattleReport> _reports = new List<BattleReport>();
     private IEnumerable<BattleReport> _filteredReports => _reports.Where(x => TableFilter(x));
     private TableGroupDefinition<BattleReport> _groupDefinition = new()
@@ -495,7 +499,7 @@
             await InvokeAsync(() =>
             {
                 _reports.Add(e.Report);
-                _search = null;
+                _clanMatchDialog?.Close();
                 if (_loading)
                 {
                     _loadingTime = Stopwatch.GetElapsedTime(timestamp);
@@ -525,16 +529,14 @@
 
         BattleResultService.ClanMatchStarted += async (s, e) =>
         {
-            await InvokeAsync(() =>
+            await InvokeAsync(async () =>
             {
                 if (!SettingService.Settings.AutoClanLookup)
                 {
                     return;
                 }
 
-                var clanToSearch = e.Item1 == SettingService.Settings.ClanAbbreviation ? e.Item2 : e.Item1;
-                _search = new SearchValue(clanToSearch, "Clan");
-                StateHasChanged();
+                await OpenClanMatchDialog(e);
             });
         };
 
@@ -661,7 +663,10 @@
 
     private async Task OpenUndefinedNamesDialog()
     {
-        await DialogService.ShowAsync<UndefinedNamesDialog>("Onbekende namen", new DialogOptions { CloseOnEscapeKey = true });
+        await DialogService.ShowAsync<UndefinedNamesDialog>("Onbekende namen", new DialogOptions
+            {
+                CloseOnEscapeKey = true
+            });
     }
 
     private async Task OpenClanMembersDialog()
@@ -673,6 +678,19 @@
                     CloseOnEscapeKey = true,
                     FullWidth = true,
                     MaxWidth = MaxWidth.Small
+                });
+    }
+
+    private async Task OpenClanMatchDialog((string, string) match)
+    {
+        _clanMatchDialog?.Close();
+        _clanMatchDialog = await DialogService.ShowAsync<ClanMatchDialog>("Clan gevecht",
+            new DialogParameters<ClanMatchDialog>() { { x => x.Match, match } },
+            new DialogOptions
+                {
+                    CloseOnEscapeKey = true,
+                    FullWidth = true,
+                    MaxWidth = MaxWidth.Large
                 });
     }
 

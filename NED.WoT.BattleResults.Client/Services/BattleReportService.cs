@@ -167,6 +167,7 @@ public partial class BattleReportService
         BattleReport report = GetBattleReport(new FileInfo(e.FullPath));
         if (report != null)
         {
+            _clanMatch = null;
             AddBattleReport(e.Name, report);
             _snackbar.Add($"Bestand '{e.Name}' is toegevoegd", Severity.Success);
         }
@@ -234,7 +235,6 @@ public partial class BattleReportService
 
         if (notify)
         {
-            _clanMatch = null;
             BattleReportAdded?.Invoke(this, new BattleReportAddedEventArgs(report));
         }
     }
