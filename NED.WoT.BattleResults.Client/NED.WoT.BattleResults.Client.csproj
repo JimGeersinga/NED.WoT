@@ -1,16 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
-    <TargetFrameworks>net9.0-windows10.0.19041.0</TargetFrameworks>
+    <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">net9.0-windows10.0.19041.0</TargetFrameworks>
 
     <OutputType>Exe</OutputType>
     <RootNamespace>NED.WoT.BattleResults.Client</RootNamespace>
     <UseMaui>true</UseMaui>
     <SingleProject>true</SingleProject>
     <ImplicitUsings>enable</ImplicitUsings>
+    <EnableDefaultCssItems>false</EnableDefaultCssItems>
     <Nullable>enable</Nullable>
-    <DefaultLanguage>nl-NL</DefaultLanguage>
-    <LangVersion>preview</LangVersion>
 
     <!-- Display name -->
     <ApplicationTitle>[NED] WoT Gevecht Statistieken</ApplicationTitle>
@@ -23,13 +22,12 @@
     <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
     <ApplicationVersion>1</ApplicationVersion>
 
-    <!-- To develop, package, and publish an app to the Microsoft Store, see: https://aka.ms/MauiTemplateUnpackaged -->
-    <WindowsPackageType>MSIX</WindowsPackageType>
-
-    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
-    <TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
+    <TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
+    
     <GenerateAppInstallerFile>True</GenerateAppInstallerFile>
     <AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
+    <PackageCertificateThumbprint>9DD749E10A1DC498F42DB0DD2D3A39CCB1D09EE1</PackageCertificateThumbprint>
     <AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
     <AppxAutoIncrementPackageRevision>True</AppxAutoIncrementPackageRevision>
     <AppxSymbolPackageEnabled>False</AppxSymbolPackageEnabled>
@@ -39,6 +37,11 @@
     <AppxBundle>Never</AppxBundle>
     <ShowPrompt>True</ShowPrompt>
     <UapAppxPackageBuildMode>SideLoadOnly</UapAppxPackageBuildMode>
+    <DefaultLanguage>nl-NL</DefaultLanguage>
+
+    <LangVersion>preview</LangVersion>
+
+    <WindowsPackageType>MSIX</WindowsPackageType>
   </PropertyGroup>
 
   <ItemGroup>
@@ -59,14 +62,22 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Maui.Controls" Version="9.0.50" />
-    <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="9.0.50" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="9.0.50" />
+    <Content Remove="wwwroot\logo.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="$(MauiVersion)" />
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.3" />
     <PackageReference Include="Microsoft.Extensions.Localization" Version="9.0.3" />
-    <PackageReference Include="MudBlazor" Version="8.4.0" />
+    <PackageReference Include="MudBlazor" Version="8.3.0" />
     <PackageReference Include="System.Numerics.Tensors" Version="9.0.3" />
     <PackageReference Include="System.Text.Json" Version="9.0.3" />
   </ItemGroup>
-  
+
+  <ItemGroup>
+    <Folder Include="Resources\Images\" />
+    <Folder Include="wwwroot\js\fontawesome\" />
+  </ItemGroup>
+
 </Project>
