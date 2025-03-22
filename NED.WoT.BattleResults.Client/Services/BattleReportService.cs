@@ -106,12 +106,12 @@ public partial class BattleReportService
         _watcher.Error += OnError;
 
         _timer?.Dispose();
-        _timer = new Timer(async _ => await TempFileWatcherAsync(), null, TimeSpan.Zero, TimeSpan.FromSeconds(2));
+        _timer = new Timer(async _ => await TempFileWatcherAsync(), null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2));
     }
 
     private async Task TempFileWatcherAsync()
     {
-        FileInfo tempFile = new(Path.Combine(_settingService.Settings.WotReplayDirectory ?? string.Empty, "temp.wotreplay"));
+        FileInfo tempFile = new(Path.Combine(_settingService.Settings.WotReplayDirectory ?? string.Empty,  "temp.wotreplay"));
         if (tempFile.Exists)
         {
             (string, string)? clanMatch = null;

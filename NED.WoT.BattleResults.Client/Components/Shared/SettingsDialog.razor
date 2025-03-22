@@ -37,6 +37,11 @@
 
             <MudSwitch Label="Automatisch clan opzoeken tijdens opstarten battle" Color="Color.Primary"
                        @bind-Value="@modal.AutoClanLookup" For="(() => modal.AutoClanLookup)" />
+            @if (System.Diagnostics.Debugger.IsAttached)
+            {
+                <MudSwitch Label="Battle statistieken tonen" Color="Color.Primary"
+                           @bind-Value="@modal.ShowBattleStats" For="(() => modal.ShowBattleStats)" />
+            }
         </DialogContent>
         <DialogActions>
             <MudButton OnClick="AppInfo.Current.ShowSettingsUI" Class="mr-2">Ga naar app settings</MudButton>
@@ -70,7 +75,8 @@
                 OnlyHighlistOwnMatches = SettingService.Settings.OnlyHighlistOwnMatches,
                 UpdateScreeenWhileLoading = SettingService.Settings.UpdateScreeenWhileLoading,
                 AutoClanLookup = SettingService.Settings.AutoClanLookup,
-                IsDarkMode = SettingService.Settings.IsDarkMode
+                IsDarkMode = SettingService.Settings.IsDarkMode,
+                ShowBattleStats = SettingService.Settings.ShowBattleStats
             };
     }
 

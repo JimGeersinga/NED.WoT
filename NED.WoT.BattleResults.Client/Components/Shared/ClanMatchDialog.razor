@@ -68,6 +68,9 @@
                                 <MudTableSortLabel SortBy="new Func<BattleReport, object>(x => x.MapName ?? string.Empty)">Map</MudTableSortLabel>
                             </MudTh>
                             <MudTh>
+                                <MudTableSortLabel SortBy="new Func<BattleReport, object>(x => x.MatchDuration)">Duratie</MudTableSortLabel>
+                            </MudTh>
+                            <MudTh>
                                 Winnaar
                             </MudTh>
                         </HeaderContent>
@@ -77,6 +80,7 @@
                             }
                             <MudTd DataLabel="Datum">@context.MatchStart.ToString("dd/MM/yyyy HH:mm")</MudTd>
                             <MudTd DataLabel="Map">@context.MapName @ownTeam?.Base</MudTd>
+                            <MudTd DataLabel="Duratie">@context.MatchDurationDisplay</MudTd>
                             <MudTd DataLabel="Winnaar" class="@ownTeam?.Result.ToString()">
                                 @(context.Team1.IsWinner == true ? context.Team1.Abbreviation : context.Team2.Abbreviation)
                             </MudTd>
