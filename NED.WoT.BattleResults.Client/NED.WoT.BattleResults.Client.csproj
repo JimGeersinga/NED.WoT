@@ -62,13 +62,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="wwwroot\js\**" />
-    <Content Remove="wwwroot\js\**" />
-    <EmbeddedResource Remove="wwwroot\js\**" />
-    <None Remove="wwwroot\js\**" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Content Remove="wwwroot\logo.png" />
   </ItemGroup>
 
@@ -85,10 +78,6 @@
 
   <ItemGroup>
     <Folder Include="Resources\Images\" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PRIResource Remove="wwwroot\js\**" />
   </ItemGroup>
 
 </Project>
