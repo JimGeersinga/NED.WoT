@@ -12,7 +12,7 @@
                     <NotAuthorized>
                         <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)">
                             <NotAuthorized>
-                                @NavigationManager.NavigateTo($"unauthorized");
+                                @{ NavigationManager.NavigateTo($"unauthorized"); }
                             </NotAuthorized>
                         </AuthorizeRouteView>
                     </NotAuthorized>

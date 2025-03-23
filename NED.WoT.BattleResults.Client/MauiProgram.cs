@@ -17,16 +17,12 @@ public static class MauiProgram
             .UseMauiApp<App>()
             .ConfigureFonts(fonts => fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular"));
 
-        builder.Configuration
-            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-            .AddJsonFile("appsettings.development.json", optional: true, reloadOnChange: true);
-
         builder.Services.AddMauiBlazorWebView();
 
-//#if DEBUG
+#if DEBUG
         builder.Services.AddBlazorWebViewDeveloperTools();
         builder.Logging.AddDebug();
-//#endif
+#endif
 
         builder.Services.AddMudServices();
         builder.Services.AddAuthorizationCore();

@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.Extensions.Configuration;
 
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -9,7 +8,7 @@ using System.Text.Json;
 
 namespace NED.WoT.BattleResults.Client.Services;
 
-public class CustomAuthenticationStateProvider(IConfiguration Configuration) : AuthenticationStateProvider
+public class CustomAuthenticationStateProvider() : AuthenticationStateProvider
 {
     private readonly HttpClient? _httpClient = new();
     private readonly JsonSerializerOptions _jsonSerializerOptions = new()
@@ -32,9 +31,9 @@ public class CustomAuthenticationStateProvider(IConfiguration Configuration) : A
             _authenticationState = null;
         }
 
-        if (_authenticationState is not null || DateTime.Now - lastAuthCheck < TimeSpan.FromMinutes(5))
+        if (_authenticationState is not null)
         {
-            return _authenticationState ?? new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+            return _authenticationState;
         }
 
         AuthResult? authResult = await CheckAuthenticationAsync();
@@ -69,13 +68,10 @@ public class CustomAuthenticationStateProvider(IConfiguration Configuration) : A
             return null;
         }
 
-        string? apiUrl = Configuration.GetValue<string>("ApiUrl");
-        if (string.IsNullOrWhiteSpace(apiUrl))
-        {
-            return null;
-        }
+        string? apiUrl = "https://script.google.com/macros/s/AKfycbwi2lOBlb6G6X313FOKSirjJu5TCUXeNPsMwp7cKPHOOqLDmIpD3LTGfOlyEJHLofR1sQ/exec";
+        string apiKey = "efb10f4a-04a0-450e-ad64-a46d326bac15";
 
-        string url = $"{apiUrl}?user={user}&machine={machine}&machineVersion={machineVersion}&machineKey={machineKey}";
+        string url = $"{apiUrl}?apiKey={apiKey}&user={user}&machine={machine}&machineVersion={machineVersion}&machineKey={machineKey}";
         string response = await _httpClient.GetStringAsync(url);
         try
         {
