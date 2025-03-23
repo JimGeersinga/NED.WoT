@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 using MudBlazor.Services;
@@ -28,7 +29,8 @@ public static class MauiProgram
 #endif
 
         builder.Services.AddMudServices();
-        builder.Services.AddScoped<AuthenticationService>();
+        builder.Services.AddAuthorizationCore();
+        builder.Services.AddSingleton<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
         builder.Services.AddScoped<BattleReportService>();
         builder.Services.AddScoped<UpdateCheckService>();
         builder.Services.AddSingleton<SettingService>();

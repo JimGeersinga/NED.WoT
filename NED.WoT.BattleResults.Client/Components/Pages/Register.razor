@@ -1,0 +1,27 @@
+﻿@page "/register"
+@using Microsoft.AspNetCore.Components.Authorization
+@inject NavigationManager NavigationManager
+
+<MudGrid Justify="Justify.Center" Class="my-7 text-center">
+    <MudItem>
+        <MudText Typo="Typo.h3">Registeren</MudText>
+        <MudText Typo="Typo.subtitle1" Class="my-7">Vraag aan WoT management of ze je toegang geven tot deze app.</MudText>
+    </MudItem>
+</MudGrid>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? authenticationState { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (authenticationState is not null)
+        {
+            var authState = await authenticationState;
+            if (authState?.User.Identity?.IsAuthenticated == true)
+            {
+                NavigationManager.NavigateTo("/");
+            }
+        }
+    }
+}
