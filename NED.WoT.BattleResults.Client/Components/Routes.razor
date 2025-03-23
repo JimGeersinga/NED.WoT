@@ -3,14 +3,27 @@
     <Router AppAssembly="@typeof(MauiProgram).Assembly">
         <Found Context="routeData">
             <CascadingValue Value="@routeData">
-                <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)">
+                <AuthorizeView Context="AppAuthState">
+                    <Authorized>
+                        <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)" />
+                    </Authorized>
                     <NotAuthorized>
-                        <RedirectToRegister />
+                        <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)">
+                            <NotAuthorized>
+                                <RedirectToRegister />
+                            </NotAuthorized>
+                        </AuthorizeRouteView>
                     </NotAuthorized>
                     <Authorizing>
-                        <Authenticating />
+                        <div class="splash">
+                            <img src="images/logo.png" />
+
+                            <div class="progress-bar">
+                                <div class="progress-bar__progress"></div>
+                            </div>
+                        </div>
                     </Authorizing>
-                </AuthorizeRouteView>
+                </AuthorizeView>
             </CascadingValue>
         </Found>
         <NotFound>

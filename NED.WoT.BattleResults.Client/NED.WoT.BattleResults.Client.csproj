@@ -62,13 +62,19 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="wwwroot\js\**" />
+    <Content Remove="wwwroot\js\**" />
+    <EmbeddedResource Remove="wwwroot\js\**" />
+    <None Remove="wwwroot\js\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Remove="wwwroot\logo.png" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Components.Authorization" Version="9.0.3" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="6.0.1" />
     <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Authorization" Version="9.0.3" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="$(MauiVersion)" />
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.3" />
     <PackageReference Include="Microsoft.Extensions.Localization" Version="9.0.3" />
@@ -79,7 +85,10 @@
 
   <ItemGroup>
     <Folder Include="Resources\Images\" />
-    <Folder Include="wwwroot\js\fontawesome\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PRIResource Remove="wwwroot\js\**" />
   </ItemGroup>
 
 </Project>

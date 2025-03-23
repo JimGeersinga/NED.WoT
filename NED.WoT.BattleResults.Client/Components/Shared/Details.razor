@@ -24,25 +24,19 @@
             <col />
             <col />
             <col />
-            @if (SettingService.Settings.ShowBattleStats)
-            {
-                <col />
-                <col />
-                <col />
-                <col />
-                <col />
-                <col />
-            }
+            <col />
+            <col />
+            <col />
+            <col />
+            <col />
+            <col />
         </ColGroup>
         <HeaderContent>
             <MudTHeadRow Class="header-centered">
                 <MudTh colspan="5" Class="sticky-left"></MudTh>
                 <MudTh colspan="2">Prestatie</MudTh>
-                @if (SettingService.Settings.ShowBattleStats)
-                {
-                    <MudTh colspan="3">Schade</MudTh>
-                    <MudTh colspan="3">Schoten</MudTh>
-                }
+                <MudTh colspan="3">Schade</MudTh>
+                <MudTh colspan="3">Schoten</MudTh>
             </MudTHeadRow>
             <MudTHeadRow>
                 <MudTh Class="sticky-left" />
@@ -52,15 +46,12 @@
                 <MudTh Class="sticky-left lifetime"><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.LifeTime)">Speeltijd</MudTableSortLabel></MudTh>
                 <MudTh><MudTableSortLabel InitialDirection="SortDirection.Descending" SortBy="new Func<Player, object?>(x=>x.ExperienceEarned)">XP</MudTableSortLabel></MudTh>
                 <MudTh><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.Kills)">Kills</MudTableSortLabel></MudTh>
-                @if (SettingService.Settings.ShowBattleStats)
-                {
-                    <MudTh><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.DamageDealt)">Gedaan</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.DamageBlocked)">Geblokt</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.DamageReceived)">Ontvangen</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.Shots)">Gelost</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.DirectHits)">Geraakt</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.Piercings)">Gepierced</MudTableSortLabel></MudTh>
-                }
+                <MudTh><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.DamageDealt)">Gedaan</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.DamageBlocked)">Geblokt</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.DamageReceived)">Ontvangen</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.Shots)">Gelost</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.DirectHits)">Geraakt</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.Piercings)">Gepierced</MudTableSortLabel></MudTh>
             </MudTHeadRow>
         </HeaderContent>
         <GroupHeaderTemplate>
@@ -113,54 +104,64 @@
             </MudTd>
             <MudTd DataLabel="ExperienceEarned">@context.ExperienceEarned</MudTd>
             <MudTd DataLabel="Kills">@context.Kills</MudTd>
-            @if (SettingService.Settings.ShowBattleStats)
-            {
-                <MudTd DataLabel="DamageDealt">@context.DamageDealt</MudTd>
-                <MudTd DataLabel="DamageBlocked">
-                    <div class="text-nowrap d-flex justify-space-between gap-1">
-                        @if (context.DamageBlocked.HasValue)
-                        {
-                            <div>@context.DamageBlocked</div>
-                            <div class="gap-1" style="display: grid; grid-template-columns: 1fr auto 1fr 40px">
-                                <span>@context.ShotsBlocked</span>
+
+            <MudTd DataLabel="DamageDealt">@context.DamageDealt</MudTd>
+            <MudTd DataLabel="DamageBlocked">
+                <div class="text-nowrap d-flex justify-space-between gap-1">
+                    @if (context.DamageBlocked.HasValue)
+                    {
+                        <div>@context.DamageBlocked</div>
+                        <div class="gap-1" style="display: grid; grid-template-columns: 1fr auto 1fr 40px">
+                            <span>@context.ShotsBlocked</span>
+                            @if (ShowBattleStats)
+                            {
                                 <span class="mx-2 grey-text text-darken-1">/</span>
                                 <span>@context.ShotsReceived</span>
                                 <span class="text-right" style="color: @context.BlockRatio.GetBlockedRatioColor() !important">@context.BlockRatio%</span>
-                            </div>
-                        }
-                    </div>
-                </MudTd>
-                <MudTd DataLabel="DamageReceived">@context.DamageReceived</MudTd>
-                <MudTd DataLabel="Shots">
-                    <div class="d-flex justify-space-between gap-1 text-nowrap">
-                        @if (context.Shots.HasValue)
-                        {
-                            var roundedRatio = Math.Round(context.ShotRatio);
+                            }
+                        </div>
+                    }
+                </div>
+            </MudTd>
+            <MudTd DataLabel="DamageReceived">@context.DamageReceived</MudTd>
+            <MudTd DataLabel="Shots">
+                <div class="d-flex justify-space-between gap-1 text-nowrap">
+                    @if (context.Shots.HasValue)
+                    {
+                        var roundedRatio = Math.Round(context.ShotRatio);
 
-                            <span>@context.Shots</span>
+                        <span>@context.Shots</span>
+                        @if (ShowBattleStats)
+                        {
                             <span style="color: cornflowerblue">@(context.ShotRatio < roundedRatio ? " < " : " > ") @roundedRatio p/m</span>
                         }
-                    </div>
-                </MudTd>
-                <MudTd DataLabel="DirectHits">
-                    <div class="d-flex justify-space-between gap-1 text-nowrap">
-                        @if (context.DirectHits.HasValue)
+                    }
+                </div>
+            </MudTd>
+            <MudTd DataLabel="DirectHits">
+                <div class="d-flex justify-space-between gap-1 text-nowrap">
+                    @if (context.DirectHits.HasValue)
+                    {
+                        <span>@context.DirectHits</span>
+                        @if (ShowBattleStats)
                         {
-                            <span>@context.DirectHits</span>
                             <span style="color: @context.HitRatio.GetHitRatioColor() !important">@(context.HitRatio)%</span>
                         }
-                    </div>
-                </MudTd>
-                <MudTd DataLabel="Piercings">
-                    <div class="d-flex justify-space-between gap-1 text-nowrap">
-                        @if (context.Piercings.HasValue)
+                    }
+                </div>
+            </MudTd>
+            <MudTd DataLabel="Piercings">
+                <div class="d-flex justify-space-between gap-1 text-nowrap">
+                    @if (context.Piercings.HasValue)
+                    {
+                        <span>@context.Piercings</span>
+                        @if (ShowBattleStats)
                         {
-                            <span>@context.Piercings</span>
                             <span style="color: @context.PenRatio.GetPenRatioColor() !important">@(context.PenRatio)%</span>
                         }
-                    </div>
-                </MudTd>
-            }
+                    }
+                </div>
+            </MudTd>
         </RowTemplate>
     </MudTable>
 </MudPaper>
@@ -168,6 +169,9 @@
 @code {
     [Parameter]
     public required BattleReport Report { get; set; }
+
+    [Parameter]
+    public required bool ShowBattleStats { get; set; }
 
     private MudTable<Player>? _tableRef;
 
@@ -194,10 +198,14 @@
     private string HighlightPlayerClassFunc(Player player, int rowNumber)
     {
         if (player.Name != null && player.Name?.ToLower() == SettingService.Settings.PlayerName?.ToLower())
+        {
             return "highlight";
+        }
 
         if (player.IsTeamKiller.GetValueOrDefault())
+        {
             return "teamkiller";
+        }
 
         return string.Empty;
     }

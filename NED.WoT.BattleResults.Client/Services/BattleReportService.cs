@@ -111,7 +111,7 @@ public partial class BattleReportService
 
     private async Task TempFileWatcherAsync()
     {
-        FileInfo tempFile = new(Path.Combine(_settingService.Settings.WotReplayDirectory ?? string.Empty,  "temp.wotreplay"));
+        FileInfo tempFile = new(Path.Combine(_settingService.Settings.WotReplayDirectory ?? string.Empty, "temp.wotreplay"));
         if (tempFile.Exists)
         {
             (string, string)? clanMatch = null;

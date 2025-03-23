@@ -18,33 +18,28 @@
         </TitleContent>
         <DialogContent>
             <MudTextField Label="WOT Replay File Path"
-                          @bind-Value="@modal.WotReplayDirectory" For="(() => modal.WotReplayDirectory)" Class="mb-3" />
+            @bind-Value="@modal.WotReplayDirectory" For="(() => modal.WotReplayDirectory)" Class="mb-3" />
             <MudDatePicker Label="Laad battles sinds"
-                           @bind-Date="@modal.LoadBattlesSince" For="(() => modal.LoadBattlesSince)" Class="mb-3" />
+            @bind-Date="@modal.LoadBattlesSince" For="(() => modal.LoadBattlesSince)" Class="mb-3" />
             <MudTextField Label="Clan afkorting"
-                          @bind-Value="@modal.ClanAbbreviation" For="(() => modal.ClanAbbreviation)" Class="mb-3" />
+            @bind-Value="@modal.ClanAbbreviation" For="(() => modal.ClanAbbreviation)" Class="mb-3" />
             <MudTextField Label="Speler naam"
-                          @bind-Value="@modal.PlayerName" For="(() => modal.PlayerName)" Class="mb-3" />
+            @bind-Value="@modal.PlayerName" For="(() => modal.PlayerName)" Class="mb-3" />
 
             <MudSwitch Label="Maximaal één battle resultaat open" Color="Color.Primary"
-                       @bind-Value="@modal.SingleBattleResultOpenedOnly" For="(() => modal.SingleBattleResultOpenedOnly)" />
+            @bind-Value="@modal.SingleBattleResultOpenedOnly" For="(() => modal.SingleBattleResultOpenedOnly)" />
 
             <MudSwitch Label="Alleen eigen match results highlighten" Color="Color.Primary"
-                       @bind-Value="@modal.OnlyHighlistOwnMatches" For="(() => modal.OnlyHighlistOwnMatches)" />
+            @bind-Value="@modal.OnlyHighlistOwnMatches" For="(() => modal.OnlyHighlistOwnMatches)" />
 
             <MudSwitch Label="Update het scherm tijdens laden" Color="Color.Primary"
-                       @bind-Value="@modal.UpdateScreeenWhileLoading" For="(() => modal.UpdateScreeenWhileLoading)" />
+            @bind-Value="@modal.UpdateScreeenWhileLoading" For="(() => modal.UpdateScreeenWhileLoading)" />
 
             <MudSwitch Label="Automatisch clan opzoeken tijdens opstarten battle" Color="Color.Primary"
-                       @bind-Value="@modal.AutoClanLookup" For="(() => modal.AutoClanLookup)" />
-            @if (System.Diagnostics.Debugger.IsAttached)
-            {
-                <MudSwitch Label="Battle statistieken tonen" Color="Color.Primary"
-                           @bind-Value="@modal.ShowBattleStats" For="(() => modal.ShowBattleStats)" />
-            }
+            @bind-Value="@modal.AutoClanLookup" For="(() => modal.AutoClanLookup)" />
         </DialogContent>
         <DialogActions>
-            <MudButton OnClick="AppInfo.Current.ShowSettingsUI" Class="mr-2">Ga naar app settings</MudButton>
+            <MudButton OnClick="AppInfo.Current.ShowSettingsUI" Class="mr-auto">Ga naar app settings</MudButton>
             @if (CanCancel)
             {
                 <MudButton OnClick="Cancel">Annuleren</MudButton>
@@ -75,8 +70,7 @@
                 OnlyHighlistOwnMatches = SettingService.Settings.OnlyHighlistOwnMatches,
                 UpdateScreeenWhileLoading = SettingService.Settings.UpdateScreeenWhileLoading,
                 AutoClanLookup = SettingService.Settings.AutoClanLookup,
-                IsDarkMode = SettingService.Settings.IsDarkMode,
-                ShowBattleStats = SettingService.Settings.ShowBattleStats
+                IsDarkMode = SettingService.Settings.IsDarkMode
             };
     }
 
@@ -87,11 +81,15 @@
 
     private void OnValidSubmit(EditContext context)
     {
+        bool directoryHasChanged = !(SettingService.Settings.WotReplayDirectory ?? string.Empty).Equals(modal.WotReplayDirectory); 
         SettingService.Settings = modal;
 
         SettingService.Save();
 
-        NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
+        if (directoryHasChanged)
+        {
+            NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
+        }
 
         Snackbar.Add("Settings succevol opgeslagen", Severity.Success);
         MudDialog.Close(DialogResult.Ok(SettingService.Settings));

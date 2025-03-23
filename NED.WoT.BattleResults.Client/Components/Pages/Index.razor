@@ -5,6 +5,7 @@
 @using System.Collections.Specialized;
 @using System.Diagnostics;
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
 
 @inject BattleReportService BattleResultService;
 @inject SettingService SettingService;
@@ -29,16 +30,16 @@
         </MudItem>
         <MudItem sm="4" Class="d-flex align-center">
             <MudAutocomplete T="SearchValue"
-            @bind-Value="_search"
-            SearchFunc="SearchAllAsync"
-            ToStringFunc="@(e=> e == null ? null : $"{e.Value} ({e.Type})")"
-            DebounceInterval="500"
-            Placeholder="Zoek op speler naam of clan tag"
-            Adornment="Adornment.Start"
-            AdornmentIcon="@Icons.Material.Filled.Search"
-            IconSize="Size.Medium"
-            Clearable="true"
-            Class="mt-0">
+                             @bind-Value="_search"
+                             SearchFunc="SearchAllAsync"
+                             ToStringFunc="@(e=> e == null ? null : $"{e.Value} ({e.Type})")"
+                             DebounceInterval="500"
+                             Placeholder="Zoek op speler naam of clan tag"
+                             Adornment="Adornment.Start"
+                             AdornmentIcon="@Icons.Material.Filled.Search"
+                             IconSize="Size.Medium"
+                             Clearable="true"
+                             Class="mt-0">
                 <ItemTemplate Context="e">
                     <div class="d-flex justify-space-between align-center">
                         <MudText Typo="Typo.inherit">@e.Value</MudText>
@@ -48,32 +49,30 @@
             </MudAutocomplete>
         </MudItem>
         <MudItem sm="4" Class="d-flex align-center justify-end gap-3">
-            @if (SettingService.Settings.ShowBattleStats)
+
+            @if (_canToggleBattleStats && _showBattleStats)
             {
-                @if (_showDetailedInfo)
-                {
-                    <div style="width: auto">
-                        <MudAutocomplete @bind-Value="_detailedInfoForPlayer"
-                        SearchFunc="SearchPlayerAsync"
-                        DebounceInterval="500"
-                        Placeholder="Zoek speler"
-                        Adornment="Adornment.Start"
-                        AdornmentIcon="@Icons.Material.Filled.AutoGraph"
-                        AdornmentColor="Color.Primary"
-                        IconSize="Size.Medium"
-                        Dense="true"
-                        Margin="Margin.Dense"
-                        Clearable="true"
-                        FullWidth="false"
-                        Variant="Variant.Outlined"
-                        OnAdornmentClick="() => _showDetailedInfo = false"
-                        Class="mt-1"></MudAutocomplete>
-                    </div>
-                }
-                else
-                {
-                    <MudIconButton Icon="@Icons.Material.Filled.AutoGraph" Color="Color.Default" OnClick="() => _showDetailedInfo = true" />
-                }
+                <div style="width: auto">
+                    <MudAutocomplete @bind-Value="_detailedInfoForPlayer"
+                                     SearchFunc="SearchPlayerAsync"
+                                     DebounceInterval="500"
+                                     Placeholder="Zoek speler"
+                                     Adornment="Adornment.Start"
+                                     AdornmentIcon="@Icons.Material.Filled.AutoGraph"
+                                     AdornmentColor="Color.Primary"
+                                     IconSize="Size.Medium"
+                                     Dense="true"
+                                     Margin="Margin.Dense"
+                                     Clearable="true"
+                                     FullWidth="false"
+                                     Variant="Variant.Outlined"
+                                     OnAdornmentClick="() => _showBattleStats = false"
+                                     Class="mt-1"></MudAutocomplete>
+                </div>
+            }
+            else if (_canToggleBattleStats)
+            {
+                <MudIconButton Icon="@Icons.Material.Filled.AutoGraph" Color="Color.Default" OnClick="() => _showBattleStats = true" />
             }
             <MudButtonGroup Color="Color.Primary" Variant="Variant.Filled">
                 <MudButton>@_matchType.ToString()</MudButton>
@@ -109,11 +108,10 @@
         <col style="width: 50px" />
         <col style="width: 50px" />
         <col style="width: 150px;" />
-        <col style="width: 150px;" />
         <col style="width: 100px;" />
         <col style="width: 200px;" />
         <col />
-        @if (_showDetailedInfo)
+        @if (_showBattleStats)
         {
             <col style="width: 0px;" />
             <col style="width: 0px;" />
@@ -125,12 +123,11 @@
     <HeaderContent>
         <MudTh Style="text-align:center; cursor: pointer;" @onclick="CollapseAllBattleReports"><MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowUp" OnClick="CollapseAllBattleReports" Variant="Variant.Text" Size="Size.Small" /></MudTh>
         <MudTh Style="text-align: center">#</MudTh>
-        <MudTh Style="text-align: center"><MudTableSortLabel SortBy="new Func<BattleReport, object>(x=>x.MatchStart)">Start datum</MudTableSortLabel></MudTh>
-        <MudTh Style="text-align: center"><MudTableSortLabel SortBy="new Func<BattleReport, object?>(x=>x.MatchEnd)">Eind datum</MudTableSortLabel></MudTh>
+        <MudTh Style="text-align: center"><MudTableSortLabel SortBy="new Func<BattleReport, object>(x=>x.MatchTimeDisplay)">Datum</MudTableSortLabel></MudTh>
         <MudTh><MudTableSortLabel SortBy="new Func<BattleReport, object?>(x=>x.MatchDuration)">Duratie</MudTableSortLabel></MudTh>
         <MudTh><MudTableSortLabel SortBy="new Func<BattleReport, object?>(x=>x.MapName)">Map</MudTableSortLabel></MudTh>
         <MudTh>VS</MudTh>
-        @if (_showDetailedInfo)
+        @if (_showBattleStats)
         {
             <MudTh Style="text-align: center">Shots</MudTh>
             <MudTh Style="text-align: center">Hits</MudTh>
@@ -140,7 +137,7 @@
         <MudTh Style="text-align: center">#</MudTh>
     </HeaderContent>
     <GroupHeaderTemplate>
-        <MudTh Class="mud-table-cell-custom-group " colspan="7">
+        <MudTh Class="mud-table-cell-custom-group " colspan="6">
             @{
                 var wins = context.Items.Count(x => x.IsWin(SettingService.Settings));
                 var loses = context.Items.Count(x => x.IsLose(SettingService.Settings));
@@ -167,7 +164,7 @@
                 </div>
             </div>
         </MudTh>
-        @if (_showDetailedInfo)
+        @if (_showBattleStats)
         {
             var players = context.Items.SelectMany(x => x.GetOwnTeam(SettingService.Settings)?.Players ?? []).ToList();
 
@@ -225,13 +222,13 @@
     <RowTemplate>
         @if (_loading)
         {
-            <MudTd colspan="9">
+            <MudTd colspan="8">
                 <MudSkeleton Animation="Animation.Wave" />
             </MudTd>
         }
         else if (context.Error != null)
         {
-            <MudTd colspan="9"><MudAlert Severity="Severity.Warning">@context.Error</MudAlert></MudTd>
+            <MudTd colspan="8"><MudAlert Severity="Severity.Warning">@context.Error</MudAlert></MudTd>
         }
         else
         {
@@ -255,11 +252,10 @@
                 <a id="@id" style="position: absolute; top:-80px;" />
             </MudTd>
             <MudTd Style="text-align:center;">@index</MudTd>
-            <MudTd Style="text-align:center;" DataLabel="MatchStart">@context.MatchStart.ToString("dd/MM/yyyy HH:mm")</MudTd>
-            <MudTd Style="text-align:center;" DataLabel="MatchEnd">@context.MatchEnd?.ToString("dd/MM/yyyy HH:mm")</MudTd>
-            <MudTd DataLabel="Duration">@context.MatchDurationDisplay</MudTd>
-            <MudTd DataLabel="MapName">@context.MapName @ownTeam?.Base</MudTd>
-            <MudTd DataLabel="Versus" Class="versus-column">
+            <MudTd Style="text-align:center;" DataLabel="Datum" Class="text-nowrap">@context.MatchTimeDisplay</MudTd>
+            <MudTd DataLabel="Duratie" Class="text-nowrap">@context.MatchDurationDisplay</MudTd>
+            <MudTd DataLabel="Map" Class="text-nowrap">@context.MapName @ownTeam?.Base</MudTd>
+            <MudTd DataLabel="VS" Class="versus-column">
                 <div class="d-flex justify-space-between text-nowrap gap-2 mud-width-full">
                     <div class="versus-info">
                         <span class="team-name text-right @context.Team1.Result.ToString() @(ownTeam?.Number == 1? "highlight" : "")">@context.Team1.Abbreviation</span>
@@ -282,7 +278,7 @@
                 </div>
             </MudTd>
 
-            @if (_showDetailedInfo)
+            @if (_showBattleStats)
             {
                 var players = ownTeam?.Players ?? [];
 
@@ -303,7 +299,7 @@
                 var penRatio = totalHits == 0 ? 0 : (int)(100m / totalHits.GetValueOrDefault() * totalPens.GetValueOrDefault());
                 var blockRatio = totalShotsReceived == 0 ? 0 : (int)(100m / totalShotsReceived.GetValueOrDefault() * totalBlocked.GetValueOrDefault());
 
-                <MudTd Class="text-right">
+                <MudTd DataLabel="Shots" Class="text-right">
                     <div class="d-flex justify-space-between gap-1 text-nowrap">
                         @if (totalShots.HasValue)
                         {
@@ -314,19 +310,19 @@
                         }
                     </div>
                 </MudTd>
-                <MudTd>
+                <MudTd DataLabel="Hits">
                     <div class="d-flex justify-space-between gap-1 text-nowrap">
                         <span>@totalHits</span>
                         <span style="color: @hitRatio.GetHitRatioColor() !important">@hitRatio%</span>
                     </div>
                 </MudTd>
-                <MudTd>
+                <MudTd DataLabel="Pens">
                     <div class="d-flex justify-space-between gap-1 text-nowrap">
                         <span>@totalPens</span>
                         <span style="color: @penRatio.GetPenRatioColor() !important">@penRatio%</span>
                     </div>
                 </MudTd>
-                <MudTd>
+                <MudTd DataLabel="Blocks">
                     <div class="gap-1 text-nowrap" style="display: grid; grid-template-columns: 1fr auto 1fr 40px">
                         <span class="text-right">@totalBlocked</span>
                         <span class="mx-2 grey-text text-darken-1">/</span>
@@ -335,7 +331,7 @@
                     </div>
                 </MudTd>
             }
-            <MudTd Style="text-align:center;">@index</MudTd>
+            <MudTd DataLabel="#" Style="text-align:center;">@index</MudTd>
         }
     </RowTemplate>
     <ChildRowContent>
@@ -345,14 +341,14 @@
             classes += SettingService.Settings.OnlyHighlistOwnMatches ? "highlight-own-result" : string.Empty;
 
             <MudTr>
-                <MudTd colspan="@(_showDetailedInfo ? 12 : 8)" class="@classes" data-report="@context.FileName">
-                    <Details Report="@context" />
+                <MudTd colspan="@(_showBattleStats ? 11 : 7)" class="@classes" data-report="@context.FileName">
+                    <Details Report="@context" ShowBattleStats="_showBattleStats" />
                 </MudTd>
             </MudTr>
         }
     </ChildRowContent>
     <FooterContent>
-        <MudTh colspan="7" Class="mud-background-gray">
+        <MudTh colspan="6" Class="mud-background-gray">
             @{
                 var wins = _filteredReports.Count(x => x.IsWin(SettingService.Settings));
                 var loses = _filteredReports.Count(x => x.IsLose(SettingService.Settings));
@@ -380,7 +376,7 @@
             </div>
         </MudTh>
 
-        @if (_showDetailedInfo)
+        @if (_showBattleStats)
         {
             var players = _filteredReports.SelectMany(x => x.GetOwnTeam(SettingService.Settings)?.Players ?? []);
 
@@ -448,7 +444,6 @@
 </MudTable>
 
 @code {
-
     public enum MatchType
     {
         All,
@@ -457,12 +452,16 @@
         Unknown
     }
 
+    [CascadingParameter]
+    public required Task<AuthenticationState> AuthenticationState { get; set; }
+
     private bool _loading = true;
     private SearchValue? _search;
     private MatchType _matchType = MatchType.Clan;
     private TimeSpan _loadingTime = TimeSpan.Zero;
 
-    private bool _showDetailedInfo = false;
+    private bool _canToggleBattleStats = false;
+    private bool _showBattleStats = false;
     private string _detailedInfoForPlayer = string.Empty;
 
     private IDialogReference? _clanMatchDialog;
@@ -479,6 +478,9 @@
     protected override async Task OnInitializedAsync()
     {
         long timestamp = 0;
+
+        AuthenticationState authResult = await AuthenticationState;
+        _canToggleBattleStats = authResult.User.HasClaim(Claims.CanSeeBattleStats, bool.TrueString);
 
         BattleResultService.LoadingBattleReportsStarted += async (s, e) =>
         {
@@ -543,7 +545,7 @@
             });
         };
 
-        await Task.Run(() => BattleResultService.LoadBattleReports());        
+        await Task.Run(() => BattleResultService.LoadBattleReports());
 
         _loading = false;
     }

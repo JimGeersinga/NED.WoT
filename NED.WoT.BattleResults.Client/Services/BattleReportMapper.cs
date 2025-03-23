@@ -135,7 +135,7 @@ public class BattleReportMapper
             player.DamageBlocked = vehicleData["damageBlockedByArmor"]?.GetValue<int>();
             player.Piercings = vehicleData["piercings"]?.GetValue<int>();
             player.HitsReceived = vehicleData["piercingEnemyHits"]?.GetValue<int>();
-            player.ShotsReceived = vehicleData["directEnemyHits"]?.GetValue<int>();
+            player.ShotsReceived = vehicleData["directHitsReceived"]?.GetValue<int>();
             player.ExperienceEarned = vehicleData["xp"]?.GetValue<int>();
             player.CreditsEarned = vehicleData["credits"]?.GetValue<int>();
             player.Shots = vehicleData["shots"]?.GetValue<int>();

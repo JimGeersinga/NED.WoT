@@ -15,12 +15,12 @@
     <DialogContent>
         @if (Match.HasValue)
         {
-            <MudGrid>
+            <MudGrid Class="pa-3">
                 <MudItem sm="12" >
                     @{
-                        int wins = battles.Count(x => x.IsWin(SettingService.Settings));
-                        int loses = battles.Count(x => x.IsLose(SettingService.Settings));
-                        int draws = battles.Count(x => x.IsDraw());
+                        int wins = _battles.Count(x => x.IsWin(SettingService.Settings));
+                        int loses = _battles.Count(x => x.IsLose(SettingService.Settings));
+                        int draws = _battles.Count(x => x.IsDraw());
                     }
                     <MudText Typo="Typo.subtitle1" Class="text-center">
                         <b class="@Result.Win.ToString()">@wins</b> Gewonnen
@@ -31,9 +31,10 @@
                     </MudText>
                 </MudItem>
                 <MudItem sm="6">
-                    <MudTable Items="@GetEnemyPlayers()" Hover="true" Breakpoint="Breakpoint.Sm" FixedHeader="true" Dense="true" Bordered="false">
+                    <MudTable Items="@_enemyPlayers" Hover="true" Breakpoint="Breakpoint.Sm" FixedHeader="true" Dense="true" Bordered="true"> 
                         <HeaderContent>
-                            <MudTh>
+                            <MudTh Style="text-align: center">#</MudTh>
+                            <MudTh Style="text-align: center">
                                 <MudTableSortLabel InitialDirection="SortDirection.Descending" SortBy="new Func<IGrouping<string?, Player>, object>(x => x.Count())">Battles</MudTableSortLabel>
                             </MudTh>
                             <MudTh>
@@ -43,9 +44,13 @@
                                 Tanks
                             </MudTh>
                         </HeaderContent>
-                        <RowTemplate>                           
-                            <MudTd DataLabel="Battles">@context.Count()</MudTd>
-                            <MudTd DataLabel="Speler">@context.Key</MudTd>
+                        <RowTemplate>
+                            @{
+                                var index = _enemyPlayers.FindIndex(x => x.Key == context.Key) + 1;
+                            }
+                            <MudTd DataLabel="#" Style="text-align:center;vertical-align: text-top;">@index</MudTd>
+                            <MudTd DataLabel="Battles" Style="text-align: center; vertical-align: text-top;">@context.Count()</MudTd>
+                            <MudTd DataLabel="Speler" Style="vertical-align: text-top;">@context.Key</MudTd>
                             <MudTd DataLabel="Tanks">
                                 @foreach(var vehicle in context.GroupBy(x => x.Vehicle).OrderByDescending(x => x.Count()))
                                 {
@@ -59,16 +64,16 @@
                     </MudTable>
                 </MudItem>
                 <MudItem sm="6">
-                    <MudTable Items="@battles" Hover="true" Breakpoint="Breakpoint.Sm" FixedHeader="true" Dense="true" Bordered="false">
+                    <MudTable Items="@_battles" Hover="true" Breakpoint="Breakpoint.Sm" FixedHeader="true" Dense="true" Bordered="true">
                         <HeaderContent>
                             <MudTh>
-                                <MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<BattleReport, object>(x => x.MatchStart)">Battle</MudTableSortLabel>
-                            </MudTh>
-                            <MudTh>
-                                <MudTableSortLabel SortBy="new Func<BattleReport, object>(x => x.MapName ?? string.Empty)">Map</MudTableSortLabel>
+                                <MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<BattleReport, object>(x => x.MatchTimeDisplay)">Datum</MudTableSortLabel>
                             </MudTh>
                             <MudTh>
                                 <MudTableSortLabel SortBy="new Func<BattleReport, object?>(x => x.MatchDuration)">Duratie</MudTableSortLabel>
+                            </MudTh>
+                            <MudTh>
+                                <MudTableSortLabel SortBy="new Func<BattleReport, object>(x => x.MapName ?? string.Empty)">Map</MudTableSortLabel>
                             </MudTh>
                             <MudTh>
                                 Winnaar
@@ -78,9 +83,9 @@
                             @{
                                 Team? ownTeam = context.GetOwnTeam(SettingService.Settings);
                             }
-                            <MudTd DataLabel="Datum">@context.MatchStart.ToString("dd/MM/yyyy HH:mm")</MudTd>
-                            <MudTd DataLabel="Map">@context.MapName @ownTeam?.Base</MudTd>
+                            <MudTd DataLabel="Datum">@context.MatchTimeDisplay</MudTd>
                             <MudTd DataLabel="Duratie">@context.MatchDurationDisplay</MudTd>
+                            <MudTd DataLabel="Map">@context.MapName @ownTeam?.Base</MudTd>
                             <MudTd DataLabel="Winnaar" class="@ownTeam?.Result.ToString()">
                                 @(context.Team1.IsWinner == true ? context.Team1.Abbreviation : context.Team2.Abbreviation)
                             </MudTd>
@@ -102,32 +107,31 @@
     [Parameter]
     public (string, string)? Match { get; set; }
 
-    private List<BattleReport> battles = new();
+    private List<BattleReport> _battles = [];
+    private List<IGrouping<string?, Player>> _enemyPlayers = [];
 
     protected override void OnParametersSet()
     {
         if (Match is not null)
         {
-            battles = BattleReportService.BattleReports
-            .Where(x =>
-                (x.Value.Team1.Abbreviation?.Equals(Match.Value.Item1, StringComparison.OrdinalIgnoreCase) ?? false) &&
-                (x.Value.Team2.Abbreviation?.Equals(Match.Value.Item2, StringComparison.OrdinalIgnoreCase) ?? false)
-                ||
-                (x.Value.Team1.Abbreviation?.Equals(Match.Value.Item2, StringComparison.OrdinalIgnoreCase) ?? false) &&
-                (x.Value.Team2.Abbreviation?.Equals(Match.Value.Item1, StringComparison.OrdinalIgnoreCase) ?? false)
-            )
-            .Select(x => x.Value)
-            .ToList();
-        }
-    }
+            _battles = BattleReportService.BattleReports
+                .Where(x =>
+                    (x.Value.Team1.Abbreviation?.Equals(Match.Value.Item1, StringComparison.OrdinalIgnoreCase) ?? false) &&
+                    (x.Value.Team2.Abbreviation?.Equals(Match.Value.Item2, StringComparison.OrdinalIgnoreCase) ?? false)
+                    ||
+                    (x.Value.Team1.Abbreviation?.Equals(Match.Value.Item2, StringComparison.OrdinalIgnoreCase) ?? false) &&
+                    (x.Value.Team2.Abbreviation?.Equals(Match.Value.Item1, StringComparison.OrdinalIgnoreCase) ?? false)
+                )
+                .Select(x => x.Value)
+                .ToList();
 
-    private List<IGrouping<string?, Player>> GetEnemyPlayers()
-    {
-        return battles
-            .Select(x => x.Team1.IsOwnTeam(SettingService.Settings) ? x.Team2 : x.Team1)
-            .SelectMany(x => x.Players)
-            .GroupBy(x => x.Name)
-            .ToList();
+            _enemyPlayers = _battles
+                .Select(x => x.Team1.IsOwnTeam(SettingService.Settings) ? x.Team2 : x.Team1)
+                .SelectMany(x => x.Players)
+                .GroupBy(x => x.Name)
+                .OrderByDescending(x =>x.Count())
+                .ToList();
+        }
     }
 
     void Cancel() => MudDialog.Close(DialogResult.Ok(true));

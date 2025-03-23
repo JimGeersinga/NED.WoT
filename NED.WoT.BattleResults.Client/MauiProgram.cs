@@ -30,6 +30,7 @@ public static class MauiProgram
 
         builder.Services.AddMudServices();
         builder.Services.AddAuthorizationCore();
+        builder.Services.AddCascadingAuthenticationState();
         builder.Services.AddSingleton<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
         builder.Services.AddScoped<BattleReportService>();
         builder.Services.AddScoped<UpdateCheckService>();

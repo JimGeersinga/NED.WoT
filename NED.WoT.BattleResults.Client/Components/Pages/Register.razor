@@ -2,19 +2,29 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @inject NavigationManager NavigationManager
 
-<MudGrid Justify="Justify.Center" Class="my-7 text-center">
-    <MudItem>
-        <MudText Typo="Typo.h3">Registeren</MudText>
-        <MudText Typo="Typo.subtitle1" Class="my-7">Vraag aan WoT management of ze je toegang geven tot deze app.</MudText>
-    </MudItem>
-</MudGrid>
+@if (_isNotAuthenticated)
+{
+    <MudContainer Style="display: flex; justify-content: center; align-items: center; height: calc(100vh - 128px);">
+        <MudGrid  Justify="Justify.Center" Class="my-auto text-center">
+            <MudItem>
+                <MudText Typo="Typo.h3">Geen toegang!</MudText>
+                <MudText Typo="Typo.subtitle1" Class="my-10">Vraag toegang aan via WoT management van <MudLink Href="https://discord.gg/zKd9aSJc" Color="Color.Primary">NED</MudLink>.</MudText>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="my-5" OnClick="Reload">Opniew proberen</MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudContainer>
+}
 
 @code {
     [CascadingParameter]
     private Task<AuthenticationState>? authenticationState { get; set; }
 
+    private bool _isNotAuthenticated = false;
+
     protected override async Task OnInitializedAsync()
     {
+        _isNotAuthenticated = false;
+
         if (authenticationState is not null)
         {
             var authState = await authenticationState;
@@ -22,6 +32,15 @@
             {
                 NavigationManager.NavigateTo("/");
             }
+            else
+            {
+                _isNotAuthenticated = true;
+            }
         }
+    }
+
+    private void Reload()
+    {
+        NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
     }
 }

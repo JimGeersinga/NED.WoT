@@ -25,6 +25,4 @@ public class Settings
     public bool AutoClanLookup { get; set; }
 
     public bool IsDarkMode { get; set; }
-
-    public bool ShowBattleStats { get; set; }
 }

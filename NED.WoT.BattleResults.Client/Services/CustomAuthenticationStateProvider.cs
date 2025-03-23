@@ -20,24 +20,20 @@ public class CustomAuthenticationStateProvider(IConfiguration Configuration) : A
 
     public override async Task<AuthenticationState> GetAuthenticationStateAsync()
     {
-        if(_authenticationState?.User?.Identity is not null && _authenticationState.User.Identity.IsAuthenticated)
-        {
-            return _authenticationState;
-        }
-
         AuthResult? authResult = await CheckAuthenticationAsync();
         ClaimsIdentity identity = authResult is null || !authResult.CanLogin
             ? new ClaimsIdentity()
-            : new ClaimsIdentity([new Claim(ClaimTypes.Name, "user")], "custom");
+            : new ClaimsIdentity([
+                new Claim(ClaimTypes.Name, Environment.UserName),
+            ], "custom");
+
+        if (authResult?.CanSeeBattleStats == true)
+        {
+            identity.AddClaim(new Claim(Claims.CanSeeBattleStats, bool.TrueString));
+        }
 
         _authenticationState = new AuthenticationState(new ClaimsPrincipal(identity));
         return _authenticationState;
-    }
-
-    public void RetryAuthentication()
-    {
-        _authenticationState = null;
-        NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
     }
 
     public async Task<AuthResult?> CheckAuthenticationAsync()

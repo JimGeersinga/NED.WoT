@@ -21,6 +21,9 @@ public class BattleReport
             return MatchDuration.HasValue ? MatchStart.AddSeconds(MatchDuration.Value) : null;
         }
     }
+
+    public string MatchTimeDisplay => $"{MatchStart:dd/MM/yyyy HH:mm} - {MatchEnd?.ToString("HH:mm")}";
+
     public int? MatchDuration { get; set; }
     public MarkupString MatchDurationDisplay
     {
