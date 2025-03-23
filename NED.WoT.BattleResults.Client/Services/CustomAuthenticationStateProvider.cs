@@ -16,10 +16,27 @@ public class CustomAuthenticationStateProvider(IConfiguration Configuration) : A
     {
         PropertyNameCaseInsensitive = true
     };
-    private AuthenticationState? _authenticationState;
+    private static AuthenticationState? _authenticationState;
+
+    public static void ResetAuthenticationState()
+    {
+        _authenticationState = null;
+    }
 
     public override async Task<AuthenticationState> GetAuthenticationStateAsync()
     {
+        DateTime lastAuthCheck = Preferences.Default.Get("LastAuthCheck", DateTime.MinValue);
+        if (lastAuthCheck.Date < DateTime.Now.Date)
+        {
+            Preferences.Default.Set("LastAuthCheck", DateTime.Now);
+            _authenticationState = null;
+        }
+
+        if (_authenticationState is not null || DateTime.Now - lastAuthCheck < TimeSpan.FromMinutes(5))
+        {
+            return _authenticationState ?? new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+        }
+
         AuthResult? authResult = await CheckAuthenticationAsync();
         ClaimsIdentity identity = authResult is null || !authResult.CanLogin
             ? new ClaimsIdentity()

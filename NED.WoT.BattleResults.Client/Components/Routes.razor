@@ -1,4 +1,6 @@
 ﻿@using Microsoft.AspNetCore.Components.Authorization
+@inject NavigationManager NavigationManager
+
 <CascadingAuthenticationState>
     <Router AppAssembly="@typeof(MauiProgram).Assembly">
         <Found Context="routeData">
@@ -10,7 +12,7 @@
                     <NotAuthorized>
                         <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)">
                             <NotAuthorized>
-                                <RedirectToRegister />
+                                @NavigationManager.NavigateTo($"unauthorized");
                             </NotAuthorized>
                         </AuthorizeRouteView>
                     </NotAuthorized>
