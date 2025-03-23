@@ -362,3 +362,5 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /NED.WoT.BattleResults.Client/cert.asc
+/NED.WoT.BattleResults.Client/appsettings.development.json
+/NED.WoT.BattleResults.Client/appsettings.development.json

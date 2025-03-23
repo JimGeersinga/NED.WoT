@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 using MudBlazor.Services;
 
@@ -15,6 +16,10 @@ public static class MauiProgram
             .UseMauiApp<App>()
             .ConfigureFonts(fonts => fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular"));
 
+        builder.Configuration
+            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            .AddJsonFile("appsettings.development.json", optional: true, reloadOnChange: true);
+
         builder.Services.AddMauiBlazorWebView();
 
 #if DEBUG
@@ -23,6 +28,7 @@ public static class MauiProgram
 #endif
 
         builder.Services.AddMudServices();
+        builder.Services.AddScoped<AuthenticationService>();
         builder.Services.AddScoped<BattleReportService>();
         builder.Services.AddScoped<UpdateCheckService>();
         builder.Services.AddSingleton<SettingService>();

@@ -1,12 +1,13 @@
 ﻿@page "/"
 @using System.Collections.ObjectModel;
 @using System.Collections.Specialized;
-@using System.Diagnostics
+@using System.Diagnostics;
 
 @inject BattleReportService BattleResultService;
 @inject SettingService SettingService;
 @inject IJSRuntime JSRuntime;
-@inject IDialogService DialogService
+@inject IDialogService DialogService;
+@inject AuthenticationService AuthenticationService;
 
 <MudToolBar Style="background-color:var(--mud-palette-surface)">
     <MudGrid Justify="Justify.SpaceBetween">
@@ -541,6 +542,9 @@
         };
 
         await Task.Run(() => BattleResultService.LoadBattleReports());
+
+        var authResult = await AuthenticationService.CheckAuthenticationAsync();
+        
 
         _loading = false;
     }

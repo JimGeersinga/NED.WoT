@@ -39,6 +39,9 @@ jobs:
     - name: Add Cert to Store
       run: certutil -user -p ${{ secrets.WINDOWS_PFX_PASSWORD }} -Silent -importpfx cert.pfx NoRoot
 
+    - name: Replace API URL in config file
+      run: sed -i "s|{API_URL}|${API_URL}|g" NED.WoT.BattleResults.Client/appsettings.json
+
     - name: Build
       run:  dotnet publish NED.WoT.BattleResults.Client\NED.WoT.BattleResults.Client.csproj -c Release -f:net9.0-windows10.0.19041.0 /p:GenerateAppxPackageOnBuild=true /p:AppxPackageSigningEnabled=true /p:PackageCertificateThumbprint=${{ secrets.WINDOWS_PFX_THUMBPRINT }}
 
