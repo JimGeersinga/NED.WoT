@@ -34,7 +34,7 @@
                              SearchFunc="SearchAllAsync"
                              ToStringFunc="@(e=> e == null ? null : $"{e.Value} ({e.Type})")"
                              DebounceInterval="500"
-                             Placeholder="Zoek op speler naam of clan tag"
+                             Placeholder="Zoek op spelernaam of clan tag"
                              Adornment="Adornment.Start"
                              AdornmentIcon="@Icons.Material.Filled.Search"
                              IconSize="Size.Medium"
@@ -56,7 +56,7 @@
                     <MudAutocomplete @bind-Value="_detailedInfoForPlayer"
                                      SearchFunc="SearchPlayerAsync"
                                      DebounceInterval="500"
-                                     Placeholder="Zoek speler"
+                                     Placeholder="Filter speler stats"
                                      Adornment="Adornment.Start"
                                      AdornmentIcon="@Icons.Material.Filled.AutoGraph"
                                      AdornmentColor="Color.Primary"
@@ -129,10 +129,10 @@
         <MudTh>VS</MudTh>
         @if (_showBattleStats)
         {
-            <MudTh Style="text-align: center">Shots</MudTh>
-            <MudTh Style="text-align: center">Hits</MudTh>
-            <MudTh Style="text-align: center">Pens</MudTh>
-            <MudTh Style="text-align: center">Blocks</MudTh>
+            <MudTh Style="text-align: center">Geschoten</MudTh>
+            <MudTh Style="text-align: center">Geraakt</MudTh>
+            <MudTh Style="text-align: center">Gepenetreerd</MudTh>
+            <MudTh Style="text-align: center">Geblokt</MudTh>
         }
         <MudTh Style="text-align: center">#</MudTh>
     </HeaderContent>
@@ -446,10 +446,10 @@
 @code {
     public enum MatchType
     {
-        All,
-        Normal,
+        Alles,
+        Normaal,
         Clan,
-        Unknown
+        Onbekend
     }
 
     [CascadingParameter]
@@ -564,9 +564,9 @@
 
         if (_matchType is MatchType.Clan && isNormalMatch)
             show = false;
-        else if (_matchType is MatchType.Normal && !isNormalMatch)
+        else if (_matchType is MatchType.Normaal && !isNormalMatch)
             show = false;
-        else if (_matchType is MatchType.Unknown && !report.IsUnkown())
+        else if (_matchType is MatchType.Onbekend && !report.IsUnkown())
             show = false;
         else if (string.IsNullOrWhiteSpace(_search?.Value))
             show = true;

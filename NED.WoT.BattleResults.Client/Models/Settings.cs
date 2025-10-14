@@ -5,8 +5,8 @@ namespace NED.WoT.BattleResults.Client.Models;
 
 public class Settings
 {
-    [Required(ErrorMessage = "WoT replay path is verplicht!")]
-    [DirectoryExists(ErrorMessage = "WoT replay path is niet geldig!")]
+    [Required(ErrorMessage = "WoT replay pad is verplicht!")]
+    [DirectoryExists(ErrorMessage = "WoT replay pad is niet geldig!")]
     public string? WotReplayDirectory { get; set; }
 
     [Required(ErrorMessage = "Datum is verplicht!")]
