@@ -18,9 +18,9 @@
             <MudGrid Class="pa-3">
                 <MudItem sm="12" >
                     @{
-                        int wins = _battles.Count(x => x.IsWin(SettingService.Settings));
-                        int loses = _battles.Count(x => x.IsLose(SettingService.Settings));
-                        int draws = _battles.Count(x => x.IsDraw());
+                        int wins = _battles.Count(x => x.Result is Result.Win);
+                        int loses = _battles.Count(x => x.Result is Result.Lose);
+                        int draws = _battles.Count(x => x.Result is Result.Draw);
                     }
                     <MudText Typo="Typo.subtitle1" Class="text-center">
                         <b class="@Result.Win.ToString()">@wins</b> Gewonnen
@@ -81,7 +81,7 @@
                         </HeaderContent>
                         <RowTemplate>
                             @{
-                                Team? ownTeam = context.GetOwnTeam(SettingService.Settings);
+                                Team? ownTeam = context.OwnTeam;
                             }
                             <MudTd DataLabel="Datum">@context.MatchTimeDisplay</MudTd>
                             <MudTd DataLabel="Duratie">@context.MatchDurationDisplay</MudTd>
@@ -126,8 +126,7 @@
                 .ToList();
 
             _enemyPlayers = _battles
-                .Select(x => x.Team1.IsOwnTeam(SettingService.Settings) ? x.Team2 : x.Team1)
-                .SelectMany(x => x.Players)
+                .SelectMany(x => x.OwnTeam!.Players)
                 .GroupBy(x => x.Name)
                 .OrderByDescending(x =>x.Count())
                 .ToList();

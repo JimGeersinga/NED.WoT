@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="NED.WoT.BattleResults.Client/NED.WoT.BattleResults.Client.csproj">
+    <Deploy Solution="Debug|*" />
+  </Project>
+</Solution>

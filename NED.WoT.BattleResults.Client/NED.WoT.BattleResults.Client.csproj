@@ -12,7 +12,7 @@
     <Nullable>enable</Nullable>
 
     <!-- Display name -->
-    <ApplicationTitle>[NED] WoT Gevecht Statistieken</ApplicationTitle>
+    <ApplicationTitle>[NED] WoT gevechtsstatistieken</ApplicationTitle>
 
     <!-- App Identifier -->
     <ApplicationId>com.insanittyx.ned.wot.battleresults.client</ApplicationId>

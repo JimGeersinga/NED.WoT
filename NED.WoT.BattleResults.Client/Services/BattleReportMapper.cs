@@ -1,8 +1,8 @@
-﻿using System.Globalization;
+﻿using NED.WoT.BattleResults.Client.Models;
+
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text.Json.Nodes;
-
-using NED.WoT.BattleResults.Client.Models;
 
 namespace NED.WoT.BattleResults.Client.Services;
 
@@ -57,6 +57,28 @@ public class BattleReportMapper
 
         game.Team1.Result = GetResult(game.Team1.IsWinner, game.Team2.IsWinner);
         game.Team2.Result = GetResult(game.Team2.IsWinner, game.Team1.IsWinner);
+
+        game.Team1.IsOwnTeam = game.Team1.Abbreviation?.ToLower() == settings.ClanAbbreviation?.ToLower() || game.Team1.Players.Any(x => x.Name?.ToLower() == settings.PlayerName?.ToLower());
+        game.Team2.IsOwnTeam = game.Team2.Abbreviation?.ToLower() == settings.ClanAbbreviation?.ToLower() || game.Team2.Players.Any(x => x.Name?.ToLower() == settings.PlayerName?.ToLower());
+
+        game.OwnTeam = game.Team1.IsOwnTeam ? game.Team1 : game.Team2.IsOwnTeam ? game.Team2 : null;
+
+        if (game.OwnTeam?.IsWinner == true)
+        {
+            game.Result = Result.Win;
+        }
+        else if (game.Team1.IsWinner == false && game.Team2.IsWinner == false)
+        {
+            game.Result = Result.Draw;
+        }
+        else if (game.OwnTeam?.IsWinner == false)
+        {
+            game.Result = Result.Lose;
+        }
+        else
+        {
+            game.Result = Result.Unknown;
+        }
 
         int playerCount = Math.Max(game.Team1.Players.Count, game.Team2.Players.Count);
         EnrichAndSortPlayers(game.Team1, playerCount);
@@ -169,6 +191,6 @@ public class BattleReportMapper
             return Result.Draw;
         }
 
-        return Result.Unkown;
+        return Result.Unknown;
     }
 }

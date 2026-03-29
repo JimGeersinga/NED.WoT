@@ -58,8 +58,8 @@
             @{
                 Team? team = context.Key as Team;
                 string classes = $"d-inline {team?.Result} ";
-                classes += Report.GetOwnTeam(SettingService.Settings)?.Number == team?.Number ? "highlight" : string.Empty;
-                bool isOwnTeam = team?.IsOwnTeam(SettingService.Settings) ?? false;
+                classes += Report.OwnTeam?.Number == team?.Number ? "highlight" : string.Empty;
+                bool isOwnTeam = team?.IsOwnTeam ?? false;
             }
             <MudTh colspan="14" Class="mud-table-cell-custom-group" data-ownteam="@isOwnTeam.ToString()">
                 <MudText Typo="Typo.subtitle1" Class="@classes"><b>@(team?.Abbreviation ?? "?")</b></MudText>

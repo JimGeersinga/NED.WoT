@@ -24,6 +24,16 @@ public class CustomAuthenticationStateProvider() : AuthenticationStateProvider
 
     public override async Task<AuthenticationState> GetAuthenticationStateAsync()
     {
+#if DEBUG
+        ClaimsIdentity debugIdentity = new ClaimsIdentity([
+                new Claim(ClaimTypes.Name, Environment.UserName),
+            ], "custom");
+        debugIdentity.AddClaim(new Claim(Claims.CanSeeBattleStats, bool.TrueString));
+
+        _authenticationState = new AuthenticationState(new ClaimsPrincipal(debugIdentity));
+        return _authenticationState;
+
+#else
         DateTime lastAuthCheck = Preferences.Default.Get("LastAuthCheck", DateTime.MinValue);
         if (lastAuthCheck.Date < DateTime.Now.Date)
         {
@@ -50,6 +60,7 @@ public class CustomAuthenticationStateProvider() : AuthenticationStateProvider
 
         _authenticationState = new AuthenticationState(new ClaimsPrincipal(identity));
         return _authenticationState;
+#endif
     }
 
     public async Task<AuthResult?> CheckAuthenticationAsync()

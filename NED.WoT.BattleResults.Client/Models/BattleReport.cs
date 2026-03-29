@@ -6,7 +6,7 @@ public enum Result
     Win,
     Lose,
     Draw,
-    Unkown
+    Unknown
 }
 public class BattleReport
 {
@@ -53,6 +53,9 @@ public class BattleReport
     }
     public Team Team1 { get; set; } = new Team();
     public Team Team2 { get; set; } = new Team();
+    public Team? OwnTeam { get; set; }
+
+    public Result Result { get; set; }
     public int? FinishReason { get; set; }
     public string? Error { get; internal set; }
     public bool ShowDetails { get; set; }
@@ -75,54 +78,6 @@ public class BattleReport
             };
         }
     }
-
-    public Team? GetOwnTeam(Settings settings)
-    {
-        return Team1.IsOwnTeam(settings) ? Team1 : Team2.IsOwnTeam(settings) ? Team2 : null;
-    }
-
-    public bool IsDraw()
-    {
-        return Team1.IsWinner == false && Team2.IsWinner == false;
-    }
-
-    public bool IsUnkown()
-    {
-        return Team1.IsWinner == null && Team2.IsWinner == null;
-    }
-
-    public bool IsWin(Settings settings)
-    {
-        if (Team1.IsOwnTeam(settings))
-        {
-            return Team1.IsWinner == true;
-        }
-        else if (Team2.IsOwnTeam(settings))
-        {
-            return Team2.IsWinner == true;
-        }
-
-        return false;
-    }
-
-    public bool IsLose(Settings settings)
-    {
-        if (IsDraw())
-        {
-            return false;
-        }
-
-        if (Team1.IsOwnTeam(settings))
-        {
-            return Team1.IsWinner == false;
-        }
-        else if (Team2.IsOwnTeam(settings))
-        {
-            return Team2.IsWinner == false;
-        }
-
-        return false;
-    }
 }
 
 public class Team
@@ -132,6 +87,9 @@ public class Team
     public string? Abbreviation { get; set; }
     public int? Health { get; set; }
     public bool? IsWinner { get; set; }
+
+    public bool IsOwnTeam { get; set; }
+
     public Result Result { get; set; }
 
     public int HitsReceived => Players.Sum(x => x.HitsReceived ?? 0);
@@ -159,14 +117,9 @@ public class Team
 
     public List<Player> Players { get; set; } = [];
 
-    public bool IsOwnTeam(Settings settings)
-    {
-        return Abbreviation?.ToLower() == settings.ClanAbbreviation?.ToLower() || Players.Any(x => x.Name?.ToLower() == settings.PlayerName?.ToLower());
-    }
-
     public string GetResult(string? map)
     {
-        List<string?> lines = Players.Where(x => x.Name != null).OrderByDescending(x => x.ExperienceEarned).Select(x => x.Name).ToList();
+        List<string?> lines = [.. Players.Where(x => x.Name != null).OrderByDescending(x => x.ExperienceEarned).Select(x => x.Name)];
         lines.Insert(0, $"{map} {(Number == 1 ? "I" : "II")}");
         lines.Insert(1, ResultDisplay);
 
