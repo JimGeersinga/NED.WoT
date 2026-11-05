@@ -46,7 +46,7 @@
 
   <ItemGroup>
     <!-- App Icon -->
-    <MauiIcon Include="Resources\AppIcon\appiconfg.svg" />
+    <MauiIcon Include="Resources\AppIcon\appicon.svg" />
 
     <!-- Splash Screen -->
     <MauiSplashScreen Include="wwwroot\img\gevechtslog-hero.svg" Link="Resources\Splash\gevechtslog_hero.svg">
@@ -59,10 +59,6 @@
 
     <!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
     <MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Remove="wwwroot\logo.png" />
   </ItemGroup>
 
   <ItemGroup>

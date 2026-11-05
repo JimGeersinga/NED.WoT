@@ -29,7 +29,7 @@ All paths are under `NED.WoT.BattleResults.Client/`.
 
 CSS-only tokens (`--wot-*` in `wwwroot/css/tokens.css`, the only CSS file with raw colour values): `surface-dialog #1c2127`, `surface-input #222830`, `skipped #8a939c`,
 `primary-soft rgba(255,136,0,.14)`, `steel-highlight rgba(255,255,255,.09)`, `bronze-edge #6e5a42`, `chip-bg rgba(176,145,106,.06)`,
-`appbar-grain`/`-top`/`-mid`/`-bottom` (app bar gradient), `dialog-bar-top #252b33` (top of the dialog title bar), `rivet-hi`/`-mid`/`-shadow`, `shadow-menu`, `shadow-dialog`, `error-boundary`, and `boot-bg` / `boot-primary` (the splash in `index.html`, drawn before the theme sets `--mud-palette-*`).
+`appbar-grain`/`-top`/`-mid`/`-bottom` (app bar gradient), `dialog-bar-top #252b33` (top of the dialog title bar), `rivet-hi`/`-mid`/`-shadow`, `shadow-menu`, `shadow-dialog`, `error-boundary`, and `boot-bg` / `boot-primary` / `boot-text` / `boot-text-secondary` / `boot-lines` / `boot-track` / `boot-glow` / `boot-grid` (the splash in `index.html` and `Splash.razor`, drawn before the theme sets `--mud-palette-*`).
 
 ## Type scale
 Heading family `"Barlow Condensed", Rajdhani, "Arial Narrow", sans-serif`; text family `Inter, system-ui, sans-serif`.
@@ -115,8 +115,8 @@ Values come from the design canvas's `wot.css`; `mud.css`, `wot.css` and the com
 - **Filter dropdowns**, **folder carousel**, **reorderable folder list**, **role chip and account menu**, **steel scrollbar**, **snackbar** (outlined dense `Alert` on `surface-dialog`, bottom left, auto-dismiss, lead word · sentence), **progress bar** (4px, hard 2px radius, Primary fill on a `dark` track), **empty state** (48px Outlined icon in text-secondary, H5, one sentence, one action) and the **WTR level icon**. Each is specified by the issue that builds it, taken from the canvas.
 
 ## Logo usage
-- The app mark is `gevechtslog-mark.svg` (the WoT HQ plate with three rising bars on the tank's hull in place of "HQ", in a gunsight; created by #3). It sits in the app bar at 36px with a 10px gap to the wordmark, on the splash screen at 160px, and as the window, taskbar and favicon icon. Minimum size 16px; below 32px the bars fade and it reads as a tank in a sight, which is intended.
-- There is no hero variant and no landing page.
+- The app mark is `gevechtslog-mark.svg` (the WoT HQ plate with three rising bars on the tank's hull in place of "HQ", in a gunsight; created by #3). It sits in the app bar at 36px with a 10px gap to the wordmark, and as the window, taskbar and favicon icon. Minimum size 16px; below 32px the bars fade and it reads as a tank in a sight, which is intended.
+- The splash screen uses `gevechtslog-hero.svg` (the open reticle without the plate) at 220px, on the HUD ground of the "Splashscherm" board. There is no landing page.
 - Clear space around the mark is half the mark's width.
 - Never recolour, outline, crop, glow or animate the logo. Never put it on orange or on photos.
 - A clan's own Wargaming emblem is never the app logo. The clan chip shows the tag only.
