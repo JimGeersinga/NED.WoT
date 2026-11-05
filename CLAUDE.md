@@ -116,16 +116,17 @@ Depends on: #N
   with `Closes #<n>`, followed by how each acceptance criterion was checked.
 - Before pushing: the build below with zero errors, and the screenshots the
   issue names attached to the PR (see "Screenshots"). CI
-  (`.github/workflows/dotnet-desktop.yml`) must pass.
+  (`.github/workflows/ci.yml`) must pass.
 - **Every PR raises the app version.** Bump `Identity Version` in
   `NED.WoT.BattleResults.Client/Platforms/Windows/Package.appxmanifest`:
   `type:story` → minor (`2.2.1.0` → `2.3.0.0`), anything else → patch
   (`2.3.0.0` → `2.3.1.0`); leave the revision (4th number) alone, the packaging build may raise it
   (`AppxAutoIncrementPackageRevision`). Job `version` in
-  `.github/workflows/dotnet-desktop.yml` fails the PR unless the version is
+  `.github/workflows/ci.yml` fails the PR unless the version is
   higher than on `master`, so each release installs as an update.
-- **A release is run by hand**: Actions → "Run workflow" on `master`. Merging
-  to `master` does not deploy.
+- **A release is run by hand**: Actions → `Release` → "Run workflow" on
+  `master` (`.github/workflows/release.yml`; the job is skipped on any other
+  branch). Merging to `master` does not deploy.
 - **The owner merges.** Never merge a PR yourself. The next issue starts only
   after the previous issue's PR is merged into `master`, so nothing is stacked.
 - Review changes go on the same branch as new commits; don't force-push over
@@ -199,6 +200,6 @@ dotnet build NED.WoT.BattleResults.Client/NED.WoT.BattleResults.Client.csproj -f
 dotnet run --project NED.WoT.BattleResults.Client -f net10.0-windows10.0.19041.0     # Debug build, for screenshots
 ```
 
-CI publishes with
+The release workflow publishes with
 `dotnet publish NED.WoT.BattleResults.Client\NED.WoT.BattleResults.Client.csproj -c Release -f:net10.0-windows10.0.19041.0 …`
-(`.github/workflows/dotnet-desktop.yml`).
+(`.github/workflows/release.yml`). CI (`ci.yml`) only builds.

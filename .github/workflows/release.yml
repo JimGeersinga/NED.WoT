@@ -1,0 +1,51 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+concurrency: release
+
+env:
+  AZURE_WEBAPP_NAME: ned-wot
+  DOTNET_VERSION: 10.0.x
+
+jobs:
+  release:
+    if: github.ref == 'refs/heads/master'
+    runs-on: windows-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Install .NET Core
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Install MAUI workload
+      run: dotnet workload install maui-windows
+
+    - name: Decrypt PFX File
+      run: |
+        echo "${{ secrets.WINDOWS_PFX_FILE}}" > cert.pfx.asc
+        certutil -decode cert.pfx.asc cert.pfx
+
+    - name: Add Cert to Store
+      run: certutil -user -p ${{ secrets.WINDOWS_PFX_PASSWORD }} -Silent -importpfx cert.pfx NoRoot
+
+    - name: Build
+      run: dotnet publish NED.WoT.BattleResults.Client\NED.WoT.BattleResults.Client.csproj -c Release -f:net10.0-windows10.0.19041.0 /p:GenerateAppxPackageOnBuild=true /p:AppxPackageSigningEnabled=true /p:PackageCertificateThumbprint=${{ secrets.WINDOWS_PFX_THUMBPRINT }}
+
+    - name: Update .appinstaller file
+      run: |
+        sed -i 's|http://schemas.microsoft.com/appx/appinstaller/2017/2|http://schemas.microsoft.com/appx/appinstaller/2021|' 'NED.WoT.BattleResults.Client/bin/Release/net10.0-windows10.0.19041.0/win10-x64/AppPackages/NED.WoT.BattleResults.Client_x64.appinstaller'
+        sed -i 's|HoursBetweenUpdateChecks="0"|HoursBetweenUpdateChecks="0" ShowPrompt="true"|' 'NED.WoT.BattleResults.Client/bin/Release/net10.0-windows10.0.19041.0/win10-x64/AppPackages/NED.WoT.BattleResults.Client_x64.appinstaller'
+
+    - name: Deploy to Azure webapp
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: ${{ env.AZURE_WEBAPP_NAME }}
+        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+        package: 'NED.WoT.BattleResults.Client/bin/Release/net10.0-windows10.0.19041.0/win10-x64/AppPackages'
