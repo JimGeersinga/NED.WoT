@@ -69,7 +69,32 @@ public static class MapNameResolver
         {"Airfield", "Airfield"},
         {"Highway", "Highway"},
         {"Safe Haven", "Safe Haven"},
-        {"Empire's Border", "Empire's Border"}
+        {"Empire's Border", "Empire's Border"},
+        {"Arzagir 4.04", "Arzagir 4.04"},
+        {"Brawl School", "Brawl School"},
+        {"Dreamland", "Dreamland"},
+        {"Ensk Region", "Ensk Region"},
+        {"Fallenstadt", "Fallenstadt"},
+        {"Fata Morgana", "Fata Morgana"},
+        {"Firnulfir", "Firnulfir"},
+        {"Glacier: Night", "Glacier: Night"},
+        {"Klondike", "Klondike"},
+        {"Kraftwerk", "Kraftwerk"},
+        {"Lauerberg", "Lauerberg"},
+        {"Nebelburg", "Nebelburg"},
+        {"New School", "New School"},
+        {"Nordskar", "Nordskar"},
+        {"Normandie", "Normandie"},
+        {"Oder", "Oder"},
+        {"Old School", "Old School"},
+        {"Omaha Beach", "Omaha Beach"},
+        {"Outpost: Night", "Outpost: Night"},
+        {"Oyster Bay", "Oyster Bay"},
+        {"Sand River: Night", "Sand River: Night"},
+        {"Serene Coast", "Serene Coast"},
+        {"Steppes: Night", "Steppes: Night"},
+        {"Studzianki", "Studzianki"},
+        {"Westwall", "Westwall"}
     };
 
     public static string? GetMapName(string? key)
