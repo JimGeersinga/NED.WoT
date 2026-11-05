@@ -17,6 +17,13 @@
     height: 36px;
 }
 
+/* ==== MudButton (every button and icon button) ==== */
+/* MudBlazor sets outline: none on button:focus, which beats the default ring in wot.css (that one sits in the mud layer). */
+.mud-button-root:focus-visible {
+    outline: 2px solid var(--mud-palette-primary);
+    outline-offset: 2px;
+}
+
 /* ==== MudButton (the user button) ==== */
 .mud-button-root.wot-ubtn {
     height: 44px;
@@ -54,7 +61,7 @@
     align-items: center;
     height: 40px;
     margin: 0;
-    padding: 0 12px 0 4px;
+    padding: 0 12px;
     border: 1px solid var(--wot-bronze-edge);
     border-radius: 4px;
     background: var(--wot-chip-bg);
