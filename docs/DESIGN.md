@@ -70,7 +70,7 @@ Every style has one home, chosen by what it styles. Work through the list in thi
 | 4 | `wwwroot/css/wot.css` | Shared `wot-*` pieces used in more than one place or meant to be, with no `.mud-*` in the selector. |
 | 5 | `wwwroot/css/gl.css` | The Gevechtslog patterns (below) that no other WoT HQ app uses. |
 | 6 | `Component.razor.css` | One component's own elements. |
-| (legacy) | `wwwroot/css/app.css` | Temporary: only the rules the screens not yet laid out again (Index, Details) still need (`.selected`, `.match-info`, `.group-info`, `.Win`/`.Lose`/`.Draw`) and the splash. #3–#9 empty it; its `!important` rules are allowed until then. |
+| (legacy) | `wwwroot/css/app.css` | Temporary: only the rules the screens not yet laid out again (the dialogs, Details) still need (`.Win`/`.Lose`/`.Draw`, the text utilities) and the splash. #3–#9 empty it; its `!important` rules are allowed until then. |
 
 - **Cascade layer.** `wwwroot/css/layers.css` (linked first, because it only imports) declares `@layer mud` and imports `MudBlazor.min.css` into it. Our CSS is unlayered, so it wins over MudBlazor whatever the selector's specificity: no doubled or quadrupled classes.
   `<head>` order: `css/layers.css`, `tokens.css`, `mud.css`, `wot.css`, `gl.css`, `app.css` (legacy, above), then the scoped bundle.
@@ -110,6 +110,7 @@ Values come from the design canvas's `wot.css`; `mud.css`, `wot.css` and the com
   | Block (Geblokt) | — | ≥ 25 | amber below |
 
 - **Day group header**: a sticky header per day with the label (H6), a neutral count chip, a win-percentage status chip and a copy button; in stats mode it carries that day's aggregate stats under the stat columns. **Fixed totals footer** for the whole table.
+- **Battle table rows** (`.gr` grid rows, one column template for the header, the day headers, the rows and the footer): hover `table-hover`; alternate rows `table-striped`; the expanded row `.wot-row-active` (`primary-soft` ground and a 2px Primary inset bar); a row the file watcher adds gets `.gl-new`, a 2-second fade from a quiet steel tint (text-primary at 16%, no orange). Your own team is always the left tag, with the clan-chip bronze edge.
 - **HP-bar name cell**: the cell filled left to right with `success` at about 25% alpha for the remaining HP; a dead player gets a full-width `error` tint at about 15% plus a 16px Filled `Dangerous` icon, so it is not colour alone.
 - **Two-tier sticky-column player table**: two header tiers (groups Prestatie, Schade, Schoten over the sortable labels); the first five columns are sticky on horizontal scroll. The own row uses the row bar (`primary-soft` ground, 2px Primary inset bar) and a Filled `Person` icon, never orange text. A team-killer's name is `info` with a Filled `Report` icon.
 - **Filter dropdowns**, **folder carousel**, **reorderable folder list**, **role chip and account menu**, **steel scrollbar**, **snackbar** (outlined dense `Alert` on `surface-dialog`, bottom left, auto-dismiss, lead word · sentence), **progress bar** (4px, hard 2px radius, Primary fill on a `dark` track), **empty state** (48px Outlined icon in text-secondary, H5, one sentence, one action) and the **WTR level icon**. Each is specified by the issue that builds it, taken from the canvas.

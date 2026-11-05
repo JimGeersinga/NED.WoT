@@ -168,66 +168,8 @@ html, body {
     color: var(--mud-palette-warning) !important;
 }
 
-.selected {
-    background-color: var(--wot-primary-soft) !important;
-}
-
-.versus-column {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.group-info {
-    position: sticky;
-    top: 39px;
-    background-color: var(--wot-appbar-top);
-    z-index: 4;
-}
-
-.match-info {
-    position: sticky;
-    top: 80px;
-    background-color: var(--mud-palette-surface);
-    z-index: 4;
-}
-
-    .match-info.selected {
-        background-color: color-mix(in srgb, var(--mud-palette-primary) 14%, var(--mud-palette-surface)) !important;
-    }
-
-    .match-info:not(.selected):hover {
-        background-color: var(--mud-palette-table-hover) !important;
-    }
-
-.versus-column .versus-info {
-    font-size: 1rem;
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-}
-
-    .versus-column .versus-info .team-name {
-        width: 100px;
-        font-weight: bold;
-    }
-
-    .versus-column .versus-info .death-count {
-        font-size: 1.5rem;
-        width: 30px;
-    }
-
-    .versus-column .versus-info .versus-text {
-        padding-inline: 0.5rem;
-    }
-
 .text-right {
     text-align: right;
-}
-
-.text-left {
-    text-align: left;
 }
 
 .text-center {

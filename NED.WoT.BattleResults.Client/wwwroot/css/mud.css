@@ -70,6 +70,12 @@
     flex: none;
 }
 
+/* The result chip of an unknown result (ResultChip): skipped grey, as Mud has no colour for it. */
+.mud-chip.wot-result-skipped {
+    background: color-mix(in srgb, var(--wot-skipped) 15%, transparent);
+    color: var(--wot-skipped);
+}
+
 /* A filter chip (design .fchip): 32px, outlined, the selected one on the soft Primary tint. */
 .mud-chip.wot-filter-chip {
     height: 32px;
@@ -272,7 +278,7 @@
     font-variant-numeric: tabular-nums;
 }
 
-/* ==== MudTable (the battle report tables as they are laid out today; the screen issues replace this group) ==== */
+/* ==== MudTable (the player table of Details as it is laid out today; the screen issues replace this group) ==== */
 .mud-table.player-table .mud-table-row {
     position: relative;
 }
@@ -296,12 +302,8 @@
     background-color: var(--wot-appbar-top);
 }
 
-.mud-table.report-table .highlight-own-result [data-label='VS'] .versus-info :not(.highlight) {
-    color: inherit !important; /* legacy: beats the !important .Win/.Lose/.Draw class rules in app.css; goes with #3–#9 */
-}
-
-.mud-table.report-table .highlight-own-result .mud-table.player-table .mud-table-cell-custom-group :not(.highlight) {
-    color: inherit !important; /* legacy: beats the inline style="color: … !important" from ColorHelper (Index.razor:230); goes with #3–#9 */
+.highlight-own-result .mud-table.player-table .mud-table-cell-custom-group :not(.highlight) {
+    color: inherit !important; /* legacy: beats the inline style="color: … !important" from ColorHelper; goes with #3–#9 */
 }
 
 .mud-table.player-table .highlight .name {
@@ -312,27 +314,14 @@
     color: var(--mud-palette-info);
 }
 
-.mud-table.report-table * .mud-table-row .mud-table-cell:not(.details) {
-    padding-inline: 1rem;
+.mud-table.player-table .mud-table-row .mud-table-cell {
+    padding-inline: 1rem; /* legacy: the player table's cell padding in Details; goes with #7 */
 }
 
 .mud-table-head .header-centered th {
     text-align: center;
 }
 
-.report-table.mud-table-sticky-header > .mud-table-container > .mud-table-root > .mud-table-head * .mud-table-cell,
-.report-table.mud-table-sticky-footer > .mud-table-container > .mud-table-root > .mud-table-foot * .mud-table-cell {
-    z-index: 4;
-}
-
 .mud-table-dense * .mud-table-row .mud-table-cell {
     padding: 6px;
-}
-
-.mud-table-sticky-footer * .mud-table-root .mud-table-foot {
-    z-index: 5;
-}
-
-.report-table .mud-table-body .match-info > td {
-    border-top: 1px solid var(--mud-palette-table-lines);
 }

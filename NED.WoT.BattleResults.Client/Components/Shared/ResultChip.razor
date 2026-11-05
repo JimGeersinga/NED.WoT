@@ -1,0 +1,31 @@
+<MudChip T="string" Variant="Variant.Text" Size="Size.Small" Color="@Colour" Icon="@Icon" Class="@(Result is Result.Unknown ? "wot-result-skipped" : null)">@Word(Result)</MudChip>
+
+@code {
+    /// <summary>The result of the battle, as shown in the chip: the colour, the icon and the word (docs/DESIGN.md, "Result chip").</summary>
+    [Parameter, EditorRequired]
+    public Result Result { get; set; }
+
+    public static string Word(Result result) => result switch
+    {
+        Result.Win => "Gewonnen",
+        Result.Lose => "Verloren",
+        Result.Draw => "Gelijkspel",
+        _ => "Onbekend",
+    };
+
+    private Color Colour => Result switch
+    {
+        Result.Win => Color.Success,
+        Result.Lose => Color.Error,
+        Result.Draw => Color.Warning,
+        _ => Color.Default,
+    };
+
+    private string Icon => Result switch
+    {
+        Result.Win => Icons.Material.Filled.CheckCircle,
+        Result.Lose => Icons.Material.Filled.Cancel,
+        Result.Draw => Icons.Material.Filled.Remove,
+        _ => Icons.Material.Filled.HelpOutline,
+    };
+}

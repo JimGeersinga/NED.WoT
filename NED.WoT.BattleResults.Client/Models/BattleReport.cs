@@ -22,7 +22,17 @@ public class BattleReport
         }
     }
 
-    public string MatchTimeDisplay => $"{MatchStart:dd/MM/yyyy HH:mm} - {MatchEnd?.ToString("HH:mm")}";
+    public string MatchTimeDisplay => $"{MatchStart:dd-MM-yyyy HH:mm}";
+
+    /// <summary>The exact day and the start and end to the second, for the hover of the time cell.</summary>
+    public string MatchTimeTooltip
+    {
+        get
+        {
+            string day = MatchStart.ToString("dddd dd-MM-yyyy", System.Globalization.CultureInfo.GetCultureInfo("nl-NL"));
+            return $"{char.ToUpper(day[0])}{day[1..]}{Environment.NewLine}Start {MatchStart:HH:mm:ss} · einde {MatchEnd?.ToString("HH:mm:ss") ?? "?"}";
+        }
+    }
 
     public int? MatchDuration { get; set; }
     public MarkupString MatchDurationDisplay
@@ -60,15 +70,14 @@ public class BattleReport
     public string? Error { get; internal set; }
     public bool ShowDetails { get; set; }
 
+    /// <summary>The day the battle counts for: a battle with MatchStart.Hour &lt;= 2 counts for the previous day.</summary>
+    public DateTime GroupDate => MatchStart.Hour <= 2 ? MatchStart.Date.AddDays(-1) : MatchStart.Date;
+
     public string Group
     {
         get
         {
-            int daysAgo = (DateTime.Now.Date - MatchStart.Date).Days;
-            if (MatchStart.Hour <= 2)
-            {
-                daysAgo += 1;
-            }
+            int daysAgo = (DateTime.Now.Date - GroupDate).Days;
 
             return daysAgo switch
             {
