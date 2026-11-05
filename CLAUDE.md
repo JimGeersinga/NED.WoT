@@ -120,7 +120,8 @@ Depends on: #N
 - **Every PR raises the app version.** Bump `Identity Version` in
   `NED.WoT.BattleResults.Client/Platforms/Windows/Package.appxmanifest`:
   `type:story` → minor (`2.2.1.0` → `2.3.0.0`), anything else → patch
-  (`2.3.0.0` → `2.3.1.0`); the revision stays `0`. Job `version` in
+  (`2.3.0.0` → `2.3.1.0`); leave the revision (4th number) alone, the packaging build may raise it
+  (`AppxAutoIncrementPackageRevision`). Job `version` in
   `.github/workflows/dotnet-desktop.yml` fails the PR unless the version is
   higher than on `master`, so each release installs as an update.
 - **A release is run by hand**: Actions → "Run workflow" on `master`. Merging
