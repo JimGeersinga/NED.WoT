@@ -186,7 +186,12 @@ PR as a screenshot, at **1280×800 and 1920×1080** (desktop only, no phone).
      `shell:AppsFolder\<PackageFamilyName>!App`.
   4. Afterwards delete that policy key and `Remove-AppxPackage` the package.
 - Attached to the PR, **never committed** (`.gitignore` holds `/*.png` and
-  `.playwright-mcp/`).
+  `.playwright-mcp/`). `gh` uploads them: write the PR body with a local
+  reference per image (`![alt](shot.png)`) and run
+  `gh pr create` or `gh pr edit <n> --body-file body.md --attach shot.png …`
+  (alt text can also follow a `#`: `--attach 'shot.png#alt'`). `gh` rewrites each
+  reference to the uploaded asset. Run it from inside the repo, and a PR body
+  that says "screenshots attached" is only true once the images show in it.
 
 ## What we don't adopt from the Clan repo, and why
 
