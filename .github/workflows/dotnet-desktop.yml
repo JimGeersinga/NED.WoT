@@ -2,8 +2,6 @@
 name: .NET Core Desktop - Build and Deploy
 
 on:
-  push:
-    branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
   workflow_dispatch:
@@ -15,11 +13,42 @@ env:
   APP_PACKAGES_LOCATION: NED.WoT.BattleResults.Client\bin\Release\net10.0-windows10.0.19041.0\win10-x64\AppPackages
 
 jobs:
+  version:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Version is higher than master
+      shell: pwsh
+      run: |
+        $path = 'NED.WoT.BattleResults.Client/Platforms/Windows/Package.appxmanifest'
+        $pattern = '<Identity[^>]*\sVersion="([^"]+)"'
+        function Read-Version($text, $where) {
+          $m = [regex]::Match($text, $pattern)
+          $v = $null
+          if (-not $m.Success -or -not [version]::TryParse($m.Groups[1].Value, [ref]$v)) {
+            Write-Host "::error::Could not read Identity Version from $path at $where."
+            exit 1
+          }
+          $v
+        }
+        $head = Read-Version (Get-Content $path -Raw) 'head'
+        $base = Read-Version (git show "origin/master:$path" | Out-String) 'master'
+        if ($head -le $base) {
+          Write-Host "::error::Package.appxmanifest Identity Version is $head, master has $base. Raise it (CLAUDE.md, Branches, commits, PRs)."
+          exit 1
+        }
+        Write-Host "Version $base -> $head"
+
   build:  
     runs-on: windows-latest      
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
                   
@@ -49,6 +78,7 @@ jobs:
 
 
     - name: Deploy to Azure webapp
+      if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master'
       uses: azure/webapps-deploy@v2
       with: 
         app-name: ${{ env.AZURE_WEBAPP_NAME }}
