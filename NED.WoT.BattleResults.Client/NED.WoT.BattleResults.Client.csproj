@@ -12,7 +12,7 @@
     <Nullable>enable</Nullable>
 
     <!-- Display name -->
-    <ApplicationTitle>[NED] WoT gevechtsstatistieken</ApplicationTitle>
+    <ApplicationTitle>WoT Gevechtslog</ApplicationTitle>
 
     <!-- App Identifier -->
     <ApplicationId>com.insanittyx.ned.wot.battleresults.client</ApplicationId>
@@ -49,9 +49,9 @@
     <MauiIcon Include="Resources\AppIcon\appiconfg.svg" />
 
     <!-- Splash Screen -->
-    <MauiSplashScreen Include="wwwroot\images\logo.png">
-      <Color>#27272fff</Color>
-      <BaseSize>2931,3803</BaseSize>
+    <MauiSplashScreen Include="wwwroot\img\gevechtslog-hero.svg" Link="Resources\Splash\gevechtslog_hero.svg">
+      <Color>#0e1114</Color>
+      <BaseSize>128,128</BaseSize>
     </MauiSplashScreen>
 
     <!-- Custom Fonts -->

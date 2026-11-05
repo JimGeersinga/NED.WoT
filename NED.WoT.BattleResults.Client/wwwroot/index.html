@@ -3,7 +3,8 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>NED.WoT.BattleResults.Client</title>
+    <title>WoT Gevechtslog</title>
+    <link rel="icon" type="image/svg+xml" href="img/gevechtslog-mark.svg" />
     <base href="/" />
     <link href="css/layers.css" rel="stylesheet" />
     <link href="css/tokens.css" rel="stylesheet" />
@@ -20,10 +21,12 @@
 
     <div id="app">
         <div class="splash">
-            <img src="images/logo.png" />
-
-            <div class="progress-bar">
-                <div class="progress-bar__progress"></div>
+            <span class="splash-corner tl"></span><span class="splash-corner tr"></span><span class="splash-corner bl"></span><span class="splash-corner br"></span>
+            <div class="splash-body">
+                <div class="splash-sight"><span class="splash-h l"></span><span class="splash-h r"></span><img src="img/gevechtslog-hero.svg" alt="" /></div>
+                <p class="splash-wordmark">WoT <b>Gevechtslog</b></p>
+                <div class="splash-prog" role="progressbar" aria-label="Laden"><i></i></div>
+                <p class="splash-caption">Gevechten laden…</p>
             </div>
         </div>
     </div>
