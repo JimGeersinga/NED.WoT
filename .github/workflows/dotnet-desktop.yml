@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
@@ -27,8 +27,17 @@ jobs:
       run: |
         $path = 'NED.WoT.BattleResults.Client/Platforms/Windows/Package.appxmanifest'
         $pattern = '<Identity[^>]*\sVersion="([^"]+)"'
-        $head = [version]([regex]::Match((Get-Content $path -Raw), $pattern).Groups[1].Value)
-        $base = [version]([regex]::Match((git show "origin/master:$path" | Out-String), $pattern).Groups[1].Value)
+        function Read-Version($text, $where) {
+          $m = [regex]::Match($text, $pattern)
+          $v = $null
+          if (-not $m.Success -or -not [version]::TryParse($m.Groups[1].Value, [ref]$v)) {
+            Write-Host "::error::Could not read Identity Version from $path at $where."
+            exit 1
+          }
+          $v
+        }
+        $head = Read-Version (Get-Content $path -Raw) 'head'
+        $base = Read-Version (git show "origin/master:$path" | Out-String) 'master'
         if ($head -le $base) {
           Write-Host "::error::Package.appxmanifest Identity Version is $head, master has $base. Raise it (CLAUDE.md, Branches, commits, PRs)."
           exit 1
@@ -39,7 +48,7 @@ jobs:
     runs-on: windows-latest      
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
                   
