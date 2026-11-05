@@ -1,4 +1,4 @@
-/* MudBlazor overrides. Checked against MudBlazor 9.12.0. Walk this file after every MudBlazor upgrade. */
+/* MudBlazor overrides. Ported from WoT HQ (checked there against MudBlazor 9.11.0; this app is on 9.12.0). The groups with no markup in this app yet (ubtn, clan and filter chip, view toggle, tabs, grid, card header, divided list, menu) are unrendered until #3–#9 use them. Walk this file after every MudBlazor upgrade. */
 /* MudBlazor's CSS is in @layer mud (layers.css) and ours is not, so a plain selector wins: no doubled classes. An !important stays only where MudBlazor writes an inline style. Colours come from var(--wot-*) and var(--mud-palette-*). */
 
 /* ==== MudAppBar (and the MudToolbar it renders) ==== */
@@ -290,11 +290,11 @@
 }
 
 .mud-table.report-table .highlight-own-result [data-label='VS'] .versus-info :not(.highlight) {
-    color: inherit !important;
+    color: inherit !important; /* legacy: beats the !important .Win/.Lose/.Draw class rules in app.css; goes with #3–#9 */
 }
 
 .mud-table.report-table .highlight-own-result .mud-table.player-table .mud-table-cell-custom-group :not(.highlight) {
-    color: inherit !important;
+    color: inherit !important; /* legacy: beats the inline style="color: … !important" from ColorHelper (Index.razor:230); goes with #3–#9 */
 }
 
 .mud-table.player-table .highlight .name {

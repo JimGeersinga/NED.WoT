@@ -10,7 +10,7 @@ h1:focus {
 }
 
     .blazor-error-boundary::after {
-        content: "An error has occurred."
+        content: "Er ging iets mis."
     }
 
 /* Focus ring: a 2px primary outline set 2px off the element. No box-shadow: MudBlazor removes its inputs' outline but not the shadow,

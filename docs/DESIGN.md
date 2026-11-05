@@ -70,9 +70,10 @@ Every style has one home, chosen by what it styles. Work through the list in thi
 | 4 | `wwwroot/css/wot.css` | Shared `wot-*` pieces used in more than one place or meant to be, with no `.mud-*` in the selector. |
 | 5 | `wwwroot/css/gl.css` | The Gevechtslog patterns (below) that no other WoT HQ app uses. |
 | 6 | `Component.razor.css` | One component's own elements. |
+| (legacy) | `wwwroot/css/app.css` | Temporary: only the rules the screens not yet laid out again (Index, Details) still need (`.selected`, `.match-info`, `.group-info`, `.Win`/`.Lose`/`.Draw`) and the splash. #3–#9 empty it; its `!important` rules are allowed until then. |
 
 - **Cascade layer.** `wwwroot/css/layers.css` (linked first, because it only imports) declares `@layer mud` and imports `MudBlazor.min.css` into it. Our CSS is unlayered, so it wins over MudBlazor whatever the selector's specificity: no doubled or quadrupled classes.
-  `<head>` order: `css/layers.css`, `tokens.css`, `mud.css`, `wot.css`, `gl.css`, then the scoped bundle.
+  `<head>` order: `css/layers.css`, `tokens.css`, `mud.css`, `wot.css`, `gl.css`, `app.css` (legacy, above), then the scoped bundle.
 - **`!important`** only in `mud.css`, only where MudBlazor writes an inline style, with a comment naming it. The focus ring in `wot.css` sits in `@layer mud` on purpose: it is a default that MudBlazor's controls override with their own outline.
 - **No `.mud-*` in a `.razor.css`**, `::deep` included. MudBlazor's own element does not get the component's scope attribute either, so a modifier class on it is styled in `mud.css`.
 - **Colours** in `mud.css`, `wot.css`, `gl.css` and `.razor.css` files are `var(--wot-*)` or `var(--mud-palette-*)`, never raw values.
