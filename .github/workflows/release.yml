@@ -25,7 +25,7 @@ jobs:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
     - name: Install MAUI workload
-      run: dotnet workload install maui
+      run: dotnet workload install maui-windows
 
     - name: Decrypt PFX File
       run: |
