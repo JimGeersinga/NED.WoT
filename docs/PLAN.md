@@ -106,7 +106,7 @@ Titles match the GitHub milestones one to one.
 
 | # | Milestone | Issues | What it delivers |
 |---|---|---|---|
-| 00 | Working agreements | #1, #21, #23 | CLAUDE.md, this plan and docs/DESIGN.md; a manual release workflow and a version bump in every PR. |
+| 00 | Working agreements | #1, #21, #23, #25 | CLAUDE.md, this plan and docs/DESIGN.md; a manual release workflow and a version bump in every PR. |
 | 01 | WoT Gevechtslog look and feel | #2–#9 | The WoT HQ design system on today's screens: theme, logo, app bar, battle table, stats mode, details, dialogs and every state. |
 | 02 | Sign in with Wargaming | #10–#12 | Wargaming login in the desktop app; rights from NED.WoT.Clan (milestone 14 there). The Excel / Google Apps Script check is removed. |
 | 03 | Filter dropdowns | #13–#14 | Clan, Speler, Map and Resultaat dropdowns and the Clangevechten \| Alles switch. |
