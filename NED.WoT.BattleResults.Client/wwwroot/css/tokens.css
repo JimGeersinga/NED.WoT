@@ -32,7 +32,13 @@
     --wot-shadow-dialog: 0 24px 56px rgba(0, 0, 0, .6);
     --wot-error-boundary: #b32121;
 
-    /* The splash in index.html is drawn before the theme provider has set --mud-palette-*; these two are its Background and Primary. */
+    /* The splash in index.html is drawn before the theme provider has set --mud-palette-*; these are its Background, Primary, Text, secondary text, Lines, progress track, glow and grid. */
     --wot-boot-bg: #0e1114;
     --wot-boot-primary: #ff8800;
+    --wot-boot-text: #e6e9ec;
+    --wot-boot-lines: #343c45;
+    --wot-boot-track: #262c33;
+    --wot-boot-text-secondary: #a2abb5;
+    --wot-boot-glow: rgba(255, 136, 0, .07);
+    --wot-boot-grid: rgba(255, 255, 255, .025);
 }

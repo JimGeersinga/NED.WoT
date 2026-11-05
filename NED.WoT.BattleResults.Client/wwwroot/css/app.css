@@ -6,51 +6,119 @@
     width: 100%;
 }
 
-    #app .splash {
-        position: absolute;
-        transform: translate(-50%, -50%);
-        left: 50%;
-        top: 50%;
-        text-align: center;
-    }
+/* The splash board (canvas "Splashscherm"): HUD ground, bronze corners, the hero in its sight, the wordmark, an indeterminate bar. Same markup in index.html and Components/Shared/Splash.razor. */
+.splash {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    color: var(--wot-boot-text);
+    font-family: var(--wot-font-text);
+    background: radial-gradient(ellipse 40% 60% at 72% 50%, var(--wot-boot-glow), transparent 70%),
+        linear-gradient(var(--wot-boot-grid) 1px, transparent 1px) 0 0 / 48px 48px,
+        linear-gradient(90deg, var(--wot-boot-grid) 1px, transparent 1px) 0 0 / 48px 48px,
+        var(--wot-boot-bg);
+}
 
-        #app .splash img {
-            height: auto;
-            width: auto;
-            max-width: 30vw;
-            max-height: 50vh;
-            padding: 4rem;
-        }
+.splash-corner {
+    position: absolute;
+    width: 28px;
+    height: 28px;
+    border: 2px solid var(--wot-bronze-edge);
+    pointer-events: none;
+}
 
-.progress-bar {
-    background-color: var(--wot-surface-input);
-    border-radius: 2px;
-    height: 4px;
+.splash-corner.tl { left: 24px; top: 24px; border-right: 0; border-bottom: 0; }
+.splash-corner.tr { right: 24px; top: 24px; border-left: 0; border-bottom: 0; }
+.splash-corner.bl { left: 24px; bottom: 24px; border-right: 0; border-top: 0; }
+.splash-corner.br { right: 24px; bottom: 24px; border-left: 0; border-top: 0; }
+
+.splash-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 22px;
+    width: 320px;
+}
+
+.splash-sight {
     position: relative;
+    flex: none;
+}
+
+.splash-sight img {
+    position: relative;
+    z-index: 1;
+    display: block;
+    width: 220px;
+    height: 220px;
+}
+
+/* The sight's crosshair lines run off to both sides. */
+.splash-h {
+    position: absolute;
+    top: 50%;
+    width: 1600px;
+    height: 9px;
+    margin-top: -4px;
+    pointer-events: none;
+}
+
+.splash-h.l {
+    right: calc(100% + 8px);
+    background: linear-gradient(var(--wot-boot-lines), var(--wot-boot-lines)) center / 100% 1px no-repeat,
+        repeating-linear-gradient(270deg, var(--wot-boot-lines) 0 1px, transparent 1px 48px);
+}
+
+.splash-h.r {
+    left: calc(100% + 8px);
+    background: linear-gradient(var(--wot-boot-lines), var(--wot-boot-lines)) center / 100% 1px no-repeat,
+        repeating-linear-gradient(90deg, var(--wot-boot-lines) 0 1px, transparent 1px 48px);
+}
+
+.splash-wordmark {
+    margin: 0;
+    font: 700 36px/1 var(--wot-font-display);
+    letter-spacing: .01em;
+    white-space: nowrap;
+}
+
+.splash-wordmark b {
+    color: var(--wot-boot-primary);
+    font-weight: 700;
+}
+
+.splash-caption {
+    margin: -10px 0 0;
+    font-size: 13px;
+    color: var(--wot-skipped);
+}
+
+/* Orange on a steel track, hard 2px radius. */
+.splash-prog {
+    position: relative;
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--wot-boot-track);
     overflow: hidden;
 }
 
-.progress-bar__progress {
-    background-color: var(--wot-boot-primary);
-    border-radius: 2px;
+.splash-prog > i {
     position: absolute;
-    bottom: 0;
     top: 0;
-    width: 50%;
-    /* Move the bar infinitely */
-    animation-duration: 2s;
-    animation-iteration-count: infinite;
-    animation-name: indeterminate-progress-bar;
+    bottom: 0;
+    width: 42%;
+    border-radius: 2px;
+    background: var(--wot-boot-primary);
+    animation: 2s infinite splash-indeterminate;
 }
 
-@keyframes indeterminate-progress-bar {
-    from {
-        left: -50%;
-    }
-
-    to {
-        left: 100%;
-    }
+@keyframes splash-indeterminate {
+    from { left: -42%; }
+    to { left: 100%; }
 }
 
 html, body {
