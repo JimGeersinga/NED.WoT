@@ -13,6 +13,8 @@ jobs:
   release:
     if: github.ref == 'refs/heads/master'
     runs-on: windows-latest
+    env:
+      PACKAGES: NED.WoT.BattleResults.Client/AppPackages
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -40,12 +42,12 @@ jobs:
 
     - name: Update .appinstaller file
       run: |
-        sed -i 's|http://schemas.microsoft.com/appx/appinstaller/2017/2|http://schemas.microsoft.com/appx/appinstaller/2021|' 'NED.WoT.BattleResults.Client/bin/Release/net10.0-windows10.0.19041.0/win10-x64/AppPackages/NED.WoT.BattleResults.Client_x64.appinstaller'
-        sed -i 's|HoursBetweenUpdateChecks="0"|HoursBetweenUpdateChecks="0" ShowPrompt="true"|' 'NED.WoT.BattleResults.Client/bin/Release/net10.0-windows10.0.19041.0/win10-x64/AppPackages/NED.WoT.BattleResults.Client_x64.appinstaller'
+        sed -i 's|http://schemas.microsoft.com/appx/appinstaller/2017/2|http://schemas.microsoft.com/appx/appinstaller/2021|' '${{ env.PACKAGES }}/NED.WoT.BattleResults.Client_x64.appinstaller'
+        sed -i 's|HoursBetweenUpdateChecks="0"|HoursBetweenUpdateChecks="0" ShowPrompt="true"|' '${{ env.PACKAGES }}/NED.WoT.BattleResults.Client_x64.appinstaller'
 
     - name: Deploy to Azure webapp
       uses: azure/webapps-deploy@v2
       with:
         app-name: ${{ env.AZURE_WEBAPP_NAME }}
         publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-        package: 'NED.WoT.BattleResults.Client/bin/Release/net10.0-windows10.0.19041.0/win10-x64/AppPackages'
+        package: '${{ env.PACKAGES }}'
