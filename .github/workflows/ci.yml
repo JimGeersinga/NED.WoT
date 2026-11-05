@@ -1,0 +1,57 @@
+
+name: CI
+
+on:
+  pull_request:
+    branches: [ "master" ]
+
+env:
+  DOTNET_VERSION: 10.0.x
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Version is higher than master
+      shell: pwsh
+      run: |
+        $path = 'NED.WoT.BattleResults.Client/Platforms/Windows/Package.appxmanifest'
+        $pattern = '<Identity[^>]*\sVersion="([^"]+)"'
+        function Read-Version($text, $where) {
+          $m = [regex]::Match($text, $pattern)
+          $v = $null
+          if (-not $m.Success -or -not [version]::TryParse($m.Groups[1].Value, [ref]$v)) {
+            Write-Host "::error::Could not read Identity Version from $path at $where."
+            exit 1
+          }
+          $v
+        }
+        $head = Read-Version (Get-Content $path -Raw) 'head'
+        $base = Read-Version (git show "origin/master:$path" | Out-String) 'master'
+        if ($head -le $base) {
+          Write-Host "::error::Package.appxmanifest Identity Version is $head, master has $base. Raise it (CLAUDE.md, Branches, commits, PRs)."
+          exit 1
+        }
+        Write-Host "Version $base -> $head"
+
+  build:
+    runs-on: windows-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Install .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Install MAUI workload
+      run: dotnet workload install maui
+
+    - name: Build
+      run: dotnet build NED.WoT.BattleResults.Client/NED.WoT.BattleResults.Client.csproj -f net10.0-windows10.0.19041.0

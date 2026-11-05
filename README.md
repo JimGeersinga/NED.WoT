@@ -2,7 +2,7 @@
 NED World of Tanks Apps
 
 ## NED WoT Battle results client
-[![.NET Core Desktop - Build and Deploy](https://github.com/JimGeersinga/NED.WoT/actions/workflows/dotnet-desktop.yml/badge.svg)](https://github.com/JimGeersinga/NED.WoT/actions/workflows/dotnet-desktop.yml)
+[![CI](https://github.com/JimGeersinga/NED.WoT/actions/workflows/ci.yml/badge.svg)](https://github.com/JimGeersinga/NED.WoT/actions/workflows/ci.yml)
 
 This windows app is used to read .wotreplay files and list them in a table
 
