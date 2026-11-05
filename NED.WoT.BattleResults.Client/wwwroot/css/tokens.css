@@ -1,0 +1,38 @@
+/* CSS-only tokens (docs/DESIGN.md): the values MudTheme (Theme/WotTheme.cs) has no slot for. This is the only CSS file with raw colour values. */
+@font-face { font-family: "Barlow Condensed"; font-style: normal; font-weight: 500; font-display: swap; src: url("../fonts/barlow-condensed-500.woff2") format("woff2"); }
+@font-face { font-family: "Barlow Condensed"; font-style: normal; font-weight: 600; font-display: swap; src: url("../fonts/barlow-condensed-600.woff2") format("woff2"); }
+@font-face { font-family: "Barlow Condensed"; font-style: normal; font-weight: 700; font-display: swap; src: url("../fonts/barlow-condensed-700.woff2") format("woff2"); }
+@font-face { font-family: "Inter"; font-style: normal; font-weight: 400; font-display: swap; src: url("../fonts/inter-400.woff2") format("woff2"); }
+@font-face { font-family: "Inter"; font-style: normal; font-weight: 500; font-display: swap; src: url("../fonts/inter-500.woff2") format("woff2"); }
+@font-face { font-family: "Inter"; font-style: normal; font-weight: 600; font-display: swap; src: url("../fonts/inter-600.woff2") format("woff2"); }
+
+:root {
+    --wot-font-display: "Barlow Condensed", Rajdhani, "Arial Narrow", sans-serif;
+    --wot-font-text: Inter, system-ui, sans-serif;
+
+    --wot-surface-dialog: #1c2127;
+    --wot-surface-input: #222830;
+    --wot-skipped: #8a939c;
+    --wot-primary-soft: rgba(255, 136, 0, .14);
+    --wot-steel-highlight: rgba(255, 255, 255, .09);
+    --wot-bronze-edge: #6e5a42;
+    --wot-chip-bg: rgba(176, 145, 106, .06);
+
+    --wot-appbar-grain: rgba(255, 255, 255, .014);
+    --wot-appbar-top: #1b2026;
+    --wot-appbar-mid: #14181d;
+    --wot-appbar-bottom: #111418;
+    --wot-dialog-bar-top: #252b33;
+
+    --wot-rivet-hi: #dcc7a6;
+    --wot-rivet-mid: #b0916a;
+    --wot-rivet-shadow: 0 1px 0 rgba(0, 0, 0, .65);
+
+    --wot-shadow-menu: 0 16px 40px rgba(0, 0, 0, .55);
+    --wot-shadow-dialog: 0 24px 56px rgba(0, 0, 0, .6);
+    --wot-error-boundary: #b32121;
+
+    /* The splash in index.html is drawn before the theme provider has set --mud-palette-*; these two are its Background and Primary. */
+    --wot-boot-bg: #0e1114;
+    --wot-boot-primary: #ff8800;
+}

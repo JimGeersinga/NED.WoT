@@ -29,7 +29,7 @@ All paths are under `NED.WoT.BattleResults.Client/`.
 
 CSS-only tokens (`--wot-*` in `wwwroot/css/tokens.css`, the only CSS file with raw colour values): `surface-dialog #1c2127`, `surface-input #222830`, `skipped #8a939c`,
 `primary-soft rgba(255,136,0,.14)`, `steel-highlight rgba(255,255,255,.09)`, `bronze-edge #6e5a42`, `chip-bg rgba(176,145,106,.06)`,
-`appbar-grain`/`-top`/`-mid`/`-bottom` (app bar gradient), `dialog-bar-top #252b33` (top of the dialog title bar), `rivet-hi`/`-mid`/`-shadow`, `shadow-menu`, `shadow-dialog` and `error-boundary`.
+`appbar-grain`/`-top`/`-mid`/`-bottom` (app bar gradient), `dialog-bar-top #252b33` (top of the dialog title bar), `rivet-hi`/`-mid`/`-shadow`, `shadow-menu`, `shadow-dialog`, `error-boundary`, and `boot-bg` / `boot-primary` (the splash in `index.html`, drawn before the theme sets `--mud-palette-*`).
 
 ## Type scale
 Heading family `"Barlow Condensed", Rajdhani, "Arial Narrow", sans-serif`; text family `Inter, system-ui, sans-serif`.

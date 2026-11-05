@@ -1,0 +1,99 @@
+/* Shared WoT HQ pieces (docs/DESIGN.md): used in more than one place or meant to be. MudBlazor overrides are in mud.css, one component's own elements in its .razor.css. */
+h1:focus {
+    outline: none;
+}
+
+.blazor-error-boundary {
+    background: var(--wot-error-boundary);
+    padding: 1rem;
+    color: var(--mud-palette-white);
+}
+
+    .blazor-error-boundary::after {
+        content: "An error has occurred."
+    }
+
+/* Focus ring: a 2px primary outline set 2px off the element. No box-shadow: MudBlazor removes its inputs' outline but not the shadow,
+   so a shadow would draw a dark ring on them. It is a default, so it sits in the mud layer on purpose: MudBlazor's controls set their
+   own outline and focus look, and win on specificity as they always did. Unlayered, the ring would also draw inside every text field. */
+@layer mud {
+    :focus-visible {
+        outline: 2px solid var(--mud-palette-primary);
+        outline-offset: 2px;
+    }
+}
+
+.wot-num {
+    font-variant-numeric: tabular-nums;
+}
+
+.wot-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    border: 1px solid var(--wot-bronze-edge);
+    background: var(--mud-palette-dark);
+    color: var(--mud-palette-tertiary);
+    font: 700 14px/1 var(--wot-font-display);
+    letter-spacing: .04em;
+    flex: none;
+}
+
+/* App bar look. The 56px height is in mud.css. */
+.wot-appbar {
+    box-sizing: border-box;
+    background: repeating-linear-gradient(90deg, var(--wot-appbar-grain) 0 1px, transparent 1px 3px), linear-gradient(180deg, var(--wot-appbar-top) 0%, var(--wot-appbar-mid) 55%, var(--wot-appbar-bottom) 100%);
+    border-bottom: 1px solid var(--mud-palette-lines-default);
+    box-shadow: inset 0 1px 0 var(--wot-steel-highlight);
+    color: var(--mud-palette-text-primary);
+}
+
+.wot-rivet {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, var(--wot-rivet-hi) 0, var(--wot-rivet-mid) 45%, var(--wot-bronze-edge) 100%);
+    box-shadow: var(--wot-rivet-shadow);
+}
+
+.wot-rivet-tl { left: 5px; top: 5px; }
+.wot-rivet-tr { right: 5px; top: 5px; }
+.wot-rivet-bl { left: 5px; bottom: 5px; }
+.wot-rivet-br { right: 5px; bottom: 5px; }
+
+.wot-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--mud-palette-text-primary);
+    text-decoration: none;
+    flex: none;
+}
+
+.wot-wordmark {
+    font: 700 22px/1 var(--wot-font-display);
+    letter-spacing: .01em;
+    white-space: nowrap;
+}
+
+.wot-wordmark b {
+    color: var(--mud-palette-primary);
+    font-weight: 700;
+}
+
+.wot-vsep {
+    width: 1px;
+    height: 28px;
+    background: var(--mud-palette-lines-default);
+    flex: none;
+}
+
+.wot-clan-tag {
+    font: 600 17px/1 var(--wot-font-display);
+    letter-spacing: .03em;
+}
+
+.wot-dialog-title {
+    font-family: var(--wot-font-display);
+}

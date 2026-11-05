@@ -23,6 +23,4 @@ public class Settings
     public bool UpdateScreeenWhileLoading { get; set; }
 
     public bool AutoClanLookup { get; set; }
-
-    public bool IsDarkMode { get; set; }
 }

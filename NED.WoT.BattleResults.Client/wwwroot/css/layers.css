@@ -1,0 +1,3 @@
+/* MudBlazor's CSS goes in @layer mud, so every unlayered rule of ours (mud.css, wot.css, gl.css, the .razor.css bundle) wins over it whatever the selector's specificity. */
+@layer mud;
+@import url("../_content/MudBlazor/MudBlazor.min.css") layer(mud);
