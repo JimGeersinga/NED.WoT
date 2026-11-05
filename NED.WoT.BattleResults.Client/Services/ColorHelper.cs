@@ -4,22 +4,22 @@ public static class ColorHelper
 {
     public static string GetHitRatioColor(this int value) => value switch
     {
-        <= 50 => "red",
-        >= 70 => "green",
-        _ => "orange"
+        <= 50 => "var(--mud-palette-error)",
+        >= 70 => "var(--mud-palette-success)",
+        _ => "var(--mud-palette-warning)"
     };
 
     public static string GetPenRatioColor(this int value) => value switch
     {
-        <= 55 => "red",
-        >= 70 => "green",
-        _ => "orange"
+        <= 55 => "var(--mud-palette-error)",
+        >= 70 => "var(--mud-palette-success)",
+        _ => "var(--mud-palette-warning)"
     };
 
     public static string GetBlockedRatioColor(this int value) => value switch
     {
-        >= 25 => "green",
-        _ => "orange"
+        >= 25 => "var(--mud-palette-success)",
+        _ => "var(--mud-palette-warning)"
     };
 
     public static string GetWinRatioColor(this decimal value) => value switch

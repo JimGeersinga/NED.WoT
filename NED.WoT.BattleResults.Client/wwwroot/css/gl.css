@@ -1,0 +1,67 @@
+/* The Gevechtslog patterns (docs/DESIGN.md, "Gevechtslog patterns"), from the canvas's project/gl.css. Class names are the canvas's, so its markup carries over.
+   Colours are var(--wot-*) and var(--mud-palette-*), never raw. MudBlazor-specific rules (chips, switch, snackbar, progress bar, fields) are in mud.css and arrive with the issue that builds them. */
+.num-xl { font: 700 56px/1 var(--wot-font-display); color: var(--mud-palette-primary); font-variant-numeric: tabular-nums; letter-spacing: .01em; }
+
+/* Grid rows (battle list). Same column template for header, group header and rows. */
+.gr { display: grid; align-items: center; min-width: 0; }
+.g-n { grid-template-columns: 44px 36px 132px 170px minmax(0, 1fr) 128px 40px; }
+.g-s { grid-template-columns: 44px 36px 124px 166px minmax(0, 1fr) 128px 128px 128px 128px 124px 40px; }
+.gc { padding: 0 12px; min-width: 0; white-space: nowrap; }
+.gc.s { padding: 0 8px; }
+.gc.p4 { padding: 0 4px; display: flex; justify-content: center; }
+.gc.r { text-align: right; }
+.gc.c { text-align: center; }
+.gh { height: 36px; background: var(--wot-surface-dialog); border-bottom: 1px solid var(--mud-palette-lines-default); font: 600 13px/1.45 var(--wot-font-text); color: var(--mud-palette-text-secondary); }
+.gb { min-height: 48px; border-bottom: 1px solid var(--mud-palette-table-lines); font-size: 14px; font-variant-numeric: tabular-nums; }
+.gb:hover { background: var(--mud-palette-table-hover); }
+.gb.alt { background: var(--mud-palette-table-striped); }
+.gb.on { background: var(--wot-primary-soft); box-shadow: inset 2px 0 0 var(--mud-palette-primary); }
+.two { display: flex; flex-direction: column; gap: 2px; line-height: 1.25; }
+.two small { font: 400 12px/1.3 var(--wot-font-text); color: var(--mud-palette-text-secondary); }
+.two b { font-weight: 500; }
+
+/* Day group header: the canvas's ground is the app bar's top steel. */
+.gg { position: sticky; top: 0; z-index: 2; min-height: 44px; background: var(--wot-appbar-top); border-top: 1px solid var(--mud-palette-lines-default); border-bottom: 1px solid var(--mud-palette-lines-default); font-variant-numeric: tabular-nums; }
+.gg .gl { grid-column: 1 / 6; display: flex; align-items: center; gap: 12px; padding: 0 16px; min-width: 0; }
+.gl > * { white-space: nowrap; flex: none; }
+
+/* Teams and score in the VS cell */
+.tag { font: 600 17px/1 var(--wot-font-display); letter-spacing: .03em; display: inline-flex; align-items: center; gap: 4px; min-width: 52px; }
+.tag.w { color: var(--mud-palette-success); }
+.tag.l { color: var(--mud-palette-error); }
+.tag.d { color: var(--mud-palette-warning); }
+.tag.u { color: var(--mud-palette-text-secondary); }
+.tag.own { padding: 3px 6px; border: 1px solid var(--wot-bronze-edge); border-radius: 2px; background: color-mix(in srgb, var(--mud-palette-tertiary) 8%, transparent); min-width: 0; }
+.vs { display: flex; align-items: center; gap: 10px; }
+.vs > * { flex: none; }
+.score { display: inline-flex; align-items: center; gap: 6px; font: 600 18px/1 var(--wot-font-display); min-width: 64px; justify-content: center; color: var(--mud-palette-text-secondary); }
+.score b { color: var(--mud-palette-text-primary); font-weight: 700; }
+
+/* Ratio cells: colour plus a level icon (16px per the design rules), so colour is never alone. */
+.rt { display: inline-flex; align-items: center; font-weight: 600; gap: 0; }
+.rt svg { width: 16px; height: 16px; margin-left: -3px; }
+.rt.hi { color: var(--mud-palette-success); }
+.rt.mid { color: var(--mud-palette-warning); }
+.rt.lo { color: var(--mud-palette-error); }
+.gc.rt { display: flex; justify-content: flex-end; align-items: center; gap: 4px; }
+.stat { display: grid; grid-template-columns: minmax(0, 1fr) 58px; column-gap: 6px; align-items: center; justify-items: end; white-space: nowrap; }
+.stat.s3 { grid-template-columns: minmax(0, 1fr) 52px 58px; }
+.stat > * { justify-self: end; }
+
+/* Player details table (two header tiers, sticky left columns). Row grounds: the canvas's are Surface and the app bar's top steel;
+   its own-row ground is Primary at 14% over Surface. */
+.pt { display: grid; grid-template-columns: var(--pc); align-items: center; min-width: var(--pw); font-variant-numeric: tabular-nums; --bgc: var(--mud-palette-surface); }
+.pt.alt { --bgc: var(--wot-appbar-top); }
+.pt.me { --bgc: color-mix(in srgb, var(--mud-palette-primary) 14%, var(--mud-palette-surface)); }
+.pt > div { padding: 0 12px; height: 34px; display: flex; align-items: center; white-space: nowrap; background: var(--bgc); border-bottom: 1px solid var(--mud-palette-table-lines); font-size: 14px; }
+.pt > div.r { justify-content: flex-end; }
+.pt.hd > div { background: var(--wot-surface-dialog); font: 600 13px/1.45 var(--wot-font-text); color: var(--mud-palette-text-secondary); border-bottom: 1px solid var(--mud-palette-lines-default); height: 32px; }
+.pt.hd.t1 > div { justify-content: center; font: 600 12px/1 var(--wot-font-display); letter-spacing: .12em; text-transform: uppercase; border-bottom: 1px solid var(--mud-palette-lines-default); }
+.pt .stk { position: sticky; z-index: 2; }
+/* HP-bar name cell: Success at 25% for the remaining HP (the design rules; the canvas draws 13%). A dead player gets a full-width Error tint at 15%, plus a Dangerous icon in the markup. */
+.pt .hp { background: linear-gradient(90deg, color-mix(in srgb, var(--mud-palette-success) 25%, transparent) var(--hp), transparent var(--hp)), var(--bgc); }
+.pt .dead { background: linear-gradient(color-mix(in srgb, var(--mud-palette-error) 15%, transparent), color-mix(in srgb, var(--mud-palette-error) 15%, transparent)), var(--bgc); }
+.pt.me > div:first-child { box-shadow: inset 2px 0 0 var(--mud-palette-primary); }
+.pt .nm { gap: 6px; overflow: hidden; }
+.pt .tk { color: var(--mud-palette-info); }
+.tm { display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 16px; background: color-mix(in srgb, var(--mud-palette-text-primary) 4%, transparent); border-bottom: 1px solid var(--mud-palette-lines-default); position: sticky; left: 0; width: var(--vw); }

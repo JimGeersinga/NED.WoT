@@ -170,11 +170,21 @@ Version bumps don't need to ask.
 There is no test project. Each screen and state an issue names is shown in the
 PR as a screenshot, at **1280×800 and 1920×1080** (desktop only, no phone).
 
-- Taken with Playwright connected over CDP to the Debug build's WebView2: start
-  the app with `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=9222`,
-  then `chromium.connectOverCDP('http://localhost:9222')`. **(verify)** that the
-  MAUI WebView2 honours the variable; if it doesn't, #2 settles another way and
-  updates this section.
+- Taken with Playwright connected over CDP to the Debug build's WebView2
+  (`chromium.connectOverCDP('http://localhost:9222')`). The app is MSIX, so it
+  can't be started like a plain exe, and the `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS`
+  environment variable does not reach it. What works:
+  1. Short checkout path (for example `D:\wt`): long paths break the deep
+     `_framework` files of the package.
+  2. Build, then fill the loose layout `bin\Debug\net10.0-windows10.0.19041.0\win-x64\AppX`:
+     copy every `AppxPackagedFile` of `…\win-x64\*.build.appxrecipe` from its
+     `Include` path to `AppX\<PackagePath>` (this populates `wwwroot`), then
+     `Add-AppxPackage -Register AppX\AppxManifest.xml`.
+  3. Before starting, set the registry value
+     `HKCU\Software\Policies\Microsoft\Edge\WebView2\AdditionalBrowserArguments`,
+     name `*`, data `--remote-debugging-port=9222`. Start the app with
+     `shell:AppsFolder\<PackageFamilyName>!App`.
+  4. Afterwards delete that policy key and `Remove-AppxPackage` the package.
 - Attached to the PR, **never committed** (`.gitignore` holds `/*.png` and
   `.playwright-mcp/`).
 
