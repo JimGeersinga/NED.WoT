@@ -91,7 +91,7 @@ Values come from the design canvas's `wot.css`; `mud.css`, `wot.css` and the com
   `linear-gradient(180deg, #1b2026 0%, #14181d 55%, #111418 100%)`, `border-bottom: 1px solid #343c45`, `inset 0 1px 0 rgba(255,255,255,.09)`.
 - `.wot-rivet` and its corner classes `.wot-rivet-tl`/`-tr`/`-bl`/`-br`: 6px, bronze `radial-gradient(circle at 35% 35%, #dcc7a6 0, #b0916a 45%, #6e5a42 100%)`, `0 1px 0 rgba(0,0,0,.65)`, 5px from each corner.
 - `.wot-brand` (gap 10; mark 36px, `.wot-brand-mark`), `.wot-wordmark` (Barlow Condensed 700 22px, `.01em`; `WoT` in text-primary, `Gevechtslog` in Primary), `.wot-vsep` (1×28px `#343c45`).
-- `.wot-clan-chip`: height 40, padding `0 12px 0 4px`, gap 10, `1px solid #6e5a42`, radius 4, `rgba(176,145,106,.06)`. In this app the chip shows the **tag only, no emblem image**. `.wot-clan-tag` 600 17px Barlow Condensed `.03em`.
+- `.wot-clan-chip`: height 40, padding `0 12px 0 4px` (the 4px is for the emblem; **with the tag only, as here, `0 12px`**), gap 10, `1px solid #6e5a42`, radius 4, `rgba(176,145,106,.06)`. In this app the chip shows the **tag only, no emblem image**. `.wot-clan-tag` 600 17px Barlow Condensed `.03em`.
 - `.wot-ubtn` (user button): height 44, gap 10, padding `0 6px 0 4px`, radius 4; `.wot-avatar` 32×32 square (radius 4), `1px solid #6e5a42`, `#262c33`, text Tertiary, 700 14px Barlow Condensed; name 600 14px Inter, role 12px Tertiary, `ExpandMore` chevron `#a2abb5`.
   Menu (`.wot-menu`): 260px wide, pinned 52px from the top and 16px from the right, dialog surface, `1px solid #343c45`, radius 6, padding `6px 0`, `0 16px 40px rgba(0,0,0,.55)`;
   items (`.wot-mitem`, MudMenuItem) 40px min height, padding `0 16px`, 15px, icon `#a2abb5`; the danger item (`.wot-menu-danger`) in the error colour.

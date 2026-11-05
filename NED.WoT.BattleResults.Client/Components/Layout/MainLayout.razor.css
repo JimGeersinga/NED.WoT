@@ -1,0 +1,4 @@
+/* The rivets are decoration: clicks go to the toolbar under them. */
+.wot-rivet {
+    pointer-events: none;
+}

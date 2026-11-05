@@ -13,22 +13,29 @@
 <MudSnackbarProvider />
 
 <MudLayout>
-    <MudAppBar>
-        @{
-            var clan = string.Empty;
-            if (!string.IsNullOrEmpty(SettingService.Settings.ClanAbbreviation))
-            {
-                clan = $"[{SettingService.Settings.ClanAbbreviation}] ";
-            }
+    <MudAppBar Class="wot-appbar" Elevation="0">
+        <span class="wot-rivet wot-rivet-tl"></span><span class="wot-rivet wot-rivet-tr"></span>
+        <span class="wot-rivet wot-rivet-bl"></span><span class="wot-rivet wot-rivet-br"></span>
+        <div class="wot-brand">
+            <MudImage Src="img/gevechtslog-mark.svg" Alt="" Class="wot-brand-mark" />
+            <span class="wot-wordmark">WoT <b>Gevechtslog</b></span>
+        </div>
+        @if (!string.IsNullOrEmpty(SettingService.Settings.ClanAbbreviation))
+        {
+            <span class="wot-vsep"></span>
+            <MudChip T="string" Class="wot-clan-chip"><span class="wot-clan-tag">[@SettingService.Settings.ClanAbbreviation]</span></MudChip>
         }
-        <MudText Typo="Typo.h6"><span style="color: var(--mud-palette-primary)">@(clan)</span>WoT gevechtsstatistieken</MudText>
         <MudSpacer />
         @if (UpdateCheckService.UpdateAvailable)
         {
-            <MudButton Variant="Variant.Outlined" OnClick="ShowUpdateDialog">Update</MudButton>
+            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Update" OnClick="ShowUpdateDialog">Update</MudButton>
         }
-        <MudIconButton Icon="@Icons.Material.Filled.Refresh" Color="Color.Inherit" OnClick="Refresh" />
-        <MudIconButton Icon="@Icons.Material.Filled.Settings" Color="Color.Inherit" OnClick="(e) => OpenSettings(true)" />
+        <MudTooltip Text="Vernieuwen">
+            <MudIconButton Icon="@Icons.Material.Filled.Refresh" Color="Color.Inherit" aria-label="Vernieuwen" OnClick="Refresh" />
+        </MudTooltip>
+        <MudTooltip Text="Instellingen">
+            <MudIconButton Icon="@Icons.Material.Filled.Settings" Color="Color.Inherit" aria-label="Instellingen" OnClick="(e) => OpenSettings(true)" />
+        </MudTooltip>
     </MudAppBar>
     <MudMainContent>
         @Body
