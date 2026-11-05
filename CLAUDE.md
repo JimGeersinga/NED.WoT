@@ -176,8 +176,7 @@ PR as a screenshot, at **1280×800 and 1920×1080** (desktop only, no phone).
   environment variable does not reach it. What works:
   1. Short checkout path (for example `D:\wt`): long paths break the deep
      `_framework` files of the package.
-  2. Build, then fill the loose layout `bin\Debug
-et10.0-windows10.0.19041.0\win-x64\AppX`:
+  2. Build, then fill the loose layout `bin\Debug\net10.0-windows10.0.19041.0\win-x64\AppX`:
      copy every `AppxPackagedFile` of `…\win-x64\*.build.appxrecipe` from its
      `Include` path to `AppX\<PackagePath>` (this populates `wwwroot`), then
      `Add-AppxPackage -Register AppX\AppxManifest.xml`.
