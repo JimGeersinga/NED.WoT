@@ -117,6 +117,14 @@ Depends on: #N
 - Before pushing: the build below with zero errors, and the screenshots the
   issue names attached to the PR (see "Screenshots"). CI
   (`.github/workflows/dotnet-desktop.yml`) must pass.
+- **Every PR raises the app version.** Bump `Identity Version` in
+  `NED.WoT.BattleResults.Client/Platforms/Windows/Package.appxmanifest`:
+  `type:story` → minor (`2.2.1.0` → `2.3.0.0`), anything else → patch
+  (`2.3.0.0` → `2.3.1.0`); the revision stays `0`. Job `version` in
+  `.github/workflows/dotnet-desktop.yml` fails the PR unless the version is
+  higher than on `master`, so each release installs as an update.
+- **A release is run by hand**: Actions → "Run workflow" on `master`. Merging
+  to `master` does not deploy.
 - **The owner merges.** Never merge a PR yourself. The next issue starts only
   after the previous issue's PR is merged into `master`, so nothing is stacked.
 - Review changes go on the same branch as new commits; don't force-push over
