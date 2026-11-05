@@ -298,7 +298,7 @@
 }
 
 .mud-table.player-table .highlight .name {
-    color: var(--mud-palette-primary) !important;
+    color: var(--mud-palette-primary) !important; /* legacy: fights the !important colour rules in app.css and ColorHelper inline colours; goes with #3–#9 */
 }
 
 .mud-table.player-table .teamkiller .name {
