@@ -108,8 +108,8 @@ Titles match the GitHub milestones one to one.
 |---|---|---|---|
 | 00 | Working agreements | #1, #21, #23, #25 | CLAUDE.md, this plan and docs/DESIGN.md; a manual release workflow and a version bump in every PR. |
 | 01 | WoT Gevechtslog look and feel | #2–#9 | The WoT HQ design system on today's screens: theme, logo, app bar, battle table, stats mode, details, dialogs and every state. |
-| 02 | Sign in with Wargaming | #10–#12 | Wargaming login in the desktop app; rights from NED.WoT.Clan (milestone 14 there). The Excel / Google Apps Script check is removed. |
-| 03 | Filter dropdowns | #13–#14 | Clan, Speler, Map and Resultaat dropdowns and the Clangevechten \| Alles switch. |
+| 02 | Filter dropdowns | #13–#14 | Clan, Speler, Map and Resultaat dropdowns and the Clangevechten \| Alles switch. |
+| 03 | Sign in with Wargaming | #10–#12 | Wargaming login in the desktop app; rights from NED.WoT.Clan (milestone 14 there). The Excel / Google Apps Script check is removed. |
 | 04 | Replay folders | #15–#16 | Several replay folders in Settings and a folder carousel in the app bar. |
 | 05 | Live battle | #17 | A separate temp-replay path for the live clan lookup. |
 | 06 | Clan battle statistics | #18–#19 | Clan rating, PR and WTR in the Clan battle dialog, from Wargaming's public API. |

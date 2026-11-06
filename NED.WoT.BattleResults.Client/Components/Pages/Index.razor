@@ -14,13 +14,16 @@
 @inject ISnackbar Snackbar;
 
 @{
-	// One pass per render: the readable battles that pass the search and the match type (the totals follow these), then their days.
+	// One pass per render: the readable battles that pass the clan, the player and the match type (the totals follow these), then their days.
 	var readable = _reports.Where(x => x.Error == null).ToList();
 	var filtered = readable.Where(TableFilter).ToList();
 	// The table shows the battles under the result chips (a day without one drops out by itself); the day header and the footer count the whole day.
 	var battles = filtered.Where(x => _resultVisibility[x.Result]).ToList();
-	// A replay that can't be read is a warning row of its own, never in a count, and only next to battle rows: a search hides it, and without a battle row the empty state speaks.
-	var unreadable = UnreadableShown(battles.Count, string.IsNullOrWhiteSpace(_search?.Value), _reports);
+	// A replay that can't be read is a warning row of its own, never in a count, and only next to battle rows: a clan or player filter hides it, and without a battle row the empty state speaks.
+	var unreadable = UnreadableShown(battles.Count, _clan is null && _player is null, _reports);
+	// The clan and player lookup of the filter bar: one instance, told the battles of this render; it rebuilds its tables on the next search only when _battlesVersion (or your own clan tag) changed.
+	_filters ??= BattleFilters.Build(readable, SettingService.Settings.ClanAbbreviation);
+	_filters.Refresh(readable, _battlesVersion, SettingService.Settings.ClanAbbreviation);
 	var days = BuildDays(filtered, unreadable);
 	var dayByLabel = days.ToDictionary(d => d.Label);
 	var visible = battles.Concat(unreadable).OrderByDescending(x => x.MatchStart).ToList();
@@ -33,15 +36,15 @@
 <div class="gl-page">
 	@* The filters wait until the loading is done: inert keeps the keyboard and the pointer out of them. *@
 	<div class="gl-filters" inert="@_loading">
-		<BattleFilterBar Reports="readable"
+		<BattleFilterBar Filters="_filters"
 						 Filtered="filtered"
-						 @bind-Search="_search"
+						 @bind-Clan="_clan"
+						 @bind-Player="_player"
 						 @bind-MatchType="_matchType"
 						 ResultVisibility="_resultVisibility"
 						 OnToggleResult="@(r => ToggleResultVisibilty(r))"
 						 CanToggleBattleStats="_canToggleBattleStats"
-						 @bind-ShowBattleStats="_showBattleStats"
-						 @bind-DetailedInfoForPlayer="_detailedInfoForPlayer" />
+						 @bind-ShowBattleStats="_showBattleStats" />
 	</div>
 
 	@if (_loading)
@@ -231,13 +234,15 @@
 	private bool _loading = true;
 	private bool _loadedOnce;
 	private string? _addedFile;
-	private SearchValue? _search;
+	private BattleFilters? _filters;
+	private int _battlesVersion;
+	private string? _clan;
+	private string? _player;
 	private MatchType _matchType = MatchType.Clan;
 	private TimeSpan _loadingTime = TimeSpan.Zero;
 
 	private bool _canToggleBattleStats = false;
 	private bool _showBattleStats = false;
-	private string _detailedInfoForPlayer = string.Empty;
 
 	private Dictionary<Result, bool> _resultVisibility = new Dictionary<Result, bool>
 	{
@@ -271,9 +276,9 @@
 		FiltersHideAll
 	}
 
-	/// <summary>The unreadable replays that get a warning row: only when a battle row is shown and no search is active.</summary>
-	private static List<BattleReport> UnreadableShown(int battleRows, bool noSearch, IEnumerable<BattleReport> reports) =>
-		battleRows > 0 && noSearch ? reports.Where(x => x.Error != null).ToList() : [];
+	/// <summary>The unreadable replays that get a warning row: only when a battle row is shown and no clan or player filter is active.</summary>
+	private static List<BattleReport> UnreadableShown(int battleRows, bool noFilter, IEnumerable<BattleReport> reports) =>
+		battleRows > 0 && noFilter ? reports.Where(x => x.Error != null).ToList() : [];
 
 	/// <summary>The cause of an empty table once loading is done and no battle row is shown: no folder, no replay at all since the date (all the replays, readable or not), or replays that the filters hide.</summary>
 	private static EmptyCause EmptyCauseOf(bool folderExists, int replayCount) =>
@@ -295,10 +300,16 @@
 		.OrderByDescending(x => x.Newest)
 		.ToList();
 
-	/// <summary>The sentence of the "Geen gevechten gevonden" empty state: it names the search and the match type that hide everything.</summary>
+	/// <summary>The sentence of the "Geen gevechten gevonden" empty state: it names the clan, the player and the match type that hide everything.</summary>
 	private string FiltersHideAllText()
 	{
-		string search = string.IsNullOrWhiteSpace(_search?.Value) ? string.Empty : $" met \"{_search.Value}\"";
+		string search = (_clan, _player) switch
+		{
+			(null, null) => string.Empty,
+			(string clan, null) => $" met clan {clan}",
+			(null, string player) => $" met speler {player}",
+			(string clan, string player) => $" met clan {clan} en speler {player}"
+		};
 		string type = _matchType switch
 		{
 			MatchType.Clan => " in clangevechten",
@@ -311,10 +322,11 @@
 		return $"Er is geen gevecht{search}{type}.{results} Probeer andere filters of wis ze.";
 	}
 
-	/// <summary>Back to the unfiltered table: no search, every match type, every result. Alles and not the default Clan, because a folder without clan battles would stay empty.</summary>
+	/// <summary>Back to the unfiltered table: no clan, no player, every match type, every result. Alles and not the default Clan, because a folder without clan battles would stay empty.</summary>
 	private void ClearFilters()
 	{
-		_search = null;
+		_clan = null;
+		_player = null;
 		_matchType = MatchType.Alles;
 		foreach (Result result in _resultVisibility.Keys.ToList())
 		{
@@ -383,25 +395,45 @@
 		Debug.Assert(brokenDays.Count == 1 && brokenDays[0].Items.Count == 0 && brokenDays[0].Newest == broken.MatchStart, "an unreadable replay alone is a day with a row and no battles");
 		Debug.Assert(UnreadableShown(0, true, [broken]).Count == 0, "no battle row: the unreadable replay gets no lone warning row (the empty state shows)");
 		Debug.Assert(UnreadableShown(3, true, [broken]).Count == 1, "next to battle rows it gets its warning row");
-		Debug.Assert(UnreadableShown(3, false, [broken]).Count == 0, "a search hides it");
+		Debug.Assert(UnreadableShown(3, false, [broken]).Count == 0, "a clan or player filter hides it");
 		List<Day> mixedDays = BuildDays(reports, [broken]);
 		Debug.Assert(mixedDays.Count == 1 && mixedDays[0].Items.Count == 5 && mixedDays[0].Number(reports[0]) == 1, "an unreadable replay does not change the count or the numbers of its day");
 
+		// A clan and a player filter the rows: both conditions, a player on either team.
+		BattleReport Fight(string own, string other, string? ownPlayer, string? otherPlayer)
+		{
+			BattleReport report = new() { MatchStart = today };
+			report.Team1 = new Team { Abbreviation = own };
+			report.Team2 = new Team { Abbreviation = other };
+			report.Team1.Players = ownPlayer == null ? [] : [new Player(report.Team1) { Name = ownPlayer }];
+			report.Team2.Players = otherPlayer == null ? [] : [new Player(report.Team2) { Name = otherPlayer }];
+			return report;
+		}
+
+		List<BattleReport> fights = [.. Enumerable.Range(0, 3).Select(_ => Fight("NED-1", "DUTCH", "Tankgeneraal", "KlompKees")), .. Enumerable.Range(0, 3).Select(_ => Fight("NED-1", "RHINE", null, null)), .. Enumerable.Range(0, 2).Select(_ => Fight("NED-1", "ZULU", null, null))];
+		Debug.Assert(fights.Count(x => Matches(x, null, null)) == 8, "no clan and no player: 8 battles");
+		Debug.Assert(fights.Count(x => Matches(x, "DUTCH", null)) == 3, "clan DUTCH: 3 battles");
+		Debug.Assert(fights.Count(x => Matches(x, "dutch", "klompkees")) == 3, "clan DUTCH and player KlompKees: 3 battles, case does not matter");
+		Debug.Assert(fights.Count(x => Matches(x, "RHINE", "KlompKees")) == 0, "clan RHINE and player KlompKees: 0 battles");
+		Debug.Assert(fights.Count(x => Matches(x, "NED-1", null)) == 8, "your own clan is on either team");
+		Debug.Assert(StatPlayers(fights, "Tankgeneraal").Count() == 3 && StatPlayers(fights, null).Count() == 0, "stats of a chosen player: only that player; no own team: nobody");
+		fights[0].OwnTeam = fights[0].Team1;
+		Debug.Assert(StatPlayers(fights, null).Single().Name == "Tankgeneraal" && StatPlayers(fights, "KlompKees").Count() == 3, "stats without a player: the own team; with a player: that player, on either team");
+
 		BattleTotals.SelfCheck();
+		BattleFilters.SelfCheck();
 		BattleStats.SelfCheck();
 	}
+
+	/// <summary>The players whose figures the stat columns total: the own team's players, or the chosen player on either team.</summary>
+	private static IEnumerable<Player> StatPlayers(IEnumerable<BattleReport> reports, string? player) => player is null
+		? reports.SelectMany(x => x.OwnTeam?.Players ?? [])
+		: reports.SelectMany(x => x.Team1.Players.Concat(x.Team2.Players)).Where(x => string.Equals(x.Name, player, StringComparison.OrdinalIgnoreCase));
 
 	/// <summary>The stat columns of stats mode for a set of battles: the total of the own team's players (or of the chosen player).</summary>
 	private RenderFragment<IEnumerable<BattleReport>> StatCells => reports => @<text>
 		@{
-			var players = reports.SelectMany(x => x.OwnTeam?.Players ?? []).ToList();
-
-			if (!string.IsNullOrEmpty(_detailedInfoForPlayer))
-			{
-				players = players.Where(x => x.Name?.Equals(_detailedInfoForPlayer, StringComparison.OrdinalIgnoreCase) ?? false).ToList();
-			}
-
-			var stats = BattleStats.Of(players);
+			var stats = BattleStats.Of(StatPlayers(reports, _player).ToList());
 		}
 		<MudTd Class="s"><RatioCell Count="@stats.Shots.ToString()" Detail="@($"{stats.ShotsPerMinute.ToString("0.0", BattleReport.DutchCulture)} p/m")" /></MudTd>
 		<MudTd Class="s"><RatioCell Count="@stats.Hits.ToString()" Ratio="stats.HitRatio" Level="stats.HitRatio.GetHitLevel()" /></MudTd>
@@ -431,6 +463,7 @@
 				}
 
 				_reports = new List<BattleReport>();
+				_battlesVersion++;
 				_loading = true;
 				StateHasChanged();
 
@@ -448,6 +481,7 @@
 			await InvokeAsync(() =>
 			{
 				_reports.Add(e.Report);
+				_battlesVersion++;
 				_clanMatchDialog?.Close();
 				if (_loading)
 				{
@@ -465,6 +499,7 @@
 			await InvokeAsync(() =>
 			{
 				_reports.Remove(e.Report);
+				_battlesVersion++;
 				StateHasChanged();
 			});
 		};
@@ -474,6 +509,7 @@
 			await InvokeAsync(async () =>
 			{
 				_reports = BattleResultService.BattleReports.Select(x => x.Value).OrderByDescending(x => x.MatchStart).ToList();
+				_battlesVersion++;
 				_loading = false;
 				if (!_loadedOnce)
 				{
@@ -515,31 +551,23 @@
 		_loading = false;
 	}
 
+	/// <summary>A clan: the battles where either team has its tag. A player: the battles with that player on either team. Both: both conditions.</summary>
+	private static bool Matches(BattleReport report, string? clan, string? player) =>
+		(clan is null || BattleFilters.SameTag(report.Team1.Abbreviation, clan) || BattleFilters.SameTag(report.Team2.Abbreviation, clan))
+		&& (player is null || report.Team1.Players.Concat(report.Team2.Players).Any(x => string.Equals(x.Name, player, StringComparison.OrdinalIgnoreCase)));
+
 	private bool TableFilter(BattleReport report)
 	{
-		bool show = false;
-
 		var isNormalMatch = (report.Team1.Abbreviation == null || report.Team1.Abbreviation == "?") &&
 							(report.Team2.Abbreviation == null || report.Team2.Abbreviation == "?");
 
-		if (_matchType is MatchType.Clan && isNormalMatch)
-			show = false;
-		else if (_matchType is MatchType.Normaal && !isNormalMatch)
-			show = false;
-		else if (_matchType is MatchType.Onbekend && report.Result is not Result.Unknown)
-			show = false;
-		else if (string.IsNullOrWhiteSpace(_search?.Value))
-			show = true;
-		else if (report.Team1.Abbreviation?.Equals(_search?.Value, StringComparison.OrdinalIgnoreCase) ?? false)
-			show = true;
-		else if (report.Team2.Abbreviation?.Equals(_search?.Value, StringComparison.OrdinalIgnoreCase) ?? false)
-			show = true;
-		else if (report.Team1.Players.Any(x => x.Name?.Equals(_search?.Value, StringComparison.OrdinalIgnoreCase) ?? false))
-			show = true;
-		else if (report.Team2.Players.Any(x => x.Name?.Equals(_search?.Value, StringComparison.OrdinalIgnoreCase) ?? false))
-			show = true;
-
-		return show;
+		return _matchType switch
+		{
+			MatchType.Clan when isNormalMatch => false,
+			MatchType.Normaal when !isNormalMatch => false,
+			MatchType.Onbekend when report.Result is not Result.Unknown => false,
+			_ => Matches(report, _clan, _player)
+		};
 	}
 
 	private void CollapseAllBattleReports()
@@ -637,6 +665,4 @@
 
 		return _resultVisibility[result];
 	}
-
-	public record SearchValue(string? Value, string Type);
 }

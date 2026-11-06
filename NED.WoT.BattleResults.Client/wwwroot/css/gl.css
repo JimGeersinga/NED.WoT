@@ -34,8 +34,6 @@
 .gl-page { display: flex; flex-direction: column; height: calc(100vh - var(--mud-appbar-height)); min-height: 0; }
 .gl-bar { flex: none; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 8px 16px; background: var(--mud-palette-surface); border-bottom: 1px solid var(--mud-palette-lines-default); }
 .gl-tools { display: flex; align-items: center; gap: 8px; margin-left: auto; flex: none; }
-.gl-search { flex: 1 1 150px; min-width: 150px; max-width: 320px; }
-.gl-player { width: 220px; flex: none; }
 .gl-chips { display: flex; gap: 6px; }
 
 .gl-sorted { display: flex; align-items: center; gap: 2px; color: var(--mud-palette-text-primary); }

@@ -2,36 +2,52 @@
 
 @inject IDialogService DialogService
 
-@* The filter bar over the battle table. It owns the search and the tool buttons; Index owns the state and gets it back through the callbacks. Milestone 03 replaces its contents. *@
+@* The filter bar over the battle table: the Clan and Speler dropdowns (MudAutocomplete over BattleFilters, styled by wot-filter in mud.css), the match type and result chips (#14 replaces those) and the tool buttons. Index owns the state and gets it back through the callbacks. *@
 @{
 	var clanMembers = Filtered.SelectMany(x => x.Team1.Players.Concat(x.Team2.Players)).Where(x => x.IsClanMember).Select(x => x.Name).Distinct().Count();
 	var undefinedNames = TankNameResolver.UndefinedTankNames.Count + MapNameResolver.UndefinedMapNames.Count;
 }
 
 <section class="gl-bar" aria-label="Filters">
-	<div class="gl-search">
-		<MudAutocomplete T="IndexPage.SearchValue"
-						 Value="Search"
-						 ValueChanged="SearchChanged"
-						 SearchFunc="SearchAllAsync"
-						 ToStringFunc="@(e=> e == null ? null : $"{e.Value} ({e.Type})")"
-						 DebounceInterval="500"
-						 Placeholder="Zoek op spelernaam of clan tag"
-						 Adornment="Adornment.Start"
-						 AdornmentIcon="@Icons.Material.Filled.Search"
-						 IconSize="Size.Medium"
-						 Variant="Variant.Outlined"
-						 Margin="Margin.Dense"
-						 Clearable="true"
-						 Class="mt-0">
-			<ItemTemplate Context="e">
-				<div class="d-flex justify-space-between align-center">
-					<MudText Typo="Typo.inherit">@e.Value</MudText>
-					<MudText Typo="Typo.caption">@e.Type</MudText>
-				</div>
-			</ItemTemplate>
-		</MudAutocomplete>
-	</div>
+	<MudAutocomplete T="BattleFilters.Option" Placeholder="Clan kiezen" aria-label="Clan"
+					 Value="_clan" ValueChanged="PickClan"
+					 SearchFunc="SearchClans" ToStringFunc="@(o => o?.Name)" ItemDisabledFunc="@(o => o.Header != null)"
+					 MaxItems="MaxItems" ReturnedItemsCountChanged="@(n => _clanCount = n)"
+					 Variant="Variant.Filled" Margin="Margin.Dense" Class="@("wot-filter" + (Clan != null ? " filled" : string.Empty))" PopoverClass="wot-filter-pop"
+					 Adornment="Adornment.Start" AdornmentIcon="@BattleFilters.Shield" Strict="false" OpenOnFocus="true"
+					 Clearable="true" ResetValueOnEmptyText="true" CoerceText="true" DebounceInterval="150" RelativeWidth="DropdownWidth.Adaptive">
+		<ItemTemplate Context="o">
+			<span class="wot-opt"><span class="wot-opt-tag">[@BattleFilters.Highlighted(o.Name, _clanTerm)]</span><span class="wot-opt-n wot-num">@BattleCount(o.Battles)</span></span>
+		</ItemTemplate>
+		<ItemDisabledTemplate Context="o"><span class="wot-opt-h">@o.Header</span></ItemDisabledTemplate>
+		<MoreItemsTemplate><span class="wot-opt-more">Nog @(_clanCount - MaxItems) clans · typ om te zoeken</span></MoreItemsTemplate>
+		<NoItemsTemplate><span class="wot-opt-more">Geen clan gevonden</span></NoItemsTemplate>
+	</MudAutocomplete>
+
+	<MudAutocomplete T="BattleFilters.Option" Placeholder="Speler zoeken" aria-label="Speler"
+					 Value="_player" ValueChanged="PickPlayer"
+					 SearchFunc="SearchPlayers" ToStringFunc="@(o => o?.Name)" ItemDisabledFunc="@(o => o.Header != null)"
+					 MaxItems="@(Clan == null ? MaxItems : (int?)null)" ReturnedItemsCountChanged="@(n => _playerCount = n)"
+					 Variant="Variant.Filled" Margin="Margin.Dense" Class="@("wot-filter" + (Player != null ? " filled" : string.Empty))" PopoverClass="wot-filter-pop"
+					 Adornment="Adornment.Start" AdornmentIcon="@BattleFilters.Helmet" AdornmentText="@PlayerTag" Strict="false" OpenOnFocus="true"
+					 Clearable="true" ResetValueOnEmptyText="true" CoerceText="true" DebounceInterval="150" RelativeWidth="DropdownWidth.Adaptive">
+		<ItemTemplate Context="o">
+			<span class="wot-opt">
+				@if (Clan == null)
+				{
+					<span class="wot-opt-tag">[@(o.Clan ?? "?")]</span>
+				}
+				<span>@BattleFilters.Highlighted(o.Name, _playerTerm)</span>
+				@if (Clan != null)
+				{
+					<span class="wot-opt-n wot-num">@BattleCount(o.Battles)</span>
+				}
+			</span>
+		</ItemTemplate>
+		<ItemDisabledTemplate Context="o"><span class="wot-opt-h">@o.Header</span></ItemDisabledTemplate>
+		<MoreItemsTemplate><span class="wot-opt-more">Nog @(_playerCount - MaxItems) spelers · typ om te zoeken</span></MoreItemsTemplate>
+		<NoItemsTemplate><span class="wot-opt-more">Geen speler gevonden</span></NoItemsTemplate>
+	</MudAutocomplete>
 
 	<MudToggleGroup T="IndexPage.MatchType" Value="MatchType" ValueChanged="MatchTypeChanged" Class="wot-view-toggle" aria-label="Soort gevechten">
 		@foreach (var matchType in Enum.GetValues<IndexPage.MatchType>())
@@ -53,24 +69,6 @@
 	<div class="gl-tools">
 		@if (CanToggleBattleStats)
 		{
-			if (ShowBattleStats)
-			{
-				<div class="gl-player">
-					<MudAutocomplete Value="DetailedInfoForPlayer"
-									 ValueChanged="DetailedInfoForPlayerChanged"
-									 SearchFunc="SearchPlayerAsync"
-									 DebounceInterval="500"
-									 Placeholder="Filter speler stats"
-									 Adornment="Adornment.Start"
-									 AdornmentIcon="@Icons.Material.Filled.AutoGraph"
-									 IconSize="Size.Medium"
-									 Margin="Margin.Dense"
-									 Variant="Variant.Outlined"
-									 Clearable="true"
-									 Class="mt-0"></MudAutocomplete>
-				</div>
-			}
-
 			<button type="button" class="gl-imgbtn gl-icon-only gl-book" aria-pressed="@(ShowBattleStats ? "true" : "false")" aria-label="Statistieken" title="Uitgebreide statistieken&#10;▲ hoog · ▬ gemiddeld · ▼ laag&#10;Geraakt: ≤ 50% laag, ≥ 70% hoog&#10;Gepenetreerd: ≤ 55% laag, ≥ 70% hoog&#10;Geblokt: ≥ 25% hoog" @onclick="() => ShowBattleStatsChanged.InvokeAsync(!ShowBattleStats)">
 				<img src="@(ShowBattleStats ? "images/book-open.png" : "images/book-closed.png")" alt="" />
 			</button>
@@ -90,19 +88,27 @@
 </section>
 
 @code {
-	/// <summary>All the battles: the search suggestions come from these.</summary>
+	/// <summary>The lookup of the clans and players in the battles, built once by Index and dropped when the battles change.</summary>
 	[Parameter, EditorRequired]
-	public required IReadOnlyCollection<BattleReport> Reports { get; set; }
+	public required BattleFilters Filters { get; set; }
 
-	/// <summary>The battles that pass the search and the match type: the result counts and the clan member count follow these.</summary>
+	/// <summary>The battles that pass the filters and the match type: the result counts and the clan member count follow these.</summary>
 	[Parameter, EditorRequired]
 	public required IReadOnlyCollection<BattleReport> Filtered { get; set; }
 
+	/// <summary>The chosen clan tag; null shows every clan.</summary>
 	[Parameter]
-	public IndexPage.SearchValue? Search { get; set; }
+	public string? Clan { get; set; }
 
 	[Parameter]
-	public EventCallback<IndexPage.SearchValue?> SearchChanged { get; set; }
+	public EventCallback<string?> ClanChanged { get; set; }
+
+	/// <summary>The chosen player name; null shows every player.</summary>
+	[Parameter]
+	public string? Player { get; set; }
+
+	[Parameter]
+	public EventCallback<string?> PlayerChanged { get; set; }
 
 	[Parameter]
 	public IndexPage.MatchType MatchType { get; set; }
@@ -125,43 +131,56 @@
 	[Parameter]
 	public EventCallback<bool> ShowBattleStatsChanged { get; set; }
 
-	[Parameter]
-	public string DetailedInfoForPlayer { get; set; } = string.Empty;
+	/// <summary>A dropdown shows this many lines (headers included); the rest is found by typing. MudAutocomplete does not virtualize. The Speler list of a chosen clan is not capped: a clan has far fewer players than the whole log.</summary>
+	private const int MaxItems = 100;
 
-	[Parameter]
-	public EventCallback<string> DetailedInfoForPlayerChanged { get; set; }
+	private BattleFilters.Option? _clan;
+	private BattleFilters.Option? _player;
+	private string _clanTerm = string.Empty;
+	private string _playerTerm = string.Empty;
+	private int _clanCount;
+	private int _playerCount;
 
-	private Task<IEnumerable<IndexPage.SearchValue>> SearchAllAsync(string value, CancellationToken token)
+	protected override void OnParametersSet()
 	{
-		var playerNames = Reports
-		.SelectMany(x => x.Team1.Players.Concat(x.Team2.Players))
-		.Select(x => new IndexPage.SearchValue(x.Name, "Speler"))
-		.Distinct();
-
-		var teamNames = Reports
-		.SelectMany(x => new[] { x.Team1.Abbreviation, x.Team2.Abbreviation })
-		.Select(x => new IndexPage.SearchValue(x, "Clan"))
-		.Distinct();
-
-		var names = teamNames.Concat(playerNames);
-
-		if (string.IsNullOrEmpty(value))
-		{
-			return Task.FromResult(names);
-		}
-
-		return Task.FromResult(names.Where(x => x?.Value?.Contains(value, StringComparison.InvariantCultureIgnoreCase) ?? false));
+		// The chosen values live in Index as plain strings (and are cleared there by "Filters wissen"): the boxes follow them.
+		_clan = Clan == null ? null : _clan?.Name == Clan ? _clan : new BattleFilters.Option(Clan, Clan, 0);
+		_player = Player == null ? null : _player?.Name == Player ? _player : new BattleFilters.Option(Player, null, 0);
 	}
 
-	private Task<IEnumerable<string>> SearchPlayerAsync(string value, CancellationToken token)
-	{
-		var playerNames = Reports.SelectMany(x => x.Team1.Players.Concat(x.Team2.Players)).Select(x => x.Name ?? string.Empty).Distinct();
-		if (string.IsNullOrEmpty(value))
-		{
-			return Task.FromResult(playerNames);
-		}
+	private static string BattleCount(int battles) => $"{battles} {(battles == 1 ? "gevecht" : "gevechten")}";
 
-		return Task.FromResult(playerNames.Where(x => x?.Contains(value, StringComparison.InvariantCultureIgnoreCase) ?? false));
+	/// <summary>The clan tag as the start adornment of the Speler box (mud.css colours it and draws the helmet in front of it); with no tag the helmet icon shows.</summary>
+	private string? PlayerTag => BattleFilters.SpelerTag(Clan, _player) is { } tag ? $"[{tag}]" : null;
+
+	private Task<IEnumerable<BattleFilters.Option>> SearchClans(string? term, CancellationToken token)
+	{
+		_clanTerm = term ?? string.Empty;
+		return Task.Run(() => Filters.ClanOptions(term), token);
+	}
+
+	private Task<IEnumerable<BattleFilters.Option>> SearchPlayers(string? term, CancellationToken token)
+	{
+		_playerTerm = term ?? string.Empty;
+		return Task.Run(() => Filters.PlayerOptions(Clan, term), token);
+	}
+
+	/// <summary>Choosing a clan drops a chosen player who never played for it, so the two filters do not leave an empty table by themselves.</summary>
+	private async Task PickClan(BattleFilters.Option? clan)
+	{
+		_clan = clan;
+		await ClanChanged.InvokeAsync(clan?.Name);
+
+		if (clan != null && Player != null && Filters.PlayerAfterClan(Player, clan.Name) == null)
+		{
+			await PlayerChanged.InvokeAsync(null);
+		}
+	}
+
+	private Task PickPlayer(BattleFilters.Option? player)
+	{
+		_player = player;
+		return PlayerChanged.InvokeAsync(player?.Name);
 	}
 
 	private async Task OpenUndefinedNamesDialog()
