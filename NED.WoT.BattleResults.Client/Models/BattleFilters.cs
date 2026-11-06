@@ -128,6 +128,9 @@ public sealed class BattleFilters
         return rows;
     }
 
+    /// <summary>The clan tag in front of the Speler field, only while a player is picked: the chosen clan's, otherwise that player's latest clan. Null (the field shows only the helmet icon) without a player, also with a clan chosen, and for a player with no clan tag and no clan chosen.</summary>
+    public static string? SpelerTag(string? chosenClan, Option? player) => player == null ? null : chosenClan ?? (string.IsNullOrEmpty(player.Clan) ? null : player.Clan);
+
     /// <summary>The Speler list for the typed term. With a clan: only the players who were ever on that clan's team, each with the battles with that clan. Without: every player once, your own clan's players first, then the others, each A to Z.</summary>
     public IEnumerable<Option> PlayerOptions(string? clan, string? term)
     {
@@ -222,6 +225,11 @@ public sealed class BattleFilters
         // A clan: only its players, with the battles with that clan.
         List<Option> dutch = filters.PlayerOptions("DUTCH", string.Empty).Where(x => x.Header == null).ToList();
         Debug.Assert(dutch.Select(x => x.Name).SequenceEqual(["KaasKoning", "KlompKees"]) && dutch.Select(x => x.Battles).SequenceEqual([1, 3]), "players of a clan: only that clan's, with battle counts");
+
+        // The tag of the Speler field, only with a player picked: the chosen clan, else the player's latest clan; none at all without either.
+        Option picked = new("KlompKees", "DUTCH", 0);
+        Debug.Assert(SpelerTag(null, null) == null && SpelerTag("RHINE", null) == null, "Speler tag: no player, no tag, also with a clan chosen");
+        Debug.Assert(SpelerTag(null, picked) == "DUTCH" && SpelerTag("RHINE", picked) == "RHINE" && SpelerTag(null, new Option("Zonder", null, 0)) == null && SpelerTag("RHINE", new Option("Zonder", null, 0)) == "RHINE", "Speler tag: the chosen clan, else the player's clan, else no tag (helmet icon only)");
 
         // Choosing a clan keeps a player who was ever on it and drops one who never was.
         Debug.Assert(filters.PlayerAfterClan("KlompKees", "DUTCH") == "KlompKees" && filters.PlayerAfterClan("klompkees", "RHINE") == null && filters.PlayerAfterClan("Kapitein_Kees", "RHINE") == "Kapitein_Kees", "a chosen player stays only when they were on the chosen clan");

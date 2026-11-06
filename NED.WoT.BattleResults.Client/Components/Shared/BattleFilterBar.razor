@@ -150,8 +150,8 @@
 
 	private static string BattleCount(int battles) => $"{battles} {(battles == 1 ? "gevecht" : "gevechten")}";
 
-	/// <summary>The clan tag of the picked player as the start adornment of the Speler box (mud.css colours it and draws the helmet in front); the helmet icon shows while no tag is set.</summary>
-	private string? PlayerTag => _player?.Clan is { Length: > 0 } clan ? $"[{clan}]" : null;
+	/// <summary>The clan tag as the start adornment of the Speler box (mud.css colours it and draws the helmet in front of it); with no tag the helmet icon shows.</summary>
+	private string? PlayerTag => BattleFilters.SpelerTag(Clan, _player) is { } tag ? $"[{tag}]" : null;
 
 	private Task<IEnumerable<BattleFilters.Option>> SearchClans(string? term, CancellationToken token)
 	{
