@@ -103,7 +103,7 @@
 			  Loading="@_loading"
 			  Hover="true"
 			  Elevation="0"
-			  Class="@("wot-battle-table" + (_showBattleStats ? " stats" : ""))"
+			  Class="@("wot-battle-table" + (_showBattleStats ? " stats" : "") + (_loading ? " loading" : ""))"
 			  GroupHeaderClass="gl-day"
 			  RowClassFunc="@RowClass"
 			  OnRowClick="@(e => ToggleShowDetailsAsync(e.Item))">
@@ -335,25 +335,24 @@
 		});
 	}
 
-	/// <summary>The skeleton rows as one row of the table, over all the columns.</summary>
+	/// <summary>The skeleton rows: one table row with a cell per column, each as high as the table area (gl-skel-col in mud.css paints a grey bar per 48px row), so the bars line up with the columns and fill the room down to the footer.</summary>
 	private RenderFragment SkeletonRow => @<text>
-		<MudTr>
-			<MudTd colspan="@(_showBattleStats ? 11 : 7)" Class="gl-skel-cell">@SkeletonRows</MudTd>
+		<MudTr aria-busy="true">
+			<MudTd Class="gl-skel-col" />
+			<MudTd Class="gl-skel-col" Style="--bar: 12px; --at: 50%" />
+			<MudTd Class="gl-skel-col" Style="--bar: 96px" />
+			<MudTd Class="gl-skel-col" Style="--bar: 104px" />
+			<MudTd Class="gl-skel-col" Style="--bar: 240px" />
+			@if (_showBattleStats)
+			{
+				<MudTd Class="gl-skel-col" Style="--bar: 64px" />
+				<MudTd Class="gl-skel-col" Style="--bar: 64px" />
+				<MudTd Class="gl-skel-col" Style="--bar: 64px" />
+				<MudTd Class="gl-skel-col" Style="--bar: 64px" />
+			}
+			<MudTd Class="gl-skel-col" Style="--bar: 76px; --at: calc(100% - 12px)" />
+			<MudTd Class="gl-skel-col" />
 		</MudTr>
-	</text>;
-
-	/// <summary>Three rows of grey bars where the next battles will come.</summary>
-	private static RenderFragment SkeletonRows => @<text>
-		@for (int i = 0; i < 3; i++)
-		{
-			<div class="gl-skel-row" aria-busy="true">
-				<MudSkeleton Width="12px" Height="12px" SkeletonType="SkeletonType.Rectangle" />
-				<MudSkeleton Width="96px" Height="12px" SkeletonType="SkeletonType.Rectangle" />
-				<MudSkeleton Width="@($"{104 + i * 8}px")" Height="12px" SkeletonType="SkeletonType.Rectangle" />
-				<MudSkeleton Width="@($"{240 - i * 10}px")" Height="12px" SkeletonType="SkeletonType.Rectangle" />
-				<MudSkeleton Width="76px" Height="12px" SkeletonType="SkeletonType.Rectangle" Class="gl-skel-end" />
-			</div>
-		}
 	</text>;
 
 	[Conditional("DEBUG")]

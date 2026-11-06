@@ -130,9 +130,5 @@
 .empty > svg { width: 48px; height: 48px; fill: var(--mud-palette-text-secondary); }
 .empty p { max-width: 340px; margin: 0; font-size: 14px; color: var(--mud-palette-text-secondary); }
 
-/* Rows still to come while loading: grey bars where the next battles will be. The colour of a bar is the theme's Skeleton. */
-.gl-skel-row { box-sizing: border-box; display: flex; align-items: center; gap: 32px; height: 48px; padding: 0 16px 0 56px; border-bottom: 1px solid var(--mud-palette-table-lines); }
-.gl-skel-end { margin-left: auto; }
-
 /* The "Geen toegang" page: a centred card on the background-gray well. */
 .gl-unauth { box-sizing: border-box; display: flex; align-items: center; justify-content: center; min-height: calc(100vh - var(--mud-appbar-height)); padding: 24px; background: var(--mud-palette-background-gray); }

@@ -523,8 +523,17 @@
 .wot-battle-table > .mud-table-container > .mud-table-root > tbody > tr.gl-unreadable { cursor: default; }
 .wot-battle-table > .mud-table-container > .mud-table-root > tbody > tr > .mud-table-cell.gl-err { padding: 0; }
 
-/* The skeleton rows under the last battle while loading hold their own rows, so the cell has no height, padding or line of its own. */
-.wot-battle-table > .mud-table-container > .mud-table-root > tbody > tr > .mud-table-cell.gl-skel-cell { height: auto; padding: 0; border-bottom: 0; }
+/* The skeleton rows while loading (Index's SkeletonRow): a cell per column, each as high as the table area minus the column header (36px) and the footer (44px), so with no battle yet they fill the room down to the footer.
+   container-type gives 100cqh, the height of the scroll container. Each cell paints a grey bar (--bar wide, --at from the left; the theme's Skeleton colour) and a line on every 48px row. */
+.wot-battle-table.loading > .mud-table-container { container-type: size; }
+.wot-battle-table > .mud-table-container > .mud-table-root > tbody > tr > .mud-table-cell.gl-skel-col {
+    height: calc(100cqh - 80px);
+    padding: 0;
+    border-bottom: 0;
+    background:
+        linear-gradient(to bottom, transparent 18px, var(--mud-palette-skeleton) 18px 30px, transparent 30px) var(--at, 12px) 0 / var(--bar, 0px) 48px repeat-y,
+        linear-gradient(to bottom, transparent 47px, var(--mud-palette-table-lines) 47px) 0 0 / 100% 48px repeat-y;
+}
 
 /* Loading="true" makes MudBlazor add a second head row (a th with colspan 1000 and an indeterminate bar). The page has its own progress bar, and a 1000-column cell would make the fixed layout collapse the Team column: no row, no layout. */
 .wot-battle-table > .mud-table-container > .mud-table-root > thead > tr + tr { display: none; }
@@ -541,6 +550,8 @@
 }
 
 .wot-row-alert .mud-alert-message { padding: 0; }
+/* The wrapper of the icon and the message is top-aligned by MudBlazor, which leaves the one-line message above the icon's middle. */
+.wot-row-alert .mud-alert-position { align-items: center; }
 .wot-row-alert b { color: var(--mud-palette-warning); font-weight: 600; }
 
 /* ==== MudProgressLinear (design .prog: 4px, a hard 2px radius, Primary on the dark track) ==== */
@@ -554,9 +565,6 @@
 /* The track is a ::before in MudBlazor (the colour at 20%); the design wants the dark steel. */
 .mud-progress-linear.wot-progress::before { background-color: var(--mud-palette-dark); opacity: 1; }
 .wot-progress .mud-progress-linear-bar { border-radius: 2px; }
-
-/* ==== MudSkeleton (the bars of the skeleton rows) ==== */
-.gl-skel-row .mud-skeleton { flex: none; border-radius: 2px; }
 
 /* ==== MudSnackbar (design .snack: an outlined dense Alert on the dialog surface, bottom left) ==== */
 /* --wot-snack is the severity's colour: the tint of the ground, the icon and the lead word. MudBlazor writes its own border colour and text colour per severity; the design keeps the steel edge and the normal text. */
