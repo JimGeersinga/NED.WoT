@@ -33,7 +33,7 @@
 
 				@if (_narrow)
 				{
-					<MudTabs Class="wot-tabs" Elevation="0" PanelClass="pt-4">
+					<MudTabs Class="wot-tabs" Elevation="0" TabPanelsClass="pt-4">
 						<MudTabPanel Text="@OpponentsTitle">@Opponents</MudTabPanel>
 						<MudTabPanel Text="@PastTitle">@Past</MudTabPanel>
 					</MudTabs>
@@ -85,7 +85,7 @@
 				{
 					<div class="d-flex justify-space-between gap-3">
 						<span>@vehicle.Key</span>
-						<MudText Typo="Typo.body2" Class="mud-text-secondary wot-num">@((int)Math.Round(100.0 * vehicle.Count() / context.Count()))%</MudText>
+						<MudText Typo="Typo.body2" Class="mud-text-secondary wot-num">@((int)Math.Round(100.0 * vehicle.Count() / context.Count(), MidpointRounding.AwayFromZero))%</MudText>
 					</div>
 				}
 			</MudTd>
@@ -95,7 +95,7 @@
 	private RenderFragment Past => @<MudTable Items="@_battles" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Elevation="0">
 		<HeaderContent>
 			<MudTh>
-				<MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<BattleReport, object>(x => x.MatchTimeDisplay)">Datum</MudTableSortLabel>
+				<MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<BattleReport, object>(x => x.MatchStart)">Datum</MudTableSortLabel>
 			</MudTh>
 			<MudTh Style="text-align: right">
 				<MudTableSortLabel SortBy="new Func<BattleReport, object?>(x => x.MatchDuration)">Duur</MudTableSortLabel>
@@ -112,8 +112,14 @@
 			<MudTd DataLabel="Datum" Class="wot-num">@context.MatchTimeDisplay</MudTd>
 			<MudTd DataLabel="Duur" Style="text-align: right" Class="wot-num mud-text-secondary">@context.MatchDurationDisplay</MudTd>
 			<MudTd DataLabel="Map"><b>@context.MapName</b> @ownTeam?.Base</MudTd>
-			<MudTd DataLabel="Winnaar" Class="@ownTeam?.Result.ToString()">
-				@(context.Team1.IsWinner == true ? context.Team1.Abbreviation : context.Team2.Abbreviation)
+			<MudTd DataLabel="Winnaar">
+				<MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+					<span class="@ownTeam?.Result.ToString()">@(context.Team1.IsWinner == true ? context.Team1.Abbreviation : context.Team2.Abbreviation)</span>
+					@if (ownTeam is not null)
+					{
+						<ResultChip Result="ownTeam.Result" />
+					}
+				</MudStack>
 			</MudTd>
 		</RowTemplate>
 	</MudTable>;

@@ -6,7 +6,16 @@
 {
     <MudIcon Icon="@Icon" Size="Size.Small" Class="mr-3" />
 }
-<MudText Typo="Typo.h5" HtmlTag="h2" Class="wot-dialog-title">@(ChildContent ?? (RenderFragment)(b => b.AddContent(0, Title)))</MudText>
+<MudText Typo="Typo.h5" HtmlTag="h2" Class="wot-dialog-title">
+    @if (ChildContent is not null)
+    {
+        @ChildContent
+    }
+    else
+    {
+        @Title
+    }
+</MudText>
 @if (Closable)
 {
     <MudIconButton Icon="@Icons.Material.Outlined.Close" Size="Size.Small" Class="mud-button-close" aria-label="Sluiten" title="Sluiten" OnClick="@(() => Dialog.Cancel())" />

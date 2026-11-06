@@ -80,11 +80,8 @@
 
     private Settings modal = new Settings();
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        // Escape closes the dialog only when it can be cancelled: the first run has to be saved (the options come from MainLayout.OpenSettings).
-        await MudDialog.SetOptionsAsync(MudDialog.Options with { CloseOnEscapeKey = CanCancel });
-
         modal = new Settings
             {
                 WotReplayDirectory = SettingService.Settings.WotReplayDirectory,
