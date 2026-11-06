@@ -100,6 +100,7 @@
 			  FixedHeader="true"
 			  FixedFooter="true"
 			  Height="100%"
+			  Loading="@_loading"
 			  Hover="true"
 			  Elevation="0"
 			  Class="@("wot-battle-table" + (_showBattleStats ? " stats" : ""))"
@@ -178,17 +179,13 @@
 			@if (_loading && ReferenceEquals(context, lastVisible))
 			{
 				@* Rows still to come, under the last one. *@
-				<MudTr>
-					<MudTd colspan="@(_showBattleStats ? 11 : 7)" Class="gl-skel-cell">@SkeletonRows</MudTd>
-				</MudTr>
+				@SkeletonRow
 			}
 		</ChildRowContent>
-		<NoRecordsContent>
-			@if (_loading)
-			{
-				@SkeletonRows
-			}
-		</NoRecordsContent>
+		@* Loading with no row yet: the skeleton rows are real rows of the table. NoRecordsContent would sit in a th with colspan 1000, which makes the fixed layout a 1000-column table and collapses the Team column. *@
+		<LoadingContentBody>
+			@SkeletonRow
+		</LoadingContentBody>
 		<FooterContent>
 			<MudTh colspan="5" scope="row">
 				<div class="gl">
@@ -337,6 +334,13 @@
 			CloseButton = false
 		});
 	}
+
+	/// <summary>The skeleton rows as one row of the table, over all the columns.</summary>
+	private RenderFragment SkeletonRow => @<text>
+		<MudTr>
+			<MudTd colspan="@(_showBattleStats ? 11 : 7)" Class="gl-skel-cell">@SkeletonRows</MudTd>
+		</MudTr>
+	</text>;
 
 	/// <summary>Three rows of grey bars where the next battles will come.</summary>
 	private static RenderFragment SkeletonRows => @<text>

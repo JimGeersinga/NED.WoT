@@ -526,9 +526,8 @@
 /* The skeleton rows under the last battle while loading hold their own rows, so the cell has no height, padding or line of its own. */
 .wot-battle-table > .mud-table-container > .mud-table-root > tbody > tr > .mud-table-cell.gl-skel-cell { height: auto; padding: 0; border-bottom: 0; }
 
-/* NoRecordsContent: MudBlazor wraps it in a th and a div with a my-3 margin; the skeleton rows bring their own spacing. */
-.wot-battle-table > .mud-table-container > .mud-table-root > tbody > tr > .mud-table-empty-row { padding: 0; border-bottom: 0; }
-.wot-battle-table .mud-table-empty-row > div { margin: 0 !important; /* beats the my-3 utility class MudBlazor puts on it */ }
+/* Loading="true" makes MudBlazor add a second head row (a th with colspan 1000 and an indeterminate bar). The page has its own progress bar, and a 1000-column cell would make the fixed layout collapse the Team column: no row, no layout. */
+.wot-battle-table > .mud-table-container > .mud-table-root > thead > tr + tr { display: none; }
 
 /* ==== MudAlert (the warning row of an unreadable replay: design .alert.c-warn on the table's row) ==== */
 .mud-alert.wot-row-alert {
