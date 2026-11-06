@@ -188,7 +188,7 @@ public partial class BattleReportService
         if (AddBattleReport(e.Name, report))
         {
             _snackbar.Add(
-                report.Error == null ? Notice("Toegevoegd", e.Name) : Notice("Niet toegevoegd", $"{e.Name} kon niet worden gelezen"),
+                report.Error == null ? Notice("Toegevoegd", e.Name) : Notice("Niet te lezen", e.Name),
                 report.Error == null ? Severity.Success : Severity.Warning);
         }
 

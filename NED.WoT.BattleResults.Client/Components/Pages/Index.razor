@@ -12,20 +12,20 @@
 @inject IJSRuntime JSRuntime;
 @inject IDialogService DialogService;
 @inject ISnackbar Snackbar;
-@inject NavigationManager NavigationManager;
 
 @{
 	// One pass per render: the readable battles that pass the search and the match type (the totals follow these), then their days.
 	var readable = _reports.Where(x => x.Error == null).ToList();
 	var filtered = readable.Where(TableFilter).ToList();
-	// A replay that can't be read is a warning row of its own: in every view (no filter can match it), but never in a count. A search hides it.
-	var unreadable = string.IsNullOrWhiteSpace(_search?.Value) ? _reports.Where(x => x.Error != null).ToList() : [];
+	// The table shows the battles under the result chips (a day without one drops out by itself); the day header and the footer count the whole day.
+	var battles = filtered.Where(x => _resultVisibility[x.Result]).ToList();
+	// A replay that can't be read is a warning row of its own, never in a count, and only next to battle rows: a search hides it, and without a battle row the empty state speaks.
+	var unreadable = UnreadableShown(battles.Count, string.IsNullOrWhiteSpace(_search?.Value), _reports);
 	var days = BuildDays(filtered, unreadable);
-	// The table shows the rows under the result chips (a day without one drops out by itself); the day header and the footer count the whole day.
 	var dayByLabel = days.ToDictionary(d => d.Label);
-	var visible = filtered.Where(x => _resultVisibility[x.Result]).Concat(unreadable).OrderByDescending(x => x.MatchStart).ToList();
+	var visible = battles.Concat(unreadable).OrderByDescending(x => x.MatchStart).ToList();
 	var lastVisible = visible.LastOrDefault();
-	var emptyCause = _loading || visible.Count > 0 ? EmptyCause.None : EmptyCauseOf(Directory.Exists(SettingService.Settings.WotReplayDirectory), _reports.Count);
+	var emptyCause = _loading || battles.Count > 0 ? EmptyCause.None : EmptyCauseOf(Directory.Exists(SettingService.Settings.WotReplayDirectory), _reports.Count);
 	var filesToLoad = BattleResultService.FilesToLoad;
 	var filesLoaded = BattleResultService.FilesLoaded;
 }
@@ -274,7 +274,11 @@
 		FiltersHideAll
 	}
 
-	/// <summary>The cause of an empty table once loading is done and no row is shown: no folder, no replay at all since the date (all the replays, readable or not), or replays that the filters hide.</summary>
+	/// <summary>The unreadable replays that get a warning row: only when a battle row is shown and no search is active.</summary>
+	private static List<BattleReport> UnreadableShown(int battleRows, bool noSearch, IEnumerable<BattleReport> reports) =>
+		battleRows > 0 && noSearch ? reports.Where(x => x.Error != null).ToList() : [];
+
+	/// <summary>The cause of an empty table once loading is done and no battle row is shown: no folder, no replay at all since the date (all the replays, readable or not), or replays that the filters hide.</summary>
 	private static EmptyCause EmptyCauseOf(bool folderExists, int replayCount) =>
 		!folderExists ? EmptyCause.ReplayFolderMissing
 		: replayCount == 0 ? EmptyCause.NothingSinceDate
@@ -321,13 +325,10 @@
 		}
 	}
 
-	/// <summary>Opens the settings, for the empty states that are fixed there. A new start date reloads the battles (a new folder reloads them from the dialog itself).</summary>
+	/// <summary>Opens the settings, for the empty states that are fixed there. The dialog reloads the battles itself when the folder or the start date changes.</summary>
 	private async Task OpenSettingsAsync()
 	{
-		DateTime? since = SettingService.Settings.LoadBattlesSince;
-		string? directory = SettingService.Settings.WotReplayDirectory;
-
-		IDialogReference dialog = await DialogService.ShowAsync<SettingsDialog>("Instellingen", new DialogOptions
+		await DialogService.ShowAsync<SettingsDialog>("Instellingen", new DialogOptions
 		{
 			MaxWidth = MaxWidth.Medium,
 			FullWidth = true,
@@ -335,12 +336,6 @@
 			CloseOnEscapeKey = true,
 			CloseButton = false
 		});
-		DialogResult? result = await dialog.Result;
-
-		if (result is { Canceled: false } && SettingService.Settings.LoadBattlesSince != since && SettingService.Settings.WotReplayDirectory == directory)
-		{
-			NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
-		}
 	}
 
 	/// <summary>Three rows of grey bars where the next battles will come.</summary>
@@ -383,6 +378,9 @@
 		List<Day> brokenDays = BuildDays([], [broken]);
 		Debug.Assert(broken.Error == "Kan bestand kapot.wotreplay niet lezen", "the warning row names the file");
 		Debug.Assert(brokenDays.Count == 1 && brokenDays[0].Items.Count == 0 && brokenDays[0].Newest == broken.MatchStart, "an unreadable replay alone is a day with a row and no battles");
+		Debug.Assert(UnreadableShown(0, true, [broken]).Count == 0, "no battle row: the unreadable replay gets no lone warning row (the empty state shows)");
+		Debug.Assert(UnreadableShown(3, true, [broken]).Count == 1, "next to battle rows it gets its warning row");
+		Debug.Assert(UnreadableShown(3, false, [broken]).Count == 0, "a search hides it");
 		List<Day> mixedDays = BuildDays(reports, [broken]);
 		Debug.Assert(mixedDays.Count == 1 && mixedDays[0].Items.Count == 5 && mixedDays[0].Number(reports[0]) == 1, "an unreadable replay does not change the count or the numbers of its day");
 

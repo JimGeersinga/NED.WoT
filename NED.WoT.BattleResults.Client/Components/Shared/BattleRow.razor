@@ -9,10 +9,6 @@
 		</MudTd>
 	</MudTr>
 }
-else if (Report.Error != null)
-{
-	<MudTd colspan="@(ShowBattleStats ? 11 : 7)" Class="gl-err"><svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Filled.Warning)</svg>@Report.Error</MudTd>
-}
 else
 {
 	var ownTeam = Report.OwnTeam;
