@@ -1,98 +1,61 @@
-﻿@inject BattleReportService BattleReportService
+﻿@implements IBrowserViewportObserver
+@implements IAsyncDisposable
+@inject BattleReportService BattleReportService
 @inject SettingService SettingService
+@inject IBrowserViewportService ViewportService
 
-<MudDialog>
+<MudDialog Class="wot-dialog" TitleClass="wot-dialog-bar">
 	<TitleContent>
-		@if (Match.HasValue)
-		{
-			<div class="d-flex text-center justify-content-center align-items-center">
-				<MudText Typo="Typo.h4">@Match.Value.Item1</MudText>
-				<MudText Typo="Typo.h5" Class="mx-3">vs</MudText>
-				<MudText Typo="Typo.h4">@Match.Value.Item2</MudText>
-			</div>
-		}
+		<WotDialogTitle>
+			@if (Match.HasValue)
+			{
+				<MudStack Row Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="4">
+					<MudText Typo="Typo.h4" HtmlTag="span">[@Match.Value.Item1]</MudText>
+					<MudText Typo="Typo.h5" HtmlTag="span" Color="Color.Secondary">vs</MudText>
+					<MudText Typo="Typo.h4" HtmlTag="span">[@Match.Value.Item2]</MudText>
+				</MudStack>
+			}
+		</WotDialogTitle>
 	</TitleContent>
 	<DialogContent>
 		@if (Match.HasValue)
 		{
-			<MudGrid Class="pa-3">
-				<MudItem sm="12">
-					@{
-						int wins = _battles.Count(x => x.Result is Result.Win);
-						int loses = _battles.Count(x => x.Result is Result.Lose);
-						int draws = _battles.Count(x => x.Result is Result.Draw);
+			<MudStack Spacing="4" Class="pt-2">
+				<MudStack Row Justify="Justify.Center" Spacing="6" role="group" aria-label="Eerdere gevechten">
+					@foreach (var (result, count) in new[] { (Result.Win, _battles.Count(x => x.Result is Result.Win)), (Result.Draw, _battles.Count(x => x.Result is Result.Draw)), (Result.Lose, _battles.Count(x => x.Result is Result.Lose)) })
+					{
+						<MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+							<MudText Typo="Typo.h5" Class="wot-num">@count</MudText>
+							<ResultChip Result="result" />
+						</MudStack>
 					}
-					<MudText Typo="Typo.subtitle1" Class="text-center">
-						<b class="@Result.Win.ToString()">@wins</b> Gewonnen
-						<span class="mx-2 grey-text text-darken-1">|</span>
-						<b class="@Result.Draw.ToString()">@draws</b> Gelijkspel
-						<span class="mx-2 grey-text text-darken-1">|</span>
-						<b class="@Result.Lose.ToString()">@loses</b> Verloren
-					</MudText>
-				</MudItem>
-				<MudItem sm="6">
-					<MudTable Items="@_enemyPlayers" Hover="true" Breakpoint="Breakpoint.Sm" FixedHeader="true" Dense="true" Bordered="true">
-						<HeaderContent>
-							<MudTh Style="text-align: center">#</MudTh>
-							<MudTh Style="text-align: center">
-								<MudTableSortLabel InitialDirection="SortDirection.Descending" SortBy="new Func<IGrouping<string?, Player>, object>(x => x.Count())">Battles</MudTableSortLabel>
-							</MudTh>
-							<MudTh>
-								<MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<IGrouping<string?, Player>, object>(x => x.Key ?? string.Empty)">Speler</MudTableSortLabel>
-							</MudTh>
-							<MudTh>
-								Tanks
-							</MudTh>
-						</HeaderContent>
-						<RowTemplate>
-							@{
-								var index = _enemyPlayers.FindIndex(x => x.Key == context.Key) + 1;
-							}
-							<MudTd DataLabel="#" Style="text-align:center;vertical-align: text-top;">@index</MudTd>
-							<MudTd DataLabel="Battles" Style="text-align: center; vertical-align: text-top;">@context.Count()</MudTd>
-							<MudTd DataLabel="Speler" Style="vertical-align: text-top;">@context.Key</MudTd>
-							<MudTd DataLabel="Tanks">
-								@foreach (var vehicle in context.GroupBy(x => x.Vehicle).OrderByDescending(x => x.Count()))
-								{
-									<div class="d-flex justify-space-between">
-										<span>@vehicle.Key</span>
-										<span>@(100 / context.Count() * vehicle.Count())%</span>
-									</div>
-								}
-							</MudTd>
-						</RowTemplate>
-					</MudTable>
-				</MudItem>
-				<MudItem sm="6">
-					<MudTable Items="@_battles" Hover="true" Breakpoint="Breakpoint.Sm" FixedHeader="true" Dense="true" Bordered="true">
-						<HeaderContent>
-							<MudTh>
-								<MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<BattleReport, object>(x => x.MatchTimeDisplay)">Datum</MudTableSortLabel>
-							</MudTh>
-							<MudTh>
-								<MudTableSortLabel SortBy="new Func<BattleReport, object?>(x => x.MatchDuration)">Duratie</MudTableSortLabel>
-							</MudTh>
-							<MudTh>
-								<MudTableSortLabel SortBy="new Func<BattleReport, object>(x => x.MapName ?? string.Empty)">Map</MudTableSortLabel>
-							</MudTh>
-							<MudTh>
-								Winnaar
-							</MudTh>
-						</HeaderContent>
-						<RowTemplate>
-							@{
-								Team? ownTeam = context.OwnTeam;
-							}
-							<MudTd DataLabel="Datum">@context.MatchTimeDisplay</MudTd>
-							<MudTd DataLabel="Duratie">@context.MatchDurationDisplay</MudTd>
-							<MudTd DataLabel="Map">@context.MapName @ownTeam?.Base</MudTd>
-							<MudTd DataLabel="Winnaar" class="@ownTeam?.Result.ToString()">
-								@(context.Team1.IsWinner == true ? context.Team1.Abbreviation : context.Team2.Abbreviation)
-							</MudTd>
-						</RowTemplate>
-					</MudTable>
-				</MudItem>
-			</MudGrid>
+				</MudStack>
+
+				@if (_narrow)
+				{
+					<MudTabs Class="wot-tabs" Elevation="0" PanelClass="pt-4">
+						<MudTabPanel Text="@OpponentsTitle">@Opponents</MudTabPanel>
+						<MudTabPanel Text="@PastTitle">@Past</MudTabPanel>
+					</MudTabs>
+				}
+				else
+				{
+					<MudGrid Spacing="4">
+						<MudItem xs="7">
+							<MudPaper Outlined Elevation="0" Class="overflow-hidden">
+								<MudText Typo="Typo.h6" Class="px-4 py-3">@OpponentsTitle</MudText>
+								@Opponents
+							</MudPaper>
+						</MudItem>
+						<MudItem xs="5">
+							<MudPaper Outlined Elevation="0" Class="overflow-hidden">
+								<MudText Typo="Typo.h6" Class="px-4 py-3">@PastTitle</MudText>
+								@Past
+							</MudPaper>
+						</MudItem>
+					</MudGrid>
+				}
+			</MudStack>
 		}
 	</DialogContent>
 	<DialogActions>
@@ -101,6 +64,60 @@
 </MudDialog>
 
 @code {
+	private string OpponentsTitle => $"Tegenstanders · {_enemyPlayers.Count}";
+	private string PastTitle => $"Eerdere gevechten · {_battles.Count}";
+
+	private RenderFragment Opponents => @<MudTable Items="@_enemyPlayers" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Elevation="0">
+		<HeaderContent>
+			<MudTh Style="text-align: right; width: 110px">
+				<MudTableSortLabel InitialDirection="SortDirection.Descending" SortBy="new Func<IGrouping<string?, Player>, object>(x => x.Count())">Gevechten</MudTableSortLabel>
+			</MudTh>
+			<MudTh>
+				<MudTableSortLabel SortBy="new Func<IGrouping<string?, Player>, object>(x => x.Key ?? string.Empty)">Speler</MudTableSortLabel>
+			</MudTh>
+			<MudTh>Tanks</MudTh>
+		</HeaderContent>
+		<RowTemplate>
+			<MudTd DataLabel="Gevechten" Style="text-align: right; vertical-align: text-top;">@context.Count()</MudTd>
+			<MudTd DataLabel="Speler" Style="vertical-align: text-top;">@context.Key</MudTd>
+			<MudTd DataLabel="Tanks">
+				@foreach (var vehicle in context.GroupBy(x => x.Vehicle).OrderByDescending(x => x.Count()))
+				{
+					<div class="d-flex justify-space-between gap-3">
+						<span>@vehicle.Key</span>
+						<MudText Typo="Typo.body2" Color="Color.Secondary" Class="wot-num">@((int)Math.Round(100.0 * vehicle.Count() / context.Count()))%</MudText>
+					</div>
+				}
+			</MudTd>
+		</RowTemplate>
+	</MudTable>;
+
+	private RenderFragment Past => @<MudTable Items="@_battles" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Elevation="0">
+		<HeaderContent>
+			<MudTh>
+				<MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<BattleReport, object>(x => x.MatchTimeDisplay)">Datum</MudTableSortLabel>
+			</MudTh>
+			<MudTh Style="text-align: right">
+				<MudTableSortLabel SortBy="new Func<BattleReport, object?>(x => x.MatchDuration)">Duur</MudTableSortLabel>
+			</MudTh>
+			<MudTh>
+				<MudTableSortLabel SortBy="new Func<BattleReport, object>(x => x.MapName ?? string.Empty)">Map</MudTableSortLabel>
+			</MudTh>
+			<MudTh>Winnaar</MudTh>
+		</HeaderContent>
+		<RowTemplate>
+			@{
+				Team? ownTeam = context.OwnTeam;
+			}
+			<MudTd DataLabel="Datum" Class="wot-num">@context.MatchTimeDisplay</MudTd>
+			<MudTd DataLabel="Duur" Style="text-align: right" Class="wot-num mud-text-secondary">@context.MatchDurationDisplay</MudTd>
+			<MudTd DataLabel="Map"><b>@context.MapName</b> @ownTeam?.Base</MudTd>
+			<MudTd DataLabel="Winnaar" Class="@ownTeam?.Result.ToString()">
+				@(context.Team1.IsWinner == true ? context.Team1.Abbreviation : context.Team2.Abbreviation)
+			</MudTd>
+		</RowTemplate>
+	</MudTable>;
+
 	[CascadingParameter]
 	public required IMudDialogInstance MudDialog { get; set; }
 
@@ -135,4 +152,34 @@
 	}
 
 	void Cancel() => MudDialog.Close(DialogResult.Ok(true));
+
+	// Below 1100px wide the two tables become tabs (docs/DESIGN.md, ".wot-tabs"); MudBlazor's own breakpoints (960, 1280) do not fall there.
+	private const int TabsBelowWidth = 1100;
+	private bool _narrow;
+
+	Guid IBrowserViewportObserver.Id { get; } = Guid.NewGuid();
+
+	MudBlazor.Services.ResizeOptions? IBrowserViewportObserver.ResizeOptions { get; } = new() { NotifyOnBreakpointOnly = false };
+
+	Task IBrowserViewportObserver.NotifyBrowserViewportChangeAsync(BrowserViewportEventArgs e)
+	{
+		bool narrow = e.BrowserWindowSize.Width < TabsBelowWidth;
+		if (narrow == _narrow)
+		{
+			return Task.CompletedTask;
+		}
+
+		_narrow = narrow;
+		return InvokeAsync(StateHasChanged);
+	}
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			await ViewportService.SubscribeAsync(this);
+		}
+	}
+
+	public async ValueTask DisposeAsync() => await ViewportService.UnsubscribeAsync(this);
 }

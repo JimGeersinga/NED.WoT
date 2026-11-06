@@ -5,11 +5,11 @@ namespace NED.WoT.BattleResults.Client.Models;
 
 public class Settings
 {
-    [Required(ErrorMessage = "WoT replay pad is verplicht!")]
-    [DirectoryExists(ErrorMessage = "WoT replay pad is niet geldig!")]
+    [Required(ErrorMessage = "Replaypad is verplicht")]
+    [DirectoryExists(ErrorMessage = "Replaypad bestaat niet")]
     public string? WotReplayDirectory { get; set; }
 
-    [Required(ErrorMessage = "Datum is verplicht!")]
+    [Required(ErrorMessage = "Datum is verplicht")]
     public DateTime? LoadBattlesSince { get; set; }
 
     public string? ClanAbbreviation { get; set; }
