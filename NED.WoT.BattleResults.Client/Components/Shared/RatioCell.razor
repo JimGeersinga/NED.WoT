@@ -1,15 +1,15 @@
-@* One stat cell of stats mode: the count on the left, the ratio on the right in its level colour plus a 16px Filled level icon (colour is never alone). Without a Ratio, Detail takes the right side in secondary text (Geschoten: p/m). The styling is inline: the cell is the same in every row, day header and footer. *@
-<div class="wot-num" style="display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 6px; align-items: center; justify-items: end; white-space: nowrap">
-	<span>@Count</span>
+@* One stat cell of stats mode: the count on the left, the ratio on the right in its level colour plus a 16px Filled level icon (colour is never alone). Without a Ratio, Detail takes the right side in secondary text (Geschoten: p/m). The styling is `.wot-ratio` in wot.css (only the level colour is inline, it is dynamic): the cell is the same in every row, day header and footer. *@
+<div class="wot-ratio wot-num">
+	<span class="wot-ratio-count">@Count</span>
 	@if (Ratio.HasValue)
 	{
-		<span title="@LevelWord" style="display: inline-flex; align-items: center; font-weight: 600; color: @Level.GetColor()">
-			@Ratio%<svg viewBox="0 0 24 24" aria-hidden="true" style="width: 16px; height: 16px; fill: currentColor; margin-left: -2px">@((MarkupString)LevelIcon)</svg>
+		<span class="wot-ratio-value" title="@LevelWord" style="color: @Level.GetColor()">
+			@Ratio%<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)LevelIcon)</svg>
 		</span>
 	}
 	else if (Detail != null)
 	{
-		<span class="mud-text-secondary">@Detail</span>
+		<span class="wot-ratio-detail mud-text-secondary">@Detail</span>
 	}
 </div>
 

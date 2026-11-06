@@ -97,3 +97,34 @@ h1:focus {
 .wot-dialog-title {
     font-family: var(--wot-font-display);
 }
+
+/* Ratio cell of stats mode (RatioCell.razor): the count on the left, the ratio (or Detail) on the right with its level icon. The level colour is inline. */
+.wot-ratio {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 6px;
+    align-items: center;
+    white-space: nowrap;
+}
+
+.wot-ratio-count {
+    justify-self: start;
+}
+
+.wot-ratio-value {
+    justify-self: end;
+    display: inline-flex;
+    align-items: center;
+    font-weight: 600;
+}
+
+.wot-ratio-detail {
+    justify-self: end;
+}
+
+.wot-ratio-value > svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+    margin-left: -2px;
+}
