@@ -1,0 +1,45 @@
+@* One stat cell of stats mode: the count on the left, the ratio on the right in its level colour plus a 16px Filled level icon (colour is never alone). Without a Ratio, Detail takes the right side in secondary text (Geschoten: p/m). The styling is `.wot-ratio` in wot.css (only the level colour is inline, it is dynamic): the cell is the same in every row, day header and footer. *@
+<div class="wot-ratio wot-num">
+	<span class="wot-ratio-count">@Count</span>
+	@if (Ratio.HasValue)
+	{
+		<span class="wot-ratio-value" title="@LevelWord" style="color: @Level.GetColor()">
+			@Ratio%<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)LevelIcon)</svg>
+		</span>
+	}
+	else if (Detail != null)
+	{
+		<span class="wot-ratio-detail mud-text-secondary">@Detail</span>
+	}
+</div>
+
+@code {
+	/// <summary>The count on the left (for block: "blocked / received").</summary>
+	[Parameter, EditorRequired]
+	public required string Count { get; set; }
+
+	/// <summary>The ratio in whole percent. Null shows Detail instead.</summary>
+	[Parameter]
+	public int? Ratio { get; set; }
+
+	[Parameter]
+	public RatioLevel Level { get; set; }
+
+	/// <summary>Secondary text on the right when there is no ratio.</summary>
+	[Parameter]
+	public string? Detail { get; set; }
+
+	private string LevelIcon => Level switch
+	{
+		RatioLevel.Low => Icons.Material.Filled.ArrowDropDown,
+		RatioLevel.High => Icons.Material.Filled.ArrowDropUp,
+		_ => Icons.Material.Filled.Remove
+	};
+
+	private string LevelWord => Level switch
+	{
+		RatioLevel.Low => "Laag",
+		RatioLevel.High => "Hoog",
+		_ => "Gemiddeld"
+	};
+}
