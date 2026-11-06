@@ -170,9 +170,9 @@
 .mud-input-filled:not(:hover):not(.mud-focused) { background-color: var(--wot-surface-input); }
 
 /* ==== MudAutocomplete (the Clan and Speler boxes of the filter bar: wot-filter on its input control, wot-filter-pop on its popover) ==== */
-.mud-autocomplete:has(> .wot-filter) { flex: 0 1 240px; min-width: 200px; }
-.mud-menu.wot-pick { flex: 0 1 180px; min-width: 150px; }
-.mud-select:not(.mud-autocomplete):has(> .wot-result) { flex: 0 1 170px; min-width: 150px; }
+/* One width for the four boxes (Clan, Speler, Map, Resultaat): 190px when empty (it fits "Alle resultaten" and "Speler zoeken" with the icon), growing with the text up to 320px (the input sizes to its text). */
+.mud-autocomplete:has(> .wot-filter), .mud-menu.wot-pick, .mud-select:not(.mud-autocomplete):has(> .wot-result) { flex: 0 0 auto; width: fit-content; min-width: 190px; max-width: 320px; }
+.mud-input-control.wot-filter input.mud-input-slot { field-sizing: content; min-width: 0; }
 .mud-input-control.wot-filter .mud-input-filled { height: 40px; min-height: 40px; font: 400 14px/1.4 var(--wot-font-text); }
 .mud-input-control.wot-filter .mud-input-filled > input { height: 40px; padding: 0 8px 0 0; font: inherit; }
 .mud-input-control.wot-filter .mud-input-adornment-start { height: 100%; margin: 0; align-items: center; }
@@ -198,8 +198,9 @@
 /* The Map and Resultaat boxes use the same wot-filter look. The Map box is a MudMenu whose activator is a read-only MudTextField; its popover (wot-map-pop) holds a search box, a checkbox list and the Wissen and Alles buttons. */
 .mud-menu.wot-pick > .mud-menu-activator { width: 100%; }
 .mud-input-control.wot-filter .mud-input-filled > input[readonly] { cursor: pointer; }
-.wot-pick-field { position: relative; }
-.wot-pick-field .mud-input-filled > input { padding-right: 36px; }
+.wot-pick-field { position: relative; flex: 1 1 auto; min-width: 0; }
+.wot-pick-field .mud-input-control, .wot-pick-field .mud-input { width: 100%; }
+.wot-pick-field .mud-input-control.wot-filter .mud-input-filled > input { padding-right: 36px; }
 /* The wisknop of the Map box (a MudTextField that is read-only has no Clearable of its own). */
 .wot-pick-clear { position: absolute; top: 8px; right: 8px; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--mud-palette-text-secondary); cursor: pointer; }
 .wot-pick-clear:hover { background: var(--mud-palette-action-default-hover); }
@@ -218,6 +219,9 @@
 .wot-map-pop .wot-map-foot { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-top: 1px solid var(--mud-palette-lines-default); }
 .wot-map-pop .wot-map-foot > span { flex: 1; }
 .wot-filter-pop .mud-list-item .mud-checkbox { margin: 0 6px 0 -8px; }
+/* The Resultaat popover fits its rows (checkbox, chip, count) instead of the 280px of the other lists, and the tick sits close to the chip (MudBlazor gives a list item icon 56px). */
+.mud-popover.wot-result-pop { min-width: 0; }
+.wot-result-pop .mud-list-item-icon { min-width: 0; margin-right: 8px; }
 /* The tick of a multi-select item (MudSelect draws it as the list item icon, no Color parameter reaches it): Primary when ticked. */
 .wot-filter-pop .mud-list-item.mud-selected-item .mud-list-item-icon { color: var(--mud-palette-primary); }
 /* The result chip in the Resultaat list: icon and word only, as the design (.chip.tx) has it. */

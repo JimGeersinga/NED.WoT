@@ -104,7 +104,7 @@
 
 	@* Resultaat: a multi-select; nothing ticked shows every result. *@
 	<MudSelect T="Result" MultiSelection="true" SelectedValues="Results" SelectedValuesChanged="PickResults" ToStringFunc="ResultChip.Word" MultiSelectionTextFunc="ResultText"
-			   Placeholder="Alle resultaten" aria-label="Resultaat" Variant="Variant.Filled" Margin="Margin.Dense" Class="@("wot-filter wot-result" + (Results.Count > 0 ? " filled" : string.Empty))" PopoverClass="wot-filter-pop"
+			   Placeholder="Alle resultaten" aria-label="Resultaat" Variant="Variant.Filled" Margin="Margin.Dense" Class="@("wot-filter wot-result" + (Results.Count > 0 ? " filled" : string.Empty))" PopoverClass="wot-filter-pop wot-result-pop"
 			   Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.EmojiEvents" Clearable="@(Results.Count > 0)" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft">
 		@foreach (var result in ResultChip.Order)
 		{
