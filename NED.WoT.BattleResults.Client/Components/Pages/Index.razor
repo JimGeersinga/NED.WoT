@@ -21,6 +21,8 @@
 	var battles = filtered.Where(x => _resultVisibility[x.Result]).ToList();
 	// A replay that can't be read is a warning row of its own, never in a count, and only next to battle rows: a clan or player filter hides it, and without a battle row the empty state speaks.
 	var unreadable = UnreadableShown(battles.Count, _clan is null && _player is null, _reports);
+	// The clan and player lookup of the filter bar: built on its first search, dropped when the battles (or your own clan tag) change.
+	_filters = _filters is { } known && known.OwnTag == (SettingService.Settings.ClanAbbreviation ?? string.Empty) ? known : BattleFilters.Build(readable, SettingService.Settings.ClanAbbreviation);
 	var days = BuildDays(filtered, unreadable);
 	var dayByLabel = days.ToDictionary(d => d.Label);
 	var visible = battles.Concat(unreadable).OrderByDescending(x => x.MatchStart).ToList();
@@ -33,7 +35,7 @@
 <div class="gl-page">
 	@* The filters wait until the loading is done: inert keeps the keyboard and the pointer out of them. *@
 	<div class="gl-filters" inert="@_loading">
-		<BattleFilterBar Reports="readable"
+		<BattleFilterBar Filters="_filters"
 						 Filtered="filtered"
 						 @bind-Clan="_clan"
 						 @bind-Player="_player"
@@ -231,6 +233,7 @@
 	private bool _loading = true;
 	private bool _loadedOnce;
 	private string? _addedFile;
+	private BattleFilters? _filters;
 	private string? _clan;
 	private string? _player;
 	private MatchType _matchType = MatchType.Clan;
@@ -416,7 +419,7 @@
 		Debug.Assert(StatPlayers(fights, null).Single().Name == "Tankgeneraal" && StatPlayers(fights, "KlompKees").Count() == 3, "stats without a player: the own team; with a player: that player, on either team");
 
 		BattleTotals.SelfCheck();
-		BattleFilterBar.SelfCheck();
+		BattleFilters.SelfCheck();
 		BattleStats.SelfCheck();
 	}
 
@@ -458,6 +461,7 @@
 				}
 
 				_reports = new List<BattleReport>();
+				_filters = null;
 				_loading = true;
 				StateHasChanged();
 
@@ -475,6 +479,7 @@
 			await InvokeAsync(() =>
 			{
 				_reports.Add(e.Report);
+				_filters = null;
 				_clanMatchDialog?.Close();
 				if (_loading)
 				{
@@ -492,6 +497,7 @@
 			await InvokeAsync(() =>
 			{
 				_reports.Remove(e.Report);
+				_filters = null;
 				StateHasChanged();
 			});
 		};
@@ -501,6 +507,7 @@
 			await InvokeAsync(async () =>
 			{
 				_reports = BattleResultService.BattleReports.Select(x => x.Value).OrderByDescending(x => x.MatchStart).ToList();
+				_filters = null;
 				_loading = false;
 				if (!_loadedOnce)
 				{
@@ -544,7 +551,7 @@
 
 	/// <summary>A clan: the battles where either team has its tag. A player: the battles with that player on either team. Both: both conditions.</summary>
 	private static bool Matches(BattleReport report, string? clan, string? player) =>
-		(clan is null || BattleFilterBar.SameTag(report.Team1.Abbreviation, clan) || BattleFilterBar.SameTag(report.Team2.Abbreviation, clan))
+		(clan is null || BattleFilters.SameTag(report.Team1.Abbreviation, clan) || BattleFilters.SameTag(report.Team2.Abbreviation, clan))
 		&& (player is null || report.Team1.Players.Concat(report.Team2.Players).Any(x => string.Equals(x.Name, player, StringComparison.OrdinalIgnoreCase)));
 
 	private bool TableFilter(BattleReport report)
