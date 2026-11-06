@@ -71,7 +71,7 @@
 				</div>
 			}
 
-			<button type="button" class="gl-imgbtn gl-icon-only gl-book" aria-pressed="@(ShowBattleStats ? "true" : "false")" aria-label="Statistieken" title="Uitgebreide statistieken" @onclick="() => ShowBattleStatsChanged.InvokeAsync(!ShowBattleStats)">
+			<button type="button" class="gl-imgbtn gl-icon-only gl-book" aria-pressed="@(ShowBattleStats ? "true" : "false")" aria-label="Statistieken" title="Uitgebreide statistieken&#10;▲ hoog · ▬ gemiddeld · ▼ laag&#10;Geraakt: ≤ 50% laag, ≥ 70% hoog&#10;Gepenetreerd: ≤ 55% laag, ≥ 70% hoog&#10;Geblokt: ≥ 25% hoog" @onclick="() => ShowBattleStatsChanged.InvokeAsync(!ShowBattleStats)">
 				<img src="@(ShowBattleStats ? "images/book-open.png" : "images/book-closed.png")" alt="" />
 			</button>
 		}

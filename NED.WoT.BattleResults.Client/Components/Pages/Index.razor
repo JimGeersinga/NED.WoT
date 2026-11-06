@@ -42,7 +42,7 @@
 			  Height="100%"
 			  Hover="true"
 			  Elevation="0"
-			  Class="wot-battle-table"
+			  Class="@("wot-battle-table" + (_showBattleStats ? " stats" : ""))"
 			  GroupHeaderClass="gl-day"
 			  RowClassFunc="@RowClass"
 			  OnRowClick="@(e => ToggleShowDetailsAsync(e.Item))">
@@ -55,7 +55,7 @@
 			<col />
 			@if (_showBattleStats)
 			{
-				<col class="c-stat" /><col class="c-stat" /><col class="c-stat" /><col class="c-stat" />
+				<col class="c-stat" /><col class="c-stat" /><col class="c-stat" /><col class="c-stat c-block" />
 			}
 			<col class="c-res" />
 			<col class="c-copy" />
@@ -197,6 +197,7 @@
 		Debug.Assert(new BattleReport { MatchStart = today.AddHours(1) }.GroupDate == today.AddDays(-1), "a battle at 01:00 counts for the previous day");
 
 		BattleTotals.SelfCheck();
+		BattleStats.SelfCheck();
 	}
 
 	/// <summary>The stat columns of stats mode for a set of battles: the total of the own team's players (or of the chosen player).</summary>
@@ -209,49 +210,12 @@
 				players = players.Where(x => x.Name?.Equals(_detailedInfoForPlayer, StringComparison.OrdinalIgnoreCase) ?? false).ToList();
 			}
 
-			var totalLifeTime = players.Sum(x => x.LifeTime);
-			var totalShots = players.Sum(x => x.Shots);
-			var totalHits = players.Sum(x => x.DirectHits);
-			var totalPens = players.Sum(x => x.Piercings);
-			var totalShotsReceived = players.Sum(x => x.ShotsReceived);
-			var totalBlocked = players.Sum(x => x.ShotsBlocked);
-
-			var shotRatio = totalShots == 0 ? 0 : totalShots.GetValueOrDefault() / (totalLifeTime.GetValueOrDefault() / 60m);
-			var hitRatio = totalShots == 0 ? 0 : (int)(100m / totalShots.GetValueOrDefault() * totalHits.GetValueOrDefault());
-			var penRatio = totalHits == 0 ? 0 : (int)(100m / totalHits.GetValueOrDefault() * totalPens.GetValueOrDefault());
-			var blockRatio = totalShotsReceived == 0 ? 0 : (int)(100m / totalShotsReceived.GetValueOrDefault() * totalBlocked.GetValueOrDefault());
+			var stats = BattleStats.Of(players);
 		}
-		<MudTd Class="s">
-			<div class="d-flex justify-space-between gap-1 text-nowrap">
-				@if (totalShots.HasValue)
-				{
-					var roundedRatio = Math.Round(shotRatio);
-
-					<span>@totalShots</span>
-					<span style="color: var(--mud-palette-text-secondary)">@(shotRatio < roundedRatio ? " < " : " > ") @roundedRatio p/m</span>
-				}
-			</div>
-		</MudTd>
-		<MudTd Class="s">
-			<div class="d-flex justify-space-between gap-1 text-nowrap">
-				<span>@totalHits</span>
-				<span style="color: @hitRatio.GetHitRatioColor()">@hitRatio%</span>
-			</div>
-		</MudTd>
-		<MudTd Class="s">
-			<div class="d-flex justify-space-between gap-1 text-nowrap">
-				<span>@totalPens</span>
-				<span style="color: @penRatio.GetPenRatioColor()">@penRatio%</span>
-			</div>
-		</MudTd>
-		<MudTd Class="s">
-			<div class="gap-1 text-nowrap" style="display: grid; grid-template-columns: 1fr auto 1fr 40px">
-				<span class="text-right">@totalBlocked</span>
-				<span class="mx-2">/</span>
-				<span>@totalShotsReceived</span>
-				<span class="text-right" style="color: @blockRatio.GetBlockedRatioColor()">@blockRatio%</span>
-			</div>
-		</MudTd>
+		<MudTd Class="s"><RatioCell Count="@stats.Shots.ToString()" Detail="@($"{stats.ShotsPerMinute.ToString("0.0", BattleReport.DutchCulture)} p/m")" /></MudTd>
+		<MudTd Class="s"><RatioCell Count="@stats.Hits.ToString()" Ratio="stats.HitRatio" Level="stats.HitRatio.GetHitLevel()" /></MudTd>
+		<MudTd Class="s"><RatioCell Count="@stats.Pens.ToString()" Ratio="stats.PenRatio" Level="stats.PenRatio.GetPenLevel()" /></MudTd>
+		<MudTd Class="s"><RatioCell Count="@($"{stats.Blocked} / {stats.Received}")" Ratio="stats.BlockRatio" Level="stats.BlockRatio.GetBlockLevel()" /></MudTd>
 	</text>;
 
 	protected override async Task OnInitializedAsync()

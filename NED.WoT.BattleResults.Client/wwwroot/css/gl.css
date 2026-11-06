@@ -97,6 +97,11 @@
 .wot-battle-table col.c-stat { width: 128px; }
 .wot-battle-table col.c-res { width: 128px; }
 .wot-battle-table col.c-copy { width: 40px; }
+/* Stats mode: the 5-digit totals of the footer need a wider Geblokt column ("19778 / 75785" and the ratio); time, map and result give up the room (the canvas's g-s template). */
+.wot-battle-table.stats col.c-time { width: 124px; }
+.wot-battle-table.stats col.c-map { width: 166px; }
+.wot-battle-table.stats col.c-res { width: 112px; }
+.wot-battle-table.stats col.c-block { width: 168px; }
 @media (min-width: 1600px) {
     .wot-battle-table col.c-chev { width: 52px; }
     .wot-battle-table col.c-num { width: 44px; }
@@ -105,6 +110,10 @@
     .wot-battle-table col.c-stat { width: 150px; }
     .wot-battle-table col.c-res { width: 160px; }
     .wot-battle-table col.c-copy { width: 48px; }
+    .wot-battle-table.stats col.c-time { width: 190px; }
+    .wot-battle-table.stats col.c-map { width: 220px; }
+    .wot-battle-table.stats col.c-res { width: 160px; }
+    .wot-battle-table.stats col.c-block { width: 190px; }
 }
 /* The scroll anchor of a row sits 80px above it: the column header (36px) and the sticky day header (44px). */
 .gl-anchor { position: absolute; top: -80px; left: 0; }
