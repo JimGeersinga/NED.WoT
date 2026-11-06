@@ -29,12 +29,6 @@ public static class ColorHelper
         _ => "var(--mud-palette-warning)"
     };
 
-    public static string GetHitRatioColor(this int value) => value.GetHitLevel().GetColor();
-
-    public static string GetPenRatioColor(this int value) => value.GetPenLevel().GetColor();
-
-    public static string GetBlockedRatioColor(this int value) => value.GetBlockLevel().GetColor();
-
     public static string GetWinRatioColor(this decimal value) => value switch
     {
         >= 50 => "Win",

@@ -75,7 +75,7 @@ else
 	public EventCallback<BattleReport> OnCopy { get; set; }
 
 	/// <summary>A team tag in the VS cell (Team 1 left, Team 2 right): coloured by the team's result, and with the clan-chip edge when it is the own team. With "Alleen eigen gevechten uitlichten" only the own tag is coloured.</summary>
-	private static string TagClass(Team team, bool own, bool onlyOwn)
+	public static string TagClass(Team team, bool own, bool onlyOwn)
 	{
 		string colour = onlyOwn && !own ? "u" : team.Result switch
 		{

@@ -278,44 +278,155 @@
     font-variant-numeric: tabular-nums;
 }
 
-/* ==== MudTable (the player table of Details as it is laid out today; the screen issues replace this group) ==== */
-.mud-table.player-table .mud-table-row {
+/* ==== MudPaper (the panel around the player table of Details: .wot-details) ==== */
+/* The MudPaper gives the Surface ground, the steel edge (Outlined) and the radius; this adds the 16px of padding and the top highlight. It is here and not in Details.razor.css because Blazor's CSS isolation does not mark the MudPaper's own element.
+   isolation: isolate keeps the z-index of the player table's sticky cells inside the panel: without it they painted over the sticky column header and the day header of the battle table when that scrolls. */
+.mud-paper.wot-details {
+    padding: 16px;
+    box-shadow: inset 0 1px 0 var(--wot-steel-highlight);
+    isolation: isolate;
+}
+
+/* ==== MudTable (the player table of Details: .player-table; the canvas's "Component: gevechtsdetails") ==== */
+/* Two header tiers, one group per team, the first five columns sticky. The widths are fixed because a sticky column needs the left offset of the ones before it:
+   expander 44, # 40, Naam 230, Tank 170, Speeltijd 84, then the figures; the last column takes what is left of the panel's width; below 1240px (1426px in stats mode, like the canvas's grid) the table scrolls sideways. The elements Details.razor renders itself are in Details.razor.css. */
+.mud-table.player-table {
+    background: transparent;
+}
+
+.mud-table.player-table .mud-table-root {
+    table-layout: fixed;
+    width: 100%;
+    min-width: 1240px;
+}
+
+.mud-table.player-table.stats .mud-table-root {
+    min-width: 1426px;
+}
+
+.mud-table.player-table col.c-lead { width: 44px; }
+.mud-table.player-table col.c-num { width: 40px; }
+.mud-table.player-table col.c-name { width: 230px; }
+.mud-table.player-table col.c-tank { width: 170px; }
+.mud-table.player-table col.c-life { width: 84px; }
+/* The figure columns share the width that is left of the panel after the sticky ones (568px) in the proportions of the canvas's widths. calc() with a percentage is ignored on a <col>, but percentages are not: the eight add up to 100%,
+   which together with the 568px of the sticky columns is more than the table, so the browser scales them down to fill it exactly and the 568px stay as they are. At the minimum width of the table (1240px, 1426px in stats mode) they come out as the canvas's widths (a sum of 672px, 858px in stats mode). */
+.mud-table.player-table col.c-xp { width: 9.524%; }
+.mud-table.player-table col.c-kills { width: 7.738%; }
+.mud-table.player-table col.c-dmg { width: 11.310%; }
+.mud-table.player-table col.c-blk { width: 16.667%; }
+.mud-table.player-table col.c-recv { width: 12.500%; }
+.mud-table.player-table col.c-shots { width: 14.286%; }
+.mud-table.player-table col.c-hits { width: 13.095%; }
+.mud-table.player-table col.c-pen { width: 14.881%; }
+.mud-table.player-table.stats col.c-xp { width: 7.459%; }
+.mud-table.player-table.stats col.c-kills { width: 6.061%; }
+.mud-table.player-table.stats col.c-dmg { width: 8.858%; }
+.mud-table.player-table.stats col.c-blk { width: 22.145%; }
+.mud-table.player-table.stats col.c-recv { width: 9.790%; }
+.mud-table.player-table.stats col.c-shots { width: 16.317%; }
+.mud-table.player-table.stats col.c-hits { width: 13.986%; }
+.mud-table.player-table.stats col.c-pen { width: 15.385%; }
+
+.mud-table.player-table .mud-table-cell {
+    height: 34px;
+    padding: 0 12px;
+    border-bottom: 1px solid var(--mud-palette-table-lines);
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+.mud-table.player-table .mud-table-cell.r {
+    text-align: right;
+}
+
+/* The row ground is a custom property, because the sticky cells need an opaque ground: alternate rows are the app bar's top steel, the own row is the active-row ground (Primary at 14%) over Surface. */
+.mud-table.player-table .mud-table-body .mud-table-row {
+    --bgc: var(--mud-palette-surface);
+}
+
+.mud-table.player-table .mud-table-body .mud-table-row.alt {
+    --bgc: var(--wot-appbar-top);
+}
+
+.mud-table.player-table .mud-table-body .mud-table-row.wot-row-active {
+    --bgc: color-mix(in srgb, var(--mud-palette-primary) 14%, var(--mud-palette-surface));
+}
+
+.mud-table.player-table .mud-table-body .mud-table-row > .mud-table-cell {
+    background: var(--bgc);
+}
+
+/* The 2px Primary bar of the own row (the same as .wot-row-active in the battle table). */
+.mud-table.player-table .mud-table-body .mud-table-row.wot-row-active > .mud-table-cell:first-child {
+    box-shadow: inset 2px 0 0 var(--mud-palette-primary);
+}
+
+/* Sticky columns. */
+.mud-table.player-table .mud-table-cell.sticky-left,
+.mud-table.player-table .mud-table-row > .mud-table-cell:first-child {
+    position: sticky;
+    top: auto;
+    z-index: 2;
+}
+
+.mud-table.player-table .mud-table-row > .mud-table-cell:first-child,
+.mud-table.player-table .mud-table-cell.lead { left: 0; }
+.mud-table.player-table .mud-table-cell.num { left: 44px; text-align: center; }
+.mud-table.player-table .mud-table-cell.name { left: 84px; overflow: hidden; }
+.mud-table.player-table .mud-table-cell.vehicle { left: 314px; overflow: hidden; text-overflow: ellipsis; }
+.mud-table.player-table .mud-table-cell.lifetime { left: 484px; box-shadow: inset -1px 0 0 var(--mud-palette-lines-default); }
+.mud-table.player-table .mud-table-body .mud-table-cell.num,
+.mud-table.player-table .mud-table-body .mud-table-cell.lifetime { color: var(--mud-palette-text-secondary); }
+
+/* The HP-bar name cell: Success at 25% from the left up to the remaining HP (--hp). A destroyed player has no bar and no tint. */
+.mud-table.player-table .mud-table-body .mud-table-row > .mud-table-cell.name.hp {
+    background: linear-gradient(90deg, color-mix(in srgb, var(--mud-palette-success) 25%, transparent) var(--hp), transparent var(--hp)), var(--bgc);
+}
+
+/* The two header tiers: the groups over the labels. */
+/* MudBlazor's FixedHeader of the battle table sticks every head cell below it to the top, the nested ones too (a "*" selector): the figure columns must scroll under the sticky ones. */
+.mud-table.player-table .mud-table-head .mud-table-cell:not(.sticky-left) {
+    position: static;
+    z-index: auto;
+}
+
+.mud-table.player-table .mud-table-head .mud-table-cell {
+    height: 32px;
+    background: var(--wot-surface-dialog);
+    color: var(--mud-palette-text-secondary);
+    border-bottom: 1px solid var(--mud-palette-lines-default);
+    font: 600 13px/1.45 var(--wot-font-text);
+}
+
+/* A right-aligned label lines up with its figures: the sort arrow hangs to the left of the label instead of taking room on the right. */
+.mud-table.player-table .mud-table-head .mud-table-cell.r .mud-table-sort-label {
     position: relative;
 }
 
-.mud-table.player-table .mud-table-cell.sticky-left {
-    left: 0;
-    position: sticky;
-    background-color: var(--mud-palette-background-gray);
-    z-index: 3;
+.mud-table.player-table .mud-table-head .mud-table-cell.r .mud-table-sort-label .mud-table-sort-label-icon {
+    position: absolute;
+    right: 100%;
+    margin: 0 2px 0 0;
 }
 
-.mud-table.player-table .mud-table-head .mud-table-cell.sticky-left {
-    background-color: var(--wot-surface-dialog);
+.mud-table.player-table .mud-table-head .tier .mud-table-cell {
+    font: 600 12px/1 var(--wot-font-display);
+    letter-spacing: .12em;
+    text-transform: uppercase;
 }
 
-.mud-table.player-table .mud-table-body .mud-table-row:nth-of-type(odd) .mud-table-cell.sticky-left {
-    background-color: var(--mud-palette-surface);
+/* The team header: a full-width row of 44px on a quiet steel tint (opaque, so the sticky expander has a ground). */
+.mud-table.player-table tr.teams > .mud-table-cell {
+    height: 44px;
+    padding: 0 16px;
+    background: color-mix(in srgb, var(--mud-palette-text-primary) 4%, var(--mud-palette-surface));
+    border-bottom: 1px solid var(--mud-palette-lines-default);
 }
 
-.mud-table.player-table .mud-table-body .mud-table-row:nth-of-type(even) .mud-table-cell.sticky-left {
-    background-color: var(--wot-appbar-top);
-}
-
-.highlight-own-result .mud-table.player-table .mud-table-cell-custom-group :not(.highlight) {
-    color: inherit !important; /* legacy: beats the inline style="color: … !important" from ColorHelper; goes with #3–#9 */
-}
-
-.mud-table.player-table .highlight .name {
-    color: var(--mud-palette-primary) !important; /* legacy: fights the !important colour rules in app.css and ColorHelper inline colours; goes with #3–#9 */
-}
-
-.mud-table.player-table .teamkiller .name {
-    color: var(--mud-palette-info);
-}
-
-.mud-table.player-table .mud-table-row .mud-table-cell {
-    padding-inline: 1rem; /* legacy: the player table's cell padding in Details; goes with #7 */
+/* The expander button (32px) has a -12px left margin of its own: 18px of padding puts it in the middle of the 44px column, with room for its focus ring, inside the scroll container's edge. */
+.mud-table.player-table tr.teams > .mud-table-cell:first-child {
+    padding: 0 0 0 18px;
 }
 
 .mud-table-head .header-centered th {

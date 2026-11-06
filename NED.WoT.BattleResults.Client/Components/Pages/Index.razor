@@ -358,8 +358,14 @@
 		}
 	}
 
-	private async Task ToggleShowDetailsAsync(BattleReport report)
+	private async Task ToggleShowDetailsAsync(BattleReport? report)
 	{
+		// A click inside the opened details (a sort header, a team expander) bubbles up to the child row, which has no item.
+		if (report is null)
+		{
+			return;
+		}
+
 		if (!report.ShowDetails && SettingService.Settings.SingleBattleResultOpenedOnly)
 		{
 			CollapseAllBattleReports();

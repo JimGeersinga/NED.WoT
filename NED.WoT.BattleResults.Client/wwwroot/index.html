@@ -41,15 +41,6 @@
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
 
     <script>
-        function keepElementOffset(selector) {
-            console.log('keepElementOffset', selector);
-            var elements = document.querySelectorAll(selector);
-            for (var i = 0; i < elements.length; i++) {
-                var offset = elements[i].offsetLeft;
-                elements[i].style = `left: ${offset}px`;
-            }
-        }
-
         function scrollIntoView(elementId) {
             console.log('scrollIntoView', elementId);
             var elem = document.getElementById(elementId);

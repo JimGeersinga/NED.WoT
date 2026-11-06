@@ -118,21 +118,4 @@
 /* The scroll anchor of a row sits 80px above it: the column header (36px) and the sticky day header (44px). */
 .gl-anchor { position: absolute; top: -80px; left: 0; }
 
-/* Player details table (two header tiers, sticky left columns). Row grounds: the canvas's are Surface and the app bar's top steel;
-   its own-row ground is Primary at 14% over Surface. */
-.pt { display: grid; grid-template-columns: var(--pc); align-items: center; min-width: var(--pw); font-variant-numeric: tabular-nums; --bgc: var(--mud-palette-surface); }
-.pt.alt { --bgc: var(--wot-appbar-top); }
-.pt.me { --bgc: color-mix(in srgb, var(--mud-palette-primary) 14%, var(--mud-palette-surface)); }
-.pt > div { padding: 0 12px; height: 34px; display: flex; align-items: center; white-space: nowrap; background: var(--bgc); border-bottom: 1px solid var(--mud-palette-table-lines); font-size: 14px; }
-.pt > div.r { justify-content: flex-end; }
-.pt.hd > div { background: var(--wot-surface-dialog); font: 600 13px/1.45 var(--wot-font-text); color: var(--mud-palette-text-secondary); border-bottom: 1px solid var(--mud-palette-lines-default); height: 32px; }
-.pt.hd.t1 > div { justify-content: center; font: 600 12px/1 var(--wot-font-display); letter-spacing: .12em; text-transform: uppercase; border-bottom: 1px solid var(--mud-palette-lines-default); }
-.pt .stk { position: sticky; z-index: 2; }
-/* HP-bar name cell: Success at 25% for the remaining HP (the design rules; the canvas draws 13%). A dead player gets a full-width Error tint at 15%, plus a Dangerous icon in the markup. */
-.pt .hp { background: linear-gradient(90deg, color-mix(in srgb, var(--mud-palette-success) 25%, transparent) var(--hp), transparent var(--hp)), var(--bgc); }
-.pt .dead { background: linear-gradient(color-mix(in srgb, var(--mud-palette-error) 15%, transparent), color-mix(in srgb, var(--mud-palette-error) 15%, transparent)), var(--bgc); }
-.pt.me > div:first-child { box-shadow: inset 2px 0 0 var(--mud-palette-primary); }
-.pt .nm { gap: 6px; overflow: hidden; }
-.pt .tk { color: var(--mud-palette-info); }
-.tm { display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 16px; background: color-mix(in srgb, var(--mud-palette-text-primary) 4%, transparent); border-bottom: 1px solid var(--mud-palette-lines-default); position: sticky; left: 0; width: var(--vw); }
 .wot-battle-table .gl { display: flex; align-items: center; gap: 12px; min-width: 0; }

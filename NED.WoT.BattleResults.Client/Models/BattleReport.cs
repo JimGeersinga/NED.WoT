@@ -91,15 +91,6 @@ public class Team
 
     public Result Result { get; set; }
 
-    public int HitsReceived => Players.Sum(x => x.HitsReceived ?? 0);
-    public int ShotsReceived => Players.Sum(x => x.ShotsReceived ?? 0);
-    public int DirectHits => Players.Sum(x => x.DirectHits ?? 0);
-    public int Piercings => Players.Sum(x => x.Piercings ?? 0);
-
-    public int HitRatio => HitsReceived == 0 ? 0 : (int)(100m / HitsReceived * DirectHits);
-    public int PenRatio => DirectHits == 0 ? 0 : (int)(100m / DirectHits * Piercings);
-    public int BlockRatio => ShotsReceived == 0 ? 0 : (int)(100m / ShotsReceived * (ShotsReceived - HitsReceived));
-
     public string ResultDisplay
     {
         get
@@ -155,9 +146,5 @@ public class Player(Team team)
     public int? DirectHits { get; set; }
     public int? DeathReason { get; set; }
     public bool IsClanMember { get; set; }
-    public decimal ShotRatio => Shots.GetValueOrDefault() == 0 ? 0 : Shots.GetValueOrDefault() / (LifeTime.GetValueOrDefault() / 60m);
-    public int HitRatio => HitsReceived.GetValueOrDefault() == 0 ? 0 : (int)(100m / Shots.GetValueOrDefault() * DirectHits.GetValueOrDefault());
-    public int PenRatio => DirectHits.GetValueOrDefault() == 0 ? 0 : (int)(100m / DirectHits.GetValueOrDefault() * Piercings.GetValueOrDefault());
-    public int BlockRatio => ShotsReceived.GetValueOrDefault() == 0 ? 0 : (int)(100m / ShotsReceived.GetValueOrDefault() * ShotsBlocked.GetValueOrDefault());
 }
 
