@@ -1,4 +1,4 @@
-﻿﻿@using System.Diagnostics
+﻿@using System.Diagnostics
 @using System.Globalization
 @inject SettingService SettingService
 @inject IJSRuntime JSRuntime
@@ -74,7 +74,7 @@
                 bool teamKiller = context.IsTeamKiller.GetValueOrDefault();
                 BattleStats stats = BattleStats.Of([context]);
                 // The tooltip carries the full name too: the name cell cuts a long name off with an ellipsis.
-                string tooltip = $"{context.DisplayName}{'\n'}Pantser {Fmt(context.Health)} / {Fmt(context.MaxHealth)} HP · Leefde {Duration(context.LifeTime)}";
+                string tooltip = $"{context.DisplayName}{'\n'}" + string.Join(" · ", new[] { context.MaxHealth.HasValue ? $"Pantser {Fmt(context.Health)} / {Fmt(context.MaxHealth)} HP" : null, $"Leefde {Duration(context.LifeTime)}" }.OfType<string>());
             }
             <MudTd DataLabel="Number" Class="sticky-left num">@context.Number</MudTd>
             <MudTd DataLabel="Name" Class="@("sticky-left name " + (dead ? "dead" : "hp"))" Style="@($"--hp: {HealthPercent(context)}%")" title="@tooltip">
