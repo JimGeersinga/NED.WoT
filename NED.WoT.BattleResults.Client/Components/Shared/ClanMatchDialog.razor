@@ -4,14 +4,14 @@
 @inject SettingService SettingService
 @inject IBrowserViewportService ViewportService
 
-<MudDialog Class="wot-dialog" TitleClass="wot-dialog-bar">
+<MudDialog Class="wot-dialog overflow-hidden" ContentClass="overflow-y-auto" TitleClass="wot-dialog-bar">
 	<TitleContent>
-		<WotDialogTitle>
+		<WotDialogTitle Dialog="MudDialog">
 			@if (Match.HasValue)
 			{
 				<MudStack Row Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="4">
 					<MudText Typo="Typo.h4" HtmlTag="span">[@Match.Value.Item1]</MudText>
-					<MudText Typo="Typo.h5" HtmlTag="span" Color="Color.Secondary">vs</MudText>
+					<MudText Typo="Typo.h5" HtmlTag="span" Class="mud-text-secondary">vs</MudText>
 					<MudText Typo="Typo.h4" HtmlTag="span">[@Match.Value.Item2]</MudText>
 				</MudStack>
 			}
@@ -85,7 +85,7 @@
 				{
 					<div class="d-flex justify-space-between gap-3">
 						<span>@vehicle.Key</span>
-						<MudText Typo="Typo.body2" Color="Color.Secondary" Class="wot-num">@((int)Math.Round(100.0 * vehicle.Count() / context.Count()))%</MudText>
+						<MudText Typo="Typo.body2" Class="mud-text-secondary wot-num">@((int)Math.Round(100.0 * vehicle.Count() / context.Count()))%</MudText>
 					</div>
 				}
 			</MudTd>

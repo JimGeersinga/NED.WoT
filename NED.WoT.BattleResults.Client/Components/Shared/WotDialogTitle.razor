@@ -9,12 +9,13 @@
 <MudText Typo="Typo.h5" HtmlTag="h2" Class="wot-dialog-title">@(ChildContent ?? (RenderFragment)(b => b.AddContent(0, Title)))</MudText>
 @if (Closable)
 {
-    <MudIconButton Icon="@Icons.Material.Outlined.Close" Size="Size.Small" Class="mud-button-close" aria-label="Sluiten" title="Sluiten" OnClick="@(() => MudDialog.Cancel())" />
+    <MudIconButton Icon="@Icons.Material.Outlined.Close" Size="Size.Small" Class="mud-button-close" aria-label="Sluiten" title="Sluiten" OnClick="@(() => Dialog.Cancel())" />
 }
 
 @code {
-    [CascadingParameter]
-    public required IMudDialogInstance MudDialog { get; set; }
+    /// <summary>The dialog the X cancels: pass the dialog's own <c>MudDialog</c>. It is a parameter because MudBlazor renders the title outside its cascading value.</summary>
+    [Parameter, EditorRequired]
+    public required IMudDialogInstance Dialog { get; set; }
 
     /// <summary>An <c>Icons.Material.Outlined.*</c> icon.</summary>
     [Parameter]

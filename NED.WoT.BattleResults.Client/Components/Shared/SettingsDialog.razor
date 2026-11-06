@@ -9,12 +9,12 @@
 
 <EditForm Model="@modal" OnValidSubmit="OnValidSubmit">
     <DataAnnotationsValidator />
-    <MudDialog Class="wot-dialog" TitleClass="wot-dialog-bar" Style="max-width: 760px">
+    <MudDialog Class="wot-dialog overflow-hidden" ContentClass="overflow-y-auto" TitleClass="wot-dialog-bar" Style="max-width: 760px">
         <TitleContent>
-            <WotDialogTitle Icon="@Icons.Material.Outlined.Settings" Title="Instellingen" Closable="CanCancel" />
+            <WotDialogTitle Dialog="MudDialog" Icon="@Icons.Material.Outlined.Settings" Title="Instellingen" Closable="CanCancel" />
         </TitleContent>
         <DialogContent>
-            <MudStack Spacing="4" Class="pt-2">
+            <MudStack Spacing="3" Class="pt-2">
                 <MudText Typo="Typo.overline" Color="Color.Tertiary">Replays</MudText>
                 <MudTextField Label="Pad naar WoT-replays" Variant="Variant.Filled"
                               Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.FolderOpen"
@@ -32,22 +32,32 @@
 
                 <MudDivider />
                 <MudText Typo="Typo.overline" Color="Color.Tertiary">Gedrag</MudText>
-                <MudSwitch Color="Color.Primary" @bind-Value="@modal.SingleBattleResultOpenedOnly" For="(() => modal.SingleBattleResultOpenedOnly)">
-                    Maximaal één gevechtsresultaat open houden
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Een geopend gevecht klapt de andere in.</MudText>
-                </MudSwitch>
-                <MudSwitch Color="Color.Primary" @bind-Value="@modal.OnlyHighlistOwnMatches" For="(() => modal.OnlyHighlistOwnMatches)">
-                    Alleen eigen gevechten uitlichten
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Alleen jouw team krijgt een resultaatkleur.</MudText>
-                </MudSwitch>
-                <MudSwitch Color="Color.Primary" @bind-Value="@modal.UpdateScreeenWhileLoading" For="(() => modal.UpdateScreeenWhileLoading)">
-                    Scherm bijwerken tijdens het laden
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Gevechten verschijnen terwijl ze worden gelezen.</MudText>
-                </MudSwitch>
-                <MudSwitch Color="Color.Primary" @bind-Value="@modal.AutoClanLookup" For="(() => modal.AutoClanLookup)">
-                    Clan automatisch opzoeken bij de start van een gevecht
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Opent Clan gevecht zodra je clan tegen een andere clan speelt.</MudText>
-                </MudSwitch>
+                <MudStack Spacing="1">
+                    <MudSwitch Color="Color.Primary" @bind-Value="@modal.SingleBattleResultOpenedOnly" For="(() => modal.SingleBattleResultOpenedOnly)">
+                        <div>
+                            <div>Maximaal één gevechtsresultaat open houden</div>
+                            <MudText Typo="Typo.caption" Class="mud-text-secondary">Een geopend gevecht klapt de andere in.</MudText>
+                        </div>
+                    </MudSwitch>
+                    <MudSwitch Color="Color.Primary" @bind-Value="@modal.OnlyHighlistOwnMatches" For="(() => modal.OnlyHighlistOwnMatches)">
+                        <div>
+                            <div>Alleen eigen gevechten uitlichten</div>
+                            <MudText Typo="Typo.caption" Class="mud-text-secondary">Alleen jouw team krijgt een resultaatkleur.</MudText>
+                        </div>
+                    </MudSwitch>
+                    <MudSwitch Color="Color.Primary" @bind-Value="@modal.UpdateScreeenWhileLoading" For="(() => modal.UpdateScreeenWhileLoading)">
+                        <div>
+                            <div>Scherm bijwerken tijdens het laden</div>
+                            <MudText Typo="Typo.caption" Class="mud-text-secondary">Gevechten verschijnen terwijl ze worden gelezen.</MudText>
+                        </div>
+                    </MudSwitch>
+                    <MudSwitch Color="Color.Primary" @bind-Value="@modal.AutoClanLookup" For="(() => modal.AutoClanLookup)">
+                        <div>
+                            <div>Clan automatisch opzoeken bij de start van een gevecht</div>
+                            <MudText Typo="Typo.caption" Class="mud-text-secondary">Opent Clan gevecht zodra je clan tegen een andere clan speelt.</MudText>
+                        </div>
+                    </MudSwitch>
+                </MudStack>
             </MudStack>
         </DialogContent>
         <DialogActions>

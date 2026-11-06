@@ -1,12 +1,12 @@
 @using Microsoft.AspNetCore.Components
 
-<MudDialog Class="wot-dialog" TitleClass="wot-dialog-bar">
+<MudDialog Class="wot-dialog overflow-hidden" ContentClass="overflow-y-auto" TitleClass="wot-dialog-bar">
     <TitleContent>
-        <WotDialogTitle Icon="@Icons.Material.Outlined.HelpOutline" Title="Onbekende namen" />
+        <WotDialogTitle Dialog="MudDialog" Icon="@Icons.Material.Outlined.HelpOutline" Title="Onbekende namen" />
     </TitleContent>
     <DialogContent>
         <MudStack Spacing="3" Class="pt-2">
-            <MudText Typo="Typo.body2" Color="Color.Secondary">Deze namen staan nog niet in de naamlijst van de app.</MudText>
+            <MudText Typo="Typo.body2" Class="mud-text-secondary">Deze namen staan nog niet in de naamlijst van de app.</MudText>
             @if (MapNameResolver.UndefinedMapNames.Count > 0)
             {
                 <MudText Typo="Typo.overline" Color="Color.Tertiary">Onbekende mapnamen</MudText>

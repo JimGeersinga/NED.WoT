@@ -1,6 +1,6 @@
 <MudDialog Class="wot-dialog" TitleClass="wot-dialog-bar">
     <TitleContent>
-        <WotDialogTitle Icon="@Icons.Material.Outlined.Groups" Title="@($"Clanleden ({_members.Count})")" />
+        <WotDialogTitle Dialog="MudDialog" Icon="@Icons.Material.Outlined.Groups" Title="@($"Clanleden ({_members.Count})")" />
     </TitleContent>
     <DialogContent>
         <MudTable Items="@_members" Hover="true" Breakpoint="Breakpoint.None" FixedHeader="true" Height="600px">
