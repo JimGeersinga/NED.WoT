@@ -280,18 +280,19 @@
 
 /* ==== MudTable (the player table of Details: .player-table; the canvas's "Component: gevechtsdetails") ==== */
 /* Two header tiers, one group per team, the first five columns sticky. The widths are fixed because a sticky column needs the left offset of the ones before it:
-   expander 44, # 40, Naam 230, Tank 170, Speeltijd 84, then the figures; the last column takes what is left of the table's width (1240px, 1426px in stats mode, like the canvas's grid). The elements Details.razor renders itself are in Details.razor.css. */
+   expander 44, # 40, Naam 230, Tank 170, Speeltijd 84, then the figures; the last column takes what is left of the panel's width; below 1240px (1426px in stats mode, like the canvas's grid) the table scrolls sideways. The elements Details.razor renders itself are in Details.razor.css. */
 .mud-table.player-table {
     background: transparent;
 }
 
 .mud-table.player-table .mud-table-root {
     table-layout: fixed;
-    width: 1240px;
+    width: 100%;
+    min-width: 1240px;
 }
 
 .mud-table.player-table.stats .mud-table-root {
-    width: 1426px;
+    min-width: 1426px;
 }
 
 .mud-table.player-table col.c-lead { width: 44px; }
@@ -299,16 +300,24 @@
 .mud-table.player-table col.c-name { width: 230px; }
 .mud-table.player-table col.c-tank { width: 170px; }
 .mud-table.player-table col.c-life { width: 84px; }
-.mud-table.player-table col.c-xp { width: 64px; }
-.mud-table.player-table col.c-kills { width: 52px; }
-.mud-table.player-table col.c-dmg { width: 76px; }
-.mud-table.player-table col.c-blk { width: 112px; }
-.mud-table.player-table col.c-recv { width: 84px; }
-.mud-table.player-table col.c-shots { width: 96px; }
-.mud-table.player-table col.c-hits { width: 88px; }
-.mud-table.player-table.stats col.c-blk { width: 190px; }
-.mud-table.player-table.stats col.c-shots { width: 140px; }
-.mud-table.player-table.stats col.c-hits { width: 120px; }
+/* The figure columns share the width that is left of the panel after the sticky ones (568px) in the proportions of the canvas's widths. calc() with a percentage is ignored on a <col>, but percentages are not: the eight add up to 100%,
+   which together with the 568px of the sticky columns is more than the table, so the browser scales them down to fill it exactly and the 568px stay as they are. At the minimum width of the table (1240px, 1426px in stats mode) they come out as the canvas's widths (a sum of 672px, 858px in stats mode). */
+.mud-table.player-table col.c-xp { width: 9.524%; }
+.mud-table.player-table col.c-kills { width: 7.738%; }
+.mud-table.player-table col.c-dmg { width: 11.310%; }
+.mud-table.player-table col.c-blk { width: 16.667%; }
+.mud-table.player-table col.c-recv { width: 12.500%; }
+.mud-table.player-table col.c-shots { width: 14.286%; }
+.mud-table.player-table col.c-hits { width: 13.095%; }
+.mud-table.player-table col.c-pen { width: 14.881%; }
+.mud-table.player-table.stats col.c-xp { width: 7.459%; }
+.mud-table.player-table.stats col.c-kills { width: 6.061%; }
+.mud-table.player-table.stats col.c-dmg { width: 8.858%; }
+.mud-table.player-table.stats col.c-blk { width: 22.145%; }
+.mud-table.player-table.stats col.c-recv { width: 9.790%; }
+.mud-table.player-table.stats col.c-shots { width: 16.317%; }
+.mud-table.player-table.stats col.c-hits { width: 13.986%; }
+.mud-table.player-table.stats col.c-pen { width: 15.385%; }
 
 .mud-table.player-table .mud-table-cell {
     height: 34px;
@@ -406,8 +415,9 @@
     border-bottom: 1px solid var(--mud-palette-lines-default);
 }
 
+/* The expander button (32px) has a -12px left margin of its own: 18px of padding puts it in the middle of the 44px column, with room for its focus ring, inside the scroll container's edge. */
 .mud-table.player-table tr.teams > .mud-table-cell:first-child {
-    padding: 0 6px;
+    padding: 0 0 0 18px;
 }
 
 .mud-table-head .header-centered th {
