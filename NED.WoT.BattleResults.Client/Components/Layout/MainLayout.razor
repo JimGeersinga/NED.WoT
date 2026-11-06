@@ -47,7 +47,7 @@
     {
         if (string.IsNullOrWhiteSpace(SettingService.Settings.WotReplayDirectory) || !Directory.Exists(SettingService.Settings.WotReplayDirectory))
         {
-            Snackbar.Add("Wot replay directory is niet ingevuld of bestaat niet", Severity.Warning);
+            Snackbar.Add(BattleReportService.Notice("Replaymap", "de map is niet ingevuld of bestaat niet"), Severity.Warning);
 
             await Task.Delay(500);
 

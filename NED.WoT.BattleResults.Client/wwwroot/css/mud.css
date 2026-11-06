@@ -517,3 +517,86 @@
 .wot-battle-table > .mud-table-container > .mud-table-root > :is(thead, tbody, tfoot) > tr > .mud-table-cell.mapcol { padding-right: 28px; }
 .wot-battle-table > .mud-table-container > .mud-table-root > tbody > tr > .mud-table-cell.gl-err { color: var(--mud-palette-warning); }
 .wot-battle-table > .mud-table-container > .mud-table-root > tbody > tr > .mud-table-cell.gl-details { height: auto; padding: 16px; background: var(--mud-palette-background); white-space: normal; }
+
+/* ==== MudTable (the battle table: rows that are not battles) ==== */
+/* An unreadable replay: one warning row over all the columns (the cell holds a MudAlert); it is not clickable, it has no details. */
+.wot-battle-table > .mud-table-container > .mud-table-root > tbody > tr.gl-unreadable { cursor: default; }
+.wot-battle-table > .mud-table-container > .mud-table-root > tbody > tr > .mud-table-cell.gl-err { padding: 0; }
+
+/* The skeleton rows under the last battle while loading hold their own rows, so the cell has no height, padding or line of its own. */
+.wot-battle-table > .mud-table-container > .mud-table-root > tbody > tr > .mud-table-cell.gl-skel-cell { height: auto; padding: 0; border-bottom: 0; }
+
+/* NoRecordsContent: MudBlazor wraps it in a th and a div with a my-3 margin; the skeleton rows bring their own spacing. */
+.wot-battle-table > .mud-table-container > .mud-table-root > tbody > tr > .mud-table-empty-row { padding: 0; border-bottom: 0; }
+.wot-battle-table .mud-table-empty-row > div { margin: 0 !important; /* beats the my-3 utility class MudBlazor puts on it */ }
+
+/* ==== MudAlert (the warning row of an unreadable replay: design .alert.c-warn on the table's row) ==== */
+.mud-alert.wot-row-alert {
+    box-sizing: border-box;
+    align-items: center;
+    height: 48px;
+    padding: 0 16px;
+    background-color: color-mix(in srgb, var(--mud-palette-warning) 13%, transparent);
+    color: var(--mud-palette-text-primary);
+    font-size: 14px;
+}
+
+.wot-row-alert .mud-alert-message { padding: 0; }
+.wot-row-alert b { color: var(--mud-palette-warning); font-weight: 600; }
+
+/* ==== MudProgressLinear (design .prog: 4px, a hard 2px radius, Primary on the dark track) ==== */
+.mud-progress-linear.wot-progress {
+    flex: none;
+    height: 4px;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+/* The track is a ::before in MudBlazor (the colour at 20%); the design wants the dark steel. */
+.mud-progress-linear.wot-progress::before { background-color: var(--mud-palette-dark); opacity: 1; }
+.wot-progress .mud-progress-linear-bar { border-radius: 2px; }
+
+/* ==== MudSkeleton (the bars of the skeleton rows) ==== */
+.gl-skel-row .mud-skeleton { flex: none; border-radius: 2px; }
+
+/* ==== MudSnackbar (design .snack: an outlined dense Alert on the dialog surface, bottom left) ==== */
+/* --wot-snack is the severity's colour: the tint of the ground, the icon and the lead word. MudBlazor writes its own border colour and text colour per severity; the design keeps the steel edge and the normal text. */
+.mud-snackbar {
+    --wot-snack: var(--mud-palette-text-primary);
+    align-items: flex-start;
+    min-width: 288px;
+    max-width: 440px;
+    padding: 12px 16px;
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: 4px;
+    background: linear-gradient(color-mix(in srgb, var(--wot-snack) 13%, transparent), color-mix(in srgb, var(--wot-snack) 13%, transparent)), var(--wot-surface-dialog);
+    box-shadow: var(--wot-shadow-menu);
+    color: var(--mud-palette-text-primary);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.mud-snackbar.mud-alert-outlined-info { --wot-snack: var(--mud-palette-info); }
+.mud-snackbar.mud-alert-outlined-success { --wot-snack: var(--mud-palette-success); }
+.mud-snackbar.mud-alert-outlined-warning { --wot-snack: var(--mud-palette-warning); }
+.mud-snackbar.mud-alert-outlined-error { --wot-snack: var(--mud-palette-error); }
+
+.mud-snackbar .mud-snackbar-icon { padding: 0; margin-top: -1px; color: var(--wot-snack); opacity: 1; }
+.mud-snackbar .mud-snackbar-content-message { padding: 0; }
+.mud-snackbar .mud-snackbar-content-message b { color: var(--wot-snack); font-weight: 600; }
+
+/* ==== MudPaper and MudImage (the "Geen toegang" card) ==== */
+.mud-paper.gl-unauth-card {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    max-width: 440px;
+    padding: 40px;
+    box-shadow: inset 0 1px 0 var(--wot-steel-highlight);
+    text-align: center;
+}
+
+.mud-image.gl-unauth-mark { width: 64px; height: 64px; }

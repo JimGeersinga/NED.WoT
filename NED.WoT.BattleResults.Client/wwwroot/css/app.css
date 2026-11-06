@@ -128,25 +128,77 @@ html, body {
     font-family: var(--wot-font-text);
 }
 
+/* The global error bar (canvas "Meldingen en fouten"): Blazor shows it with display: block, so the row inside it is the flex container. */
 #blazor-error-ui {
-    background: var(--wot-surface-dialog);
-    color: var(--mud-palette-text-primary);
+    background: var(--wot-error-bar);
+    color: var(--wot-error-bar-text);
     bottom: 0;
-    box-shadow: 0 -1px 2px var(--mud-palette-overlay-dark);
     display: none;
     left: 0;
-    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
     position: fixed;
     width: 100%;
     z-index: 1000;
+    font: 500 14px/1.5 var(--wot-font-text);
 }
 
-    #blazor-error-ui .dismiss {
-        cursor: pointer;
-        position: absolute;
-        right: 0.75rem;
-        top: 0.5rem;
-    }
+#blazor-error-ui .error-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+}
+
+#blazor-error-ui .error-bar-icon,
+#blazor-error-ui .dismiss svg {
+    width: 24px;
+    height: 24px;
+    fill: currentColor;
+    flex: none;
+}
+
+#blazor-error-ui .error-bar-text {
+    flex: 1;
+}
+
+/* The Herladen text button: an outlined small button in the contrast colour. */
+#blazor-error-ui .reload {
+    display: inline-flex;
+    align-items: center;
+    height: 32px;
+    padding: 0 12px;
+    border: 1px solid color-mix(in srgb, var(--wot-error-bar-text) 55%, transparent);
+    border-radius: 4px;
+    color: inherit;
+    font: 600 15px/1 var(--wot-font-display);
+    letter-spacing: .05em;
+    text-decoration: none;
+    text-transform: uppercase;
+}
+
+#blazor-error-ui .reload:hover,
+#blazor-error-ui .dismiss:hover {
+    background: color-mix(in srgb, var(--wot-error-bar-text) 12%, transparent);
+}
+
+#blazor-error-ui .dismiss {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: 4px;
+    background: none;
+    color: inherit;
+    cursor: pointer;
+    flex: none;
+}
+
+#blazor-error-ui :focus-visible {
+    outline: 2px solid var(--wot-error-bar-text);
+    outline-offset: 2px;
+}
 
 .status-bar-safe-area {
     display: none;

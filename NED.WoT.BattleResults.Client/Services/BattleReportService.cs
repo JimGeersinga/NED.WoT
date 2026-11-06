@@ -1,8 +1,12 @@
+using Microsoft.AspNetCore.Components;
+
 using MudBlazor;
 
 using NED.WoT.BattleResults.Client.Models;
 
 using System.Collections.Concurrent;
+using System.Diagnostics;
+using System.Net;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
@@ -21,7 +25,16 @@ public partial class BattleReportService
     private static ReadOnlySpan<byte> ReplayIdentifier => "\"clientVersionFromXml\""u8;
     private static ReadOnlySpan<byte> StatsIdentifier => "\"personal\""u8;
 
+    private int _filesToLoad;
+    private int _filesLoaded;
+
     public ConcurrentDictionary<string, BattleReport> BattleReports { get; set; } = new ConcurrentDictionary<string, BattleReport>();
+
+    /// <summary>The replay files the current load has to read (0 until the folder is listed): the "n van m bestanden" of the progress bar.</summary>
+    public int FilesToLoad => Volatile.Read(ref _filesToLoad);
+
+    /// <summary>The replay files the current load has read so far, readable or not.</summary>
+    public int FilesLoaded => Volatile.Read(ref _filesLoaded);
 
     public event EventHandler? LoadingBattleReportsStarted;
     public event EventHandler? LoadingBattleReportsFinished;
@@ -48,6 +61,8 @@ public partial class BattleReportService
             return;
         }
 
+        Interlocked.Exchange(ref _filesToLoad, 0);
+        Interlocked.Exchange(ref _filesLoaded, 0);
         LoadingBattleReportsStarted?.Invoke(this, new EventArgs());
 
         DirectoryInfo directoryInfo = new(_settingService.Settings.WotReplayDirectory);
@@ -56,6 +71,7 @@ public partial class BattleReportService
             .Where(x => x.LastWriteTime > _settingService.Settings.LoadBattlesSince && !IsTempFile(x.Name))
             .OrderByDescending(x => x.CreationTime)
             .ToList();
+        Interlocked.Exchange(ref _filesToLoad, files.Count);
 
         OrderablePartitioner<FileInfo> partitioner = Partitioner.Create(files);
         Parallel.ForEach(partitioner, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, file =>
@@ -68,11 +84,12 @@ public partial class BattleReportService
             }
             catch (Exception ex)
             {
-                BattleReport report = new()
-                {
-                    MatchStart = file.CreationTime,
-                    Error = $"Failed to process file {file.Name}: {ex.Message}"
-                };
+                // The unreadable file becomes a row of its own in the table, not a silent gap.
+                AddBattleReport(file.Name, Unreadable(file, ex.Message), _settingService.Settings.UpdateScreeenWhileLoading);
+            }
+            finally
+            {
+                Interlocked.Increment(ref _filesLoaded);
             }
         });
 
@@ -145,7 +162,7 @@ public partial class BattleReportService
             {
                 _clanMatch = clanMatch;
 
-                _snackbar.Add($"Match gestart tussen {_clanMatch.Value.Item1} en {_clanMatch.Value.Item2}", Severity.Info);
+                _snackbar.Add(Notice("Match gestart", $"{_clanMatch.Value.Item1} tegen {_clanMatch.Value.Item2}"), Severity.Info);
                 ClanMatchStarted?.Invoke(this, clanMatch.Value);
             }
         }
@@ -165,15 +182,14 @@ public partial class BattleReportService
         LoadingBattleReportsStarted?.Invoke(this, new EventArgs());
 
         BattleReport report = GetBattleReport(new FileInfo(e.FullPath));
-        if (report != null)
+        _clanMatch = null;
+
+        // An unreadable replay is added too (it shows as a warning row); a duplicate has already had its own message.
+        if (AddBattleReport(e.Name, report))
         {
-            _clanMatch = null;
-            AddBattleReport(e.Name, report);
-            _snackbar.Add($"Bestand '{e.Name}' is toegevoegd", Severity.Success);
-        }
-        else
-        {
-            _snackbar.Add($"Kan bestand {e.Name} niet toevoegen", Severity.Warning);
+            _snackbar.Add(
+                report.Error == null ? Notice("Toegevoegd", e.Name) : Notice("Niet toegevoegd", $"{e.Name} kon niet worden gelezen"),
+                report.Error == null ? Severity.Success : Severity.Warning);
         }
 
         LoadingBattleReportsFinished?.Invoke(this, new EventArgs());
@@ -183,19 +199,20 @@ public partial class BattleReportService
     {
         if (BattleReports.Remove(e.Name!, out BattleReport? report))
         {
-            _snackbar.Add($"Replay bestand '{e.Name}' is verwijderd", Severity.Warning);
+            _snackbar.Add(Notice("Verwijderd", $"{e.Name} is niet meer aanwezig"), Severity.Warning);
             BattleReportRemoved?.Invoke(this, new BattleReportRemovedEventArgs(report));
         }
     }
 
     private void OnError(object sender, ErrorEventArgs e)
     {
-        _snackbar.Add($"Er is iets fout gegaan bij de file watcher: {e.GetException()}", Severity.Error);
+        Debug.WriteLine($"File watcher: {e.GetException()}");
+        _snackbar.Add(Notice("Bestandsbewaking", "er ging iets mis"), Severity.Error);
     }
 
     private BattleReport GetBattleReport(FileInfo file)
     {
-        BattleReport report = new();
+        BattleReport report;
 
         try
         {
@@ -205,20 +222,16 @@ public partial class BattleReportService
             JsonObject? replay = GetJsonFromFile<JsonObject>(fileData, '{', '}', replayStartIndex);
             if (replay?["dateTime"] == null)
             {
-                report.MatchStart = file.CreationTime;
-                report.Error = $"Could not parse file: {file.Name}";
+                return Unreadable(file, "no dateTime in the replay header");
             }
-            else
-            {
-                int statsStartIndex = fileData.IndexOf(StatsIdentifier);
-                JsonArray? stats = GetJsonFromFile<JsonArray>(fileData, '[', ']', statsStartIndex);
-                report = BattleReportMapper.Map(replay, stats, _settingService.Settings);
-            }
+
+            int statsStartIndex = fileData.IndexOf(StatsIdentifier);
+            JsonArray? stats = GetJsonFromFile<JsonArray>(fileData, '[', ']', statsStartIndex);
+            report = BattleReportMapper.Map(replay, stats, _settingService.Settings);
         }
         catch (Exception ex)
         {
-            report.MatchStart = file.CreationTime;
-            report.Error = ex.Message;
+            return Unreadable(file, ex.Message);
         }
 
         report.FileName = file.Name;
@@ -226,17 +239,35 @@ public partial class BattleReportService
         return report;
     }
 
-    private void AddBattleReport(string name, BattleReport report, bool notify = true)
+    /// <summary>What the warning row of an unreadable replay says.</summary>
+    public static string UnreadableMessage(string fileName) => $"Kan bestand {fileName} niet lezen";
+
+    /// <summary>The report of a replay that can't be read: no battle, only the warning row. The reason goes to the debug output, not to the UI.</summary>
+    private static BattleReport Unreadable(FileInfo file, string reason)
     {
-        if (!BattleReports.TryAdd(name, report))
+        Debug.WriteLine($"Unreadable replay {file.Name}: {reason}");
+
+        return new BattleReport { FileName = file.Name, MatchStart = file.CreationTime, Error = UnreadableMessage(file.Name) };
+    }
+
+    /// <summary>A snackbar message as lead word · sentence (docs/DESIGN.md, "snackbar"): the lead word is bold in the severity colour. Both parts are HTML-encoded, so a file name is safe in it.</summary>
+    public static MarkupString Notice(string lead, string sentence) => new($"<b>{WebUtility.HtmlEncode(lead)} · </b>{WebUtility.HtmlEncode(sentence)}");
+
+    /// <returns>False when a report with this file name is already there (the user has been told).</returns>
+    private bool AddBattleReport(string name, BattleReport report, bool notify = true)
+    {
+        bool added = BattleReports.TryAdd(name, report);
+        if (!added)
         {
-            _snackbar.Add($"Kan bestand '{name}' niet toevoegen", Severity.Error);
+            _snackbar.Add(Notice("Niet toegevoegd", $"{name} staat al in de lijst"), Severity.Warning);
         }
 
         if (notify)
         {
             BattleReportAdded?.Invoke(this, new BattleReportAddedEventArgs(report));
         }
+
+        return added;
     }
 
     private static T? GetJsonFromFile<T>(ReadOnlySpan<byte> fileData, char start, char end, int identifyIndex)

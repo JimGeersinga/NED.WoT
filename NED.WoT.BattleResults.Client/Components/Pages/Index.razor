@@ -11,27 +11,87 @@
 @inject SettingService SettingService;
 @inject IJSRuntime JSRuntime;
 @inject IDialogService DialogService;
+@inject ISnackbar Snackbar;
+@inject NavigationManager NavigationManager;
 
 @{
-	// One pass per render: the battles that pass the search and the match type (the totals follow these), then their days.
-	var filtered = _reports.Where(TableFilter).ToList();
-	var days = BuildDays(filtered);
+	// One pass per render: the readable battles that pass the search and the match type (the totals follow these), then their days.
+	var readable = _reports.Where(x => x.Error == null).ToList();
+	var filtered = readable.Where(TableFilter).ToList();
+	// A replay that can't be read is a warning row of its own: in every view (no filter can match it), but never in a count. A search hides it.
+	var unreadable = string.IsNullOrWhiteSpace(_search?.Value) ? _reports.Where(x => x.Error != null).ToList() : [];
+	var days = BuildDays(filtered, unreadable);
 	// The table shows the rows under the result chips (a day without one drops out by itself); the day header and the footer count the whole day.
 	var dayByLabel = days.ToDictionary(d => d.Label);
-	var visible = filtered.Where(x => _resultVisibility[x.Result]).OrderByDescending(x => x.MatchStart).ToList();
+	var visible = filtered.Where(x => _resultVisibility[x.Result]).Concat(unreadable).OrderByDescending(x => x.MatchStart).ToList();
+	var lastVisible = visible.LastOrDefault();
+	var emptyCause = _loading || visible.Count > 0 ? EmptyCause.None : EmptyCauseOf(Directory.Exists(SettingService.Settings.WotReplayDirectory), _reports.Count);
+	var filesToLoad = BattleResultService.FilesToLoad;
+	var filesLoaded = BattleResultService.FilesLoaded;
 }
 
 <div class="gl-page">
-	<BattleFilterBar Reports="_reports"
-					 Filtered="filtered"
-					 @bind-Search="_search"
-					 @bind-MatchType="_matchType"
-					 ResultVisibility="_resultVisibility"
-					 OnToggleResult="@(r => ToggleResultVisibilty(r))"
-					 CanToggleBattleStats="_canToggleBattleStats"
-					 @bind-ShowBattleStats="_showBattleStats"
-					 @bind-DetailedInfoForPlayer="_detailedInfoForPlayer" />
+	@* The filters wait until the loading is done: inert keeps the keyboard and the pointer out of them. *@
+	<div class="gl-filters" inert="@_loading">
+		<BattleFilterBar Reports="readable"
+						 Filtered="filtered"
+						 @bind-Search="_search"
+						 @bind-MatchType="_matchType"
+						 ResultVisibility="_resultVisibility"
+						 OnToggleResult="@(r => ToggleResultVisibilty(r))"
+						 CanToggleBattleStats="_canToggleBattleStats"
+						 @bind-ShowBattleStats="_showBattleStats"
+						 @bind-DetailedInfoForPlayer="_detailedInfoForPlayer" />
+	</div>
 
+	@if (_loading)
+	{
+		<MudProgressLinear Class="wot-progress"
+						   Color="Color.Primary"
+						   Size="Size.Small"
+						   Indeterminate="@(filesToLoad == 0)"
+						   Min="0"
+						   Max="@Math.Max(filesToLoad, 1)"
+						   Value="filesLoaded"
+						   aria-label="@(filesToLoad == 0 ? "Gevechten laden" : $"Gevechten laden: {filesLoaded} van {filesToLoad} bestanden")" />
+	}
+
+	@if (emptyCause == EmptyCause.ReplayFolderMissing)
+	{
+		<div class="gl-empty-well">
+			<EmptyState Icon="@Icons.Material.Outlined.FolderOff"
+						Title="Replaymap niet gevonden"
+						Text="Zonder map kan Gevechtslog geen .wotreplay-bestanden lezen. Kies de map waarin World of Tanks je replays bewaart."
+						ActionText="Instellingen openen"
+						ActionIcon="@Icons.Material.Outlined.Settings"
+						ActionPrimary="true"
+						OnAction="OpenSettingsAsync" />
+		</div>
+	}
+	else if (emptyCause == EmptyCause.NothingSinceDate)
+	{
+		<div class="gl-empty-well">
+			<EmptyState Icon="@Icons.Material.Outlined.History"
+						Title="@($"Geen gevechten sinds {SettingService.Settings.LoadBattlesSince?.ToString("dd-MM-yyyy")}")"
+						Text="Er staan geen nieuwere .wotreplay-bestanden in de map. Speel een gevecht, kies een andere map of laad een eerdere periode."
+						ActionText="Datum aanpassen"
+						ActionIcon="@Icons.Material.Outlined.Event"
+						OnAction="OpenSettingsAsync" />
+		</div>
+	}
+	else if (emptyCause == EmptyCause.FiltersHideAll)
+	{
+		<div class="gl-empty-well">
+			<EmptyState Icon="@Icons.Material.Outlined.FilterAltOff"
+						Title="Geen gevechten gevonden"
+						Text="@FiltersHideAllText()"
+						ActionText="Filters wissen"
+						ActionIcon="@Icons.Material.Outlined.FilterAltOff"
+						OnAction="ClearFilters" />
+		</div>
+	}
+	else
+	{
 	<MudTable T="BattleReport"
 			  Items="visible"
 			  GroupBy="_groupDefinition"
@@ -92,24 +152,60 @@
 							   OnCopy="@(reports => CopyResultAsync(reports))" />
 		</GroupHeaderTemplate>
 		<RowTemplate>
-			<BattleRow Report="context"
-					   Number="dayByLabel[context.Group].Number(context)"
-					   ShowBattleStats="_showBattleStats"
-					   Stats="StatCells"
-					   OnCopy="@(report => CopyResultAsync(report, report.OwnTeam))" />
+			@if (context.Error != null)
+			{
+				@* One warning Alert over all the columns, instead of a silent gap. *@
+				<MudTd colspan="@(_showBattleStats ? 11 : 7)" Class="gl-err">
+					<MudAlert Severity="Severity.Warning" Variant="Variant.Text" Icon="@Icons.Material.Filled.Warning" Class="wot-row-alert" Dense="true" Square="true" Elevation="0">
+						<b>Niet te lezen · </b>@context.Error
+					</MudAlert>
+				</MudTd>
+			}
+			else
+			{
+				<BattleRow Report="context"
+						   Number="dayByLabel[context.Group].Number(context)"
+						   ShowBattleStats="_showBattleStats"
+						   Stats="StatCells"
+						   OnCopy="@(report => CopyResultAsync(report, report.OwnTeam))" />
+			}
 		</RowTemplate>
 		<ChildRowContent>
 			@if (context.ShowDetails)
 			{
 				<BattleRow Report="context" ShowBattleStats="_showBattleStats" DetailsRow="true" />
 			}
+			@if (_loading && ReferenceEquals(context, lastVisible))
+			{
+				@* Rows still to come, under the last one. *@
+				<MudTr>
+					<MudTd colspan="@(_showBattleStats ? 11 : 7)" Class="gl-skel-cell">@SkeletonRows</MudTd>
+				</MudTr>
+			}
 		</ChildRowContent>
+		<NoRecordsContent>
+			@if (_loading)
+			{
+				@SkeletonRows
+			}
+		</NoRecordsContent>
 		<FooterContent>
 			<MudTh colspan="5" scope="row">
 				<div class="gl">
 					<MudText Typo="Typo.h6" HtmlTag="h2">Totaal</MudText>
-					<MudText Typo="Typo.caption" Class="mud-text-secondary wot-num">sinds @SettingService.Settings.LoadBattlesSince?.ToString("dd-MM-yyyy")</MudText>
-					<BattleTotals Reports="filtered" ShowRecord="!_showBattleStats" Suffix="@(_loadingTime == TimeSpan.Zero ? null : $" · geladen in {_loadingTime.TotalSeconds.ToString("0.0", BattleReport.DutchCulture)} s")" />
+					@if (_loading)
+					{
+						<MudText Typo="Typo.caption" Class="mud-text-secondary wot-num">@filesLoaded van @filesToLoad bestanden gelezen</MudText>
+					}
+					else
+					{
+						<MudText Typo="Typo.caption" Class="mud-text-secondary wot-num">sinds @SettingService.Settings.LoadBattlesSince?.ToString("dd-MM-yyyy")</MudText>
+					}
+					<BattleTotals Reports="filtered" ShowRecord="!_showBattleStats" Suffix="@(_loading || _loadingTime == TimeSpan.Zero ? null : $" · geladen in {_loadingTime.TotalSeconds.ToString("0.0", BattleReport.DutchCulture)} s")" />
+					@if (_loading && SettingService.Settings.UpdateScreeenWhileLoading)
+					{
+						<MudText Typo="Typo.caption" Class="mud-text-secondary">wordt bijgewerkt tijdens het laden</MudText>
+					}
 				</div>
 			</MudTh>
 			@if (_showBattleStats)
@@ -120,6 +216,7 @@
 			<MudTd></MudTd>
 		</FooterContent>
 	</MudTable>
+	}
 </div>
 
 @code {
@@ -163,23 +260,102 @@
 		Selector = (e) => e.Group
 	};
 
-	private string RowClass(BattleReport report, int index) => "gl-row"
+	private string RowClass(BattleReport report, int index) => report.Error != null ? "gl-unreadable" : "gl-row"
 		+ (index % 2 == 1 ? " alt" : string.Empty)
 		+ (report.ShowDetails ? " wot-row-active" : string.Empty)
 		+ (report.FileName == _addedFile ? " gl-new" : string.Empty);
 
-	/// <summary>One day of battles, newest first. The number of a battle in its day is its place counted from the oldest (oldest = 1).</summary>
-	private sealed record Day(string Label, DateTime Date, List<BattleReport> Items)
+	/// <summary>Why the table area has no rows: the cause picks the empty state.</summary>
+	private enum EmptyCause
+	{
+		None,
+		ReplayFolderMissing,
+		NothingSinceDate,
+		FiltersHideAll
+	}
+
+	/// <summary>The cause of an empty table once loading is done and no row is shown: no folder, no replay at all since the date (all the replays, readable or not), or replays that the filters hide.</summary>
+	private static EmptyCause EmptyCauseOf(bool folderExists, int replayCount) =>
+		!folderExists ? EmptyCause.ReplayFolderMissing
+		: replayCount == 0 ? EmptyCause.NothingSinceDate
+		: EmptyCause.FiltersHideAll;
+
+	/// <summary>One day of battles, newest first. The number of a battle in its day is its place counted from the oldest (oldest = 1). Items are the readable battles; Newest also counts an unreadable replay of the day, which has a row but no number and no count.</summary>
+	private sealed record Day(string Label, DateTime Date, List<BattleReport> Items, DateTime Newest)
 	{
 		/// <summary>The place of a battle in its day, counted from the oldest (oldest = 1). The result chips do not change it.</summary>
 		public int Number(BattleReport report) => Items.Count - Items.IndexOf(report);
 	}
 
-	private static List<Day> BuildDays(IEnumerable<BattleReport> reports) => reports
+	private static List<Day> BuildDays(IEnumerable<BattleReport> reports, IEnumerable<BattleReport>? unreadable = null) => reports
+		.Concat(unreadable ?? [])
 		.GroupBy(x => x.Group)
-		.Select(x => new Day(x.Key, x.First().GroupDate, x.OrderByDescending(r => r.MatchStart).ToList()))
-		.OrderByDescending(x => x.Items[0].MatchStart)
+		.Select(x => new Day(x.Key, x.First().GroupDate, x.Where(r => r.Error == null).OrderByDescending(r => r.MatchStart).ToList(), x.Max(r => r.MatchStart)))
+		.OrderByDescending(x => x.Newest)
 		.ToList();
+
+	/// <summary>The sentence of the "Geen gevechten gevonden" empty state: it names the search and the match type that hide everything.</summary>
+	private string FiltersHideAllText()
+	{
+		string search = string.IsNullOrWhiteSpace(_search?.Value) ? string.Empty : $" met \"{_search.Value}\"";
+		string type = _matchType switch
+		{
+			MatchType.Clan => " in clangevechten",
+			MatchType.Normaal => " in normale gevechten",
+			MatchType.Onbekend => " met een onbekend resultaat",
+			_ => string.Empty
+		};
+		string results = _resultVisibility.Values.All(x => x) ? string.Empty : " Een of meer resultaten staan uit.";
+
+		return $"Er is geen gevecht{search}{type}.{results} Probeer andere filters of wis ze.";
+	}
+
+	/// <summary>Back to the unfiltered table: no search, every match type, every result. Alles and not the default Clan, because a folder without clan battles would stay empty.</summary>
+	private void ClearFilters()
+	{
+		_search = null;
+		_matchType = MatchType.Alles;
+		foreach (Result result in _resultVisibility.Keys.ToList())
+		{
+			_resultVisibility[result] = true;
+		}
+	}
+
+	/// <summary>Opens the settings, for the empty states that are fixed there. A new start date reloads the battles (a new folder reloads them from the dialog itself).</summary>
+	private async Task OpenSettingsAsync()
+	{
+		DateTime? since = SettingService.Settings.LoadBattlesSince;
+		string? directory = SettingService.Settings.WotReplayDirectory;
+
+		IDialogReference dialog = await DialogService.ShowAsync<SettingsDialog>("Instellingen", new DialogOptions
+		{
+			MaxWidth = MaxWidth.Medium,
+			FullWidth = true,
+			BackdropClick = false,
+			CloseOnEscapeKey = true,
+			CloseButton = false
+		});
+		DialogResult? result = await dialog.Result;
+
+		if (result is { Canceled: false } && SettingService.Settings.LoadBattlesSince != since && SettingService.Settings.WotReplayDirectory == directory)
+		{
+			NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
+		}
+	}
+
+	/// <summary>Three rows of grey bars where the next battles will come.</summary>
+	private static RenderFragment SkeletonRows => @<text>
+		@for (int i = 0; i < 3; i++)
+		{
+			<div class="gl-skel-row" aria-busy="true">
+				<MudSkeleton Width="12px" Height="12px" SkeletonType="SkeletonType.Rectangle" />
+				<MudSkeleton Width="96px" Height="12px" SkeletonType="SkeletonType.Rectangle" />
+				<MudSkeleton Width="@($"{104 + i * 8}px")" Height="12px" SkeletonType="SkeletonType.Rectangle" />
+				<MudSkeleton Width="@($"{240 - i * 10}px")" Height="12px" SkeletonType="SkeletonType.Rectangle" />
+				<MudSkeleton Width="76px" Height="12px" SkeletonType="SkeletonType.Rectangle" Class="gl-skel-end" />
+			</div>
+		}
+	</text>;
 
 	[Conditional("DEBUG")]
 	private static void SelfCheck()
@@ -195,6 +371,20 @@
 		Debug.Assert(days[0].Number(reports[4]) == 5, "the newest battle is #5");
 		Debug.Assert(days[0].Date == today, "the day header shows today's date");
 		Debug.Assert(new BattleReport { MatchStart = today.AddHours(1) }.GroupDate == today.AddDays(-1), "a battle at 01:00 counts for the previous day");
+
+		// The cause of an empty table picks its empty state.
+		Debug.Assert(EmptyCauseOf(false, 0) == EmptyCause.ReplayFolderMissing, "no folder is the missing-folder state, whatever else is true");
+		Debug.Assert(EmptyCauseOf(false, 7) == EmptyCause.ReplayFolderMissing, "no folder wins over the replay count");
+		Debug.Assert(EmptyCauseOf(true, 0) == EmptyCause.NothingSinceDate, "a folder without replays since the date is the since-date state");
+		Debug.Assert(EmptyCauseOf(true, 7) == EmptyCause.FiltersHideAll, "replays that no row shows are hidden by the filters");
+
+		// An unreadable replay is a row of its own: it has its day but no count and no number.
+		BattleReport broken = new() { FileName = "kapot.wotreplay", MatchStart = today.AddHours(20), Error = BattleReportService.UnreadableMessage("kapot.wotreplay") };
+		List<Day> brokenDays = BuildDays([], [broken]);
+		Debug.Assert(broken.Error == "Kan bestand kapot.wotreplay niet lezen", "the warning row names the file");
+		Debug.Assert(brokenDays.Count == 1 && brokenDays[0].Items.Count == 0 && brokenDays[0].Newest == broken.MatchStart, "an unreadable replay alone is a day with a row and no battles");
+		List<Day> mixedDays = BuildDays(reports, [broken]);
+		Debug.Assert(mixedDays.Count == 1 && mixedDays[0].Items.Count == 5 && mixedDays[0].Number(reports[0]) == 1, "an unreadable replay does not change the count or the numbers of its day");
 
 		BattleTotals.SelfCheck();
 		BattleStats.SelfCheck();
@@ -243,7 +433,8 @@
 				_loading = true;
 				StateHasChanged();
 
-				while (_loading && SettingService.Settings.UpdateScreeenWhileLoading)
+				// The progress bar moves with it, so it runs for every load, not only when the battles show while loading.
+				while (_loading)
 				{
 					await Task.Delay(500);
 					StateHasChanged();
@@ -360,8 +551,8 @@
 
 	private async Task ToggleShowDetailsAsync(BattleReport? report)
 	{
-		// A click inside the opened details (a sort header, a team expander) bubbles up to the child row, which has no item.
-		if (report is null)
+		// A click inside the opened details (a sort header, a team expander) bubbles up to the child row, which has no item. An unreadable replay has no details.
+		if (report is null || report.Error != null)
 		{
 			return;
 		}
@@ -380,7 +571,17 @@
 
 	private async Task CopyResultAsync(BattleReport report, Team? team)
 	{
-		await Clipboard.SetTextAsync(team?.GetResult(report.MapName) ?? string.Empty);
+		string text = team?.GetResult(report.MapName) ?? string.Empty;
+		await Clipboard.SetTextAsync(text);
+		NotifyCopied(text);
+	}
+
+	private void NotifyCopied(string text)
+	{
+		if (text.Length > 0)
+		{
+			Snackbar.Add(BattleReportService.Notice("Gekopieerd", "opstelling staat op het klembord"), Severity.Success);
+		}
 	}
 
 	private async Task CopyResultAsync(IEnumerable<BattleReport> reports)
@@ -389,6 +590,12 @@
 		var splitResults = results
 				.Select(r => r?.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries) ?? [])
 				.ToList();
+
+		// A day with only an unreadable replay has no battles to copy.
+		if (splitResults.Count == 0)
+		{
+			return;
+		}
 
 		int maxLines = splitResults.Max(lines => lines.Length);
 
@@ -405,6 +612,7 @@
 		string output = string.Join(Environment.NewLine, outputLines);
 
 		await Clipboard.SetTextAsync(output);
+		NotifyCopied(output);
 	}
 
 	private async Task OpenClanMatchDialog((string, string) match)
