@@ -26,10 +26,10 @@
 
 	<MudAutocomplete T="BattleFilters.Option" Placeholder="Speler zoeken" aria-label="Speler"
 					 Value="_player" ValueChanged="PickPlayer"
-					 SearchFunc="SearchPlayers" ToStringFunc="PlayerText" ItemDisabledFunc="@(o => o.Header != null)"
-					 MaxItems="MaxItems" ReturnedItemsCountChanged="@(n => _playerCount = n)"
+					 SearchFunc="SearchPlayers" ToStringFunc="@(o => o?.Name)" ItemDisabledFunc="@(o => o.Header != null)"
+					 MaxItems="@(Clan == null ? MaxItems : (int?)null)" ReturnedItemsCountChanged="@(n => _playerCount = n)"
 					 Variant="Variant.Filled" Margin="Margin.Dense" Class="@("wot-filter" + (Player != null ? " filled" : string.Empty))" PopoverClass="wot-filter-pop"
-					 Adornment="Adornment.Start" AdornmentIcon="@BattleFilters.Helmet" Strict="false" OpenOnFocus="true"
+					 Adornment="Adornment.Start" AdornmentIcon="@BattleFilters.Helmet" AdornmentText="@PlayerTag" Strict="false" OpenOnFocus="true"
 					 Clearable="true" ResetValueOnEmptyText="true" CoerceText="true" DebounceInterval="150" RelativeWidth="DropdownWidth.Adaptive">
 		<ItemTemplate Context="o">
 			<span class="wot-opt">
@@ -131,7 +131,7 @@
 	[Parameter]
 	public EventCallback<bool> ShowBattleStatsChanged { get; set; }
 
-	/// <summary>A dropdown shows this many lines (headers included); the rest is found by typing. MudAutocomplete does not virtualize.</summary>
+	/// <summary>A dropdown shows this many lines (headers included); the rest is found by typing. MudAutocomplete does not virtualize. The Speler list of a chosen clan is not capped: a clan has far fewer players than the whole log.</summary>
 	private const int MaxItems = 100;
 
 	private BattleFilters.Option? _clan;
@@ -150,7 +150,8 @@
 
 	private static string BattleCount(int battles) => $"{battles} {(battles == 1 ? "gevecht" : "gevechten")}";
 
-	private static string? PlayerText(BattleFilters.Option? player) => player == null ? null : string.IsNullOrEmpty(player.Clan) ? player.Name : $"[{player.Clan}] {player.Name}";
+	/// <summary>The clan tag of the picked player as the start adornment of the Speler box (mud.css colours it and draws the helmet in front); the helmet icon shows while no tag is set.</summary>
+	private string? PlayerTag => _player?.Clan is { Length: > 0 } clan ? $"[{clan}]" : null;
 
 	private Task<IEnumerable<BattleFilters.Option>> SearchClans(string? term, CancellationToken token)
 	{

@@ -177,13 +177,17 @@
 .mud-input-control.wot-filter .mud-input-adornment-icon-button { width: 40px; height: 40px; padding: 0; }
 .mud-input-control.wot-filter .mud-input-adornment .mud-icon-root { width: 20px; height: 20px; color: var(--mud-palette-tertiary); }
 .mud-input-control.wot-filter.filled .mud-input-filled { box-shadow: inset 0 -2px 0 var(--mud-palette-primary); }
+/* A picked player: the clan tag is the adornment text (bronze), and the helmet is drawn in front of it because the icon is ignored next to a text. */
+.mud-input-control.wot-filter .mud-input-adornment-text { display: inline-flex; align-items: center; margin: 0 8px 0 12px; font: 600 15px/1 var(--wot-font-display); letter-spacing: .03em; color: var(--mud-palette-tertiary); }
+.mud-input-control.wot-filter .mud-input-adornment-text::before { content: ""; flex: none; width: 20px; height: 20px; margin-right: 8px; background: var(--mud-palette-primary); mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M12 3C7.6 3 4.5 6.4 4.5 10.8V15l1.5 1.5V19h12v-2.5l1.5-1.5v-4.2C19.5 6.4 16.4 3 12 3zM6.8 10.4h10.4v3.2H6.8z'/%3E%3C/svg%3E") center / contain no-repeat; }
 .mud-input-control.wot-filter.filled .mud-input-adornment .mud-icon-root { color: var(--mud-palette-primary); }
-.mud-popover.wot-filter-pop { min-width: 280px; border: 1px solid var(--mud-palette-lines-default); border-radius: 6px; box-shadow: var(--wot-shadow-menu); }
+.mud-popover.wot-filter-pop { overflow: hidden; min-width: 280px; border: 1px solid var(--mud-palette-lines-default); border-radius: 6px; box-shadow: var(--wot-shadow-menu); }
 .wot-filter-pop .mud-list-item { min-height: 38px; padding: 0 14px; }
 .wot-filter-pop .wot-opt { display: flex; align-items: center; justify-content: flex-start; gap: 10px; width: 100%; }
 .wot-filter-pop .wot-opt b { font-weight: 700; color: var(--mud-palette-text-primary); }
 .wot-filter-pop .wot-opt-tag { font: 600 15px/1 var(--wot-font-display); letter-spacing: .03em; color: var(--mud-palette-text-secondary); }
 .wot-filter-pop .wot-opt-n, .wot-filter-pop .wot-opt-more { font-size: 12px; color: var(--mud-palette-text-secondary); }
+.wot-filter-pop .wot-opt-n { margin-left: auto; }
 .wot-filter-pop .mud-list-item.mud-list-item-disabled { opacity: 1; }
 .wot-filter-pop .wot-opt-h { font: 600 12px/1.6 var(--wot-font-display); letter-spacing: .12em; text-transform: uppercase; color: var(--mud-palette-tertiary); }
 
