@@ -178,6 +178,30 @@ public sealed class BattleFilters
         }
     }
 
+    /// <summary>The Map list for the typed term: every map in the battles with its number of battles, A to Z. A ticked map without a battle in <paramref name="battles"/> stays listed (with 0) so it can be unticked. Battles without a map name are not listed.</summary>
+    public static List<Option> MapOptions(IEnumerable<BattleReport> battles, IEnumerable<string> ticked, string? term)
+    {
+        Dictionary<string, int> counts = new(StringComparer.Ordinal);
+        foreach (string map in battles.Select(x => x.MapName).OfType<string>())
+        {
+            counts[map] = counts.GetValueOrDefault(map) + 1;
+        }
+
+        foreach (string map in ticked)
+        {
+            counts.TryAdd(map, 0);
+        }
+
+        return counts
+            .Where(x => Has(x.Key, term ?? string.Empty))
+            .OrderBy(x => x.Key, StringComparer.InvariantCultureIgnoreCase)
+            .Select(x => new Option(x.Key, null, x.Value))
+            .ToList();
+    }
+
+    /// <summary>The text of the Map box: the first map in A to Z order and "+n" for the rest; null when nothing is ticked.</summary>
+    public static string? MapSummary(IReadOnlyCollection<string> ticked) => ticked.Count == 0 ? null : ticked.Count == 1 ? ticked.First() : $"{ticked.Order(StringComparer.InvariantCultureIgnoreCase).First()} +{ticked.Count - 1}";
+
     /// <summary>The player to keep after a clan is chosen: the same player when they were ever on that clan's team (so they are in the Speler list for it), otherwise null.</summary>
     public string? PlayerAfterClan(string player, string clan) =>
         (_tables.Value.ByClan.GetValueOrDefault(clan) ?? []).Any(x => string.Equals(x.Name, player, StringComparison.OrdinalIgnoreCase)) ? player : null;
@@ -259,6 +283,13 @@ public sealed class BattleFilters
         Debug.Assert(live.PlayerOptions(null, "oud").Count(x => x.Header == null) == 0 && live.PlayerOptions(null, "nieuw").Count(x => x.Header == null) == 1, "a new version with the same count: rebuilt, no stale list");
         live.Refresh(replaced, 1, "DUTCH");
         Debug.Assert(live.ClanOptions(string.Empty).First().Header == "Jouw clan" && live.ClanOptions(string.Empty).ElementAt(1).Name == "DUTCH", "a changed own clan tag rebuilds the tables");
+
+        // The Map list: A to Z with counts, a ticked map without battles stays, a typed term narrows it; the box shows the first map and "+n".
+        List<BattleReport> onMaps = [new() { MapName = "Steppes" }, new() { MapName = "Abbey" }, new() { MapName = "Steppes" }, new() { MapName = null }];
+        Debug.Assert(MapOptions(onMaps, [], null).Select(x => $"{x.Name}:{x.Battles}").SequenceEqual(["Abbey:1", "Steppes:2"]), "maps: A to Z with their battle count, no map name is not listed");
+        Debug.Assert(MapOptions(onMaps, ["Fjords"], null).Select(x => $"{x.Name}:{x.Battles}").SequenceEqual(["Abbey:1", "Fjords:0", "Steppes:2"]), "a ticked map with no battle stays listed");
+        Debug.Assert(MapOptions(onMaps, [], "STE").Select(x => x.Name).SequenceEqual(["Steppes"]), "a typed term narrows the maps, case does not matter");
+        Debug.Assert(MapSummary([]) == null && MapSummary(["Steppes"]) == "Steppes" && MapSummary(["Steppes", "Abbey", "Fjords"]) == "Abbey +2", "map box: nothing, one map, the first map and +n");
 
         // A player of two clans is one row without a clan and a row under each clan.
         List<BattleReport> moved = [Battle(1, "NED-1", "DUTCH", ["Tankgeneraal"], ["Wisselaar"]), Battle(2, "NED-1", "RHINE", ["Tankgeneraal"], ["Wisselaar"])];

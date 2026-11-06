@@ -1,14 +1,19 @@
-@using IndexPage = NED.WoT.BattleResults.Client.Components.Pages.Index
-
 @inject IDialogService DialogService
 
-@* The filter bar over the battle table: the Clan and Speler dropdowns (MudAutocomplete over BattleFilters, styled by wot-filter in mud.css), the match type and result chips (#14 replaces those) and the tool buttons. Index owns the state and gets it back through the callbacks. *@
+@* The filter bar over the battle table, in the order of the design: the Clangevechten | Alles switch, a separator, then the Clan and Speler dropdowns (MudAutocomplete over BattleFilters, styled by wot-filter in mud.css), the Map and Resultaat dropdowns and the tool buttons. Index owns the state and gets it back through the callbacks. *@
 @{
 	var clanMembers = Filtered.SelectMany(x => x.Team1.Players.Concat(x.Team2.Players)).Where(x => x.IsClanMember).Select(x => x.Name).Distinct().Count();
 	var undefinedNames = TankNameResolver.UndefinedTankNames.Count + MapNameResolver.UndefinedMapNames.Count;
 }
 
 <section class="gl-bar" aria-label="Filters">
+	<MudToggleGroup T="bool" Value="ClanOnly" ValueChanged="ClanOnlyChanged" Class="wot-view-toggle" aria-label="Soort gevechten">
+		<MudToggleItem Value="true" Text="Clangevechten" />
+		<MudToggleItem Value="false" Text="Alles" />
+	</MudToggleGroup>
+
+	<span class="wot-vsep" role="separator" aria-orientation="vertical"></span>
+
 	<MudAutocomplete T="BattleFilters.Option" Placeholder="Clan kiezen" aria-label="Clan"
 					 Value="_clan" ValueChanged="PickClan"
 					 SearchFunc="SearchClans" ToStringFunc="@(o => o?.Name)" ItemDisabledFunc="@(o => o.Header != null)"
@@ -49,22 +54,65 @@
 		<NoItemsTemplate><span class="wot-opt-more">Geen speler gevonden</span></NoItemsTemplate>
 	</MudAutocomplete>
 
-	<MudToggleGroup T="IndexPage.MatchType" Value="MatchType" ValueChanged="MatchTypeChanged" Class="wot-view-toggle" aria-label="Soort gevechten">
-		@foreach (var matchType in Enum.GetValues<IndexPage.MatchType>())
-		{
-			<MudToggleItem Value="matchType" Text="@matchType.ToString()" />
-		}
-	</MudToggleGroup>
+	@* Map: a MudMenu whose popover holds a search box, a checkbox per map and the Wissen and Alles buttons; the field is its activator. *@
+	<MudMenu @bind-Open="_mapOpen" Class="wot-pick" PopoverClass="wot-filter-pop wot-map-pop" RelativeWidth="DropdownWidth.Adaptive" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft">
+		<ActivatorContent>
+			@* The clear button is MudBlazor's own (a small MudIconButton with its mud-input-clear-button class), placed over the box like the one MudBlazor draws in the other three; it sits outside the clickable field so its click does not also toggle the menu. *@
+			<div class="wot-pick-field">
+				<div @onclick="() => ToggleMap(context)">
+					<MudTextField T="string" ReadOnly="true" Text="@BattleFilters.MapSummary(Maps)" Placeholder="Alle maps" aria-label="Map" aria-haspopup="listbox"
+								  Variant="Variant.Filled" Margin="Margin.Dense" Class="@("wot-filter" + (Maps.Count > 0 ? " filled" : string.Empty))"
+								  Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.Map" />
+				</div>
+				@if (Maps.Count > 0)
+				{
+					<MudIconButton Icon="@Icons.Material.Filled.Clear" Size="Size.Small" Class="mud-input-clear-button wot-pick-clear" aria-label="Maps wissen" title="Maps wissen" OnClick="ClearMaps" />
+				}
+			</div>
+		</ActivatorContent>
+		<ChildContent>
+			@if (_mapOpen)
+			{
+				var maps = BattleFilters.MapOptions(Scoped, Maps, _mapTerm);
+				<div class="wot-map-search" @onkeydown="MapKey">
+					<MudTextField T="string" @bind-Value="_mapTerm" Immediate="true" Placeholder="Zoek een map" aria-label="Map zoeken"
+								  Variant="Variant.Outlined" Margin="Margin.Dense" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.Search" />
+				</div>
+				<div class="wot-map-list" role="listbox" aria-multiselectable="true" aria-label="Maps">
+					@foreach (var map in maps)
+					{
+						var name = map.Name;
+						<div role="option" aria-selected="@(Maps.Contains(name) ? "true" : "false")">
+							<MudCheckBox T="bool" Value="Maps.Contains(name)" ValueChanged="@(on => ToggleMapName(name, on))" Dense="true" Color="Color.Primary">
+								<span class="wot-opt"><span>@BattleFilters.Highlighted(name, _mapTerm)</span><span class="wot-opt-n wot-num">@BattleCount(map.Battles)</span></span>
+							</MudCheckBox>
+						</div>
+					}
+					@if (maps.Count == 0)
+					{
+						<span class="wot-opt-more wot-map-none">Geen map gevonden</span>
+					}
+				</div>
+				<div class="wot-map-foot">
+					<span class="wot-opt-more wot-num">@Maps.Count geselecteerd</span>
+					<MudButton Variant="Variant.Text" Size="Size.Small" Disabled="@(Maps.Count == 0)" OnClick="ClearMaps">Wissen</MudButton>
+					<MudButton Variant="Variant.Outlined" Size="Size.Small" OnClick="() => TickAll(maps)">Alles</MudButton>
+				</div>
+			}
+		</ChildContent>
+	</MudMenu>
 
-	<div class="gl-chips" role="group" aria-label="Resultaat">
-		@foreach (var result in ResultVisibility.Keys)
+	@* Resultaat: a multi-select; nothing ticked shows every result. *@
+	<MudSelect T="Result" MultiSelection="true" SelectedValues="Results" SelectedValuesChanged="PickResults" ToStringFunc="ResultChip.Word" MultiSelectionTextFunc="ResultText"
+			   Placeholder="Alle resultaten" aria-label="Resultaat" Variant="Variant.Filled" Margin="Margin.Dense" Class="@("wot-filter wot-result" + (Results.Count > 0 ? " filled" : string.Empty))" PopoverClass="wot-filter-pop wot-result-pop"
+			   Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.EmojiEvents" Clearable="@(Results.Count > 0)" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft">
+		@foreach (var result in ResultChip.Order)
 		{
-			var shown = ResultVisibility[result];
-			<MudChip T="string" Class="wot-filter-chip" Selected="@shown" OnClick="() => OnToggleResult.InvokeAsync(result)" aria-pressed="@(shown ? "true" : "false")">
-				@ResultChip.Word(result)<span class="wot-num ml-1">@Filtered.Count(x => x.Result == result)</span>
-			</MudChip>
+			<MudSelectItem T="Result" Value="result">
+				<span class="wot-opt"><ResultChip Result="result" /><span class="wot-opt-n wot-num">@Filtered.Count(x => x.Result == result)</span></span>
+			</MudSelectItem>
 		}
-	</div>
+	</MudSelect>
 
 	<div class="gl-tools">
 		@if (CanToggleBattleStats)
@@ -110,17 +158,30 @@
 	[Parameter]
 	public EventCallback<string?> PlayerChanged { get; set; }
 
-	[Parameter]
-	public IndexPage.MatchType MatchType { get; set; }
-
-	[Parameter]
-	public EventCallback<IndexPage.MatchType> MatchTypeChanged { get; set; }
-
+	/// <summary>The battles that pass the switch, the clan and the player but not the Map filter: the Map list counts these, so each map shows what ticking it would give.</summary>
 	[Parameter, EditorRequired]
-	public required IReadOnlyDictionary<Result, bool> ResultVisibility { get; set; }
+	public required IReadOnlyCollection<BattleReport> Scoped { get; set; }
+
+	/// <summary>Clangevechten (true) hides the random battles, Alles (false) shows them too.</summary>
+	[Parameter]
+	public bool ClanOnly { get; set; }
 
 	[Parameter]
-	public EventCallback<Result> OnToggleResult { get; set; }
+	public EventCallback<bool> ClanOnlyChanged { get; set; }
+
+	/// <summary>The ticked maps; empty shows every map.</summary>
+	[Parameter, EditorRequired]
+	public required HashSet<string> Maps { get; set; }
+
+	[Parameter]
+	public EventCallback<HashSet<string>> MapsChanged { get; set; }
+
+	/// <summary>The ticked results; empty shows every result.</summary>
+	[Parameter, EditorRequired]
+	public required HashSet<Result> Results { get; set; }
+
+	[Parameter]
+	public EventCallback<HashSet<Result>> ResultsChanged { get; set; }
 
 	[Parameter]
 	public bool CanToggleBattleStats { get; set; }
@@ -140,6 +201,9 @@
 	private string _playerTerm = string.Empty;
 	private int _clanCount;
 	private int _playerCount;
+	private bool _mapOpen;
+	private string? _mapTerm;
+
 
 	protected override void OnParametersSet()
 	{
@@ -201,5 +265,49 @@
 				FullWidth = true,
 				MaxWidth = MaxWidth.Small
 			});
+	}
+
+	private async Task ToggleMap(MenuContext menu)
+	{
+		_mapTerm = null;
+		await menu.ToggleAsync();
+	}
+
+	/// <summary>Escape in the search box closes the list (MudMenu only hears it on the list itself).</summary>
+	private void MapKey(KeyboardEventArgs e)
+	{
+		if (e.Key == "Escape")
+		{
+			_mapOpen = false;
+		}
+	}
+
+	private Task ClearMaps() => MapsChanged.InvokeAsync([]);
+
+	private Task ToggleMapName(string name, bool on)
+	{
+		HashSet<string> maps = [.. Maps];
+		if (on)
+		{
+			maps.Add(name);
+		}
+		else
+		{
+			maps.Remove(name);
+		}
+
+		return MapsChanged.InvokeAsync(maps);
+	}
+
+	/// <summary>Alles ticks every map in the list as it is now (the typed term narrows it).</summary>
+	private Task TickAll(IEnumerable<BattleFilters.Option> listed) => MapsChanged.InvokeAsync([.. Maps, .. listed.Select(x => x.Name)]);
+
+	private Task PickResults(IEnumerable<Result>? results) => ResultsChanged.InvokeAsync([.. results ?? []]);
+
+	/// <summary>The box text: the first ticked result in the order of the list and "+n" for the rest.</summary>
+	private static string ResultText(IReadOnlyList<string> words)
+	{
+		List<string> sorted = [.. words.OrderBy(w => Array.FindIndex(ResultChip.Order, r => ResultChip.Word(r) == w))];
+		return sorted.Count == 0 ? string.Empty : sorted.Count == 1 ? sorted[0] : $"{sorted[0]} +{sorted.Count - 1}";
 	}
 }

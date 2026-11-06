@@ -5,6 +5,9 @@
     [Parameter, EditorRequired]
     public Result Result { get; set; }
 
+    /// <summary>The order results are listed in, in the Resultaat dropdown, its box text and the empty-state sentence: won, drawn, lost, unknown.</summary>
+    public static readonly Result[] Order = [Result.Win, Result.Draw, Result.Lose, Result.Unknown];
+
     public static string Word(Result result) => result switch
     {
         Result.Win => "Gewonnen",
