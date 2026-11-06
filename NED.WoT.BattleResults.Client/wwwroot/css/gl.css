@@ -119,3 +119,16 @@
 .gl-anchor { position: absolute; top: -80px; left: 0; }
 
 .wot-battle-table .gl { display: flex; align-items: center; gap: 12px; min-width: 0; }
+
+/* The filter bar while a load runs: Index makes it inert (the keyboard and the pointer stay out), this greys it. */
+.gl-filters { flex: none; }
+.gl-filters[inert] { opacity: .6; }
+
+/* Empty state (EmptyState.razor): an Outlined 48px icon in text-secondary, an H5, one sentence and one action. The well centres it in the room under the filter bar. */
+.gl-empty-well { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
+.empty { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; padding: 40px 24px; }
+.empty > svg { width: 48px; height: 48px; fill: var(--mud-palette-text-secondary); }
+.empty p { max-width: 340px; margin: 0; font-size: 14px; color: var(--mud-palette-text-secondary); }
+
+/* The "Geen toegang" page: a centred card on the background-gray well. */
+.gl-unauth { box-sizing: border-box; display: flex; align-items: center; justify-content: center; min-height: calc(100vh - var(--mud-appbar-height)); padding: 24px; background: var(--mud-palette-background-gray); }

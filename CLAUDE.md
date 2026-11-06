@@ -174,8 +174,9 @@ PR as a screenshot, at **1280×800 and 1920×1080** (desktop only, no phone).
   (`chromium.connectOverCDP('http://localhost:9222')`). The app is MSIX, so it
   can't be started like a plain exe, and the `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS`
   environment variable does not reach it. What works:
-  1. Short checkout path (for example `D:\wt`): long paths break the deep
-     `_framework` files of the package.
+  1. Work in the current checkout; don't create another checkout, clone or
+     worktree elsewhere. Long paths can break the deep `_framework` files of
+     the package: if that happens, stop and ask the owner before moving.
   2. Build, then fill the loose layout `bin\Debug\net10.0-windows10.0.19041.0\win-x64\AppX`:
      copy every `AppxPackagedFile` of `…\win-x64\*.build.appxrecipe` from its
      `Include` path to `AppX\<PackagePath>` (this populates `wwwroot`), then

@@ -31,6 +31,9 @@
     --wot-shadow-menu: 0 16px 40px rgba(0, 0, 0, .55);
     --wot-shadow-dialog: 0 24px 56px rgba(0, 0, 0, .6);
     --wot-error-boundary: #b32121;
+    /* The global error bar of index.html can show before the theme provider has set --mud-palette-*: the theme's Error and Error contrast. */
+    --wot-error-bar: #ff6470;
+    --wot-error-bar-text: #121417;
 
     /* The splash in index.html is drawn before the theme provider has set --mud-palette-*; these are its Background, Primary, Text, secondary text, Lines, progress track, glow and grid. */
     --wot-boot-bg: #0e1114;

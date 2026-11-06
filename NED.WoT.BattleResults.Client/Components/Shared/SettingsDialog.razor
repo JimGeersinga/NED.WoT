@@ -102,17 +102,18 @@
 
     private void OnValidSubmit(EditContext context)
     {
-        bool directoryHasChanged = !(SettingService.Settings.WotReplayDirectory ?? string.Empty).Equals(modal.WotReplayDirectory); 
+        bool reloadNeeded = !(SettingService.Settings.WotReplayDirectory ?? string.Empty).Equals(modal.WotReplayDirectory)
+            || SettingService.Settings.LoadBattlesSince != modal.LoadBattlesSince;
         SettingService.Settings = modal;
 
         SettingService.Save();
 
-        if (directoryHasChanged)
+        if (reloadNeeded)
         {
             NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
         }
 
-        Snackbar.Add("Opgeslagen · instellingen zijn bewaard", Severity.Success);
+        Snackbar.Add(BattleReportService.Notice("Opgeslagen", "instellingen zijn bewaard"), Severity.Success);
         MudDialog.Close(DialogResult.Ok(SettingService.Settings));
     }
 }

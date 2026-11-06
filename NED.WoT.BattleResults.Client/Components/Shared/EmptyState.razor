@@ -1,0 +1,39 @@
+@* An empty state (docs/DESIGN.md, "empty state"): an Outlined 48px icon in text-secondary, an H5, one sentence and one action. Its rules are `.empty` in gl.css. *@
+<div class="empty">
+	<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icon)</svg>
+	<MudText Typo="Typo.h5" HtmlTag="h2">@Title</MudText>
+	<p>@Text</p>
+	<MudButton Variant="@(ActionPrimary ? Variant.Filled : Variant.Outlined)"
+			   Color="@(ActionPrimary ? Color.Primary : Color.Default)"
+			   StartIcon="@ActionIcon"
+			   Class="mt-2"
+			   OnClick="@(() => OnAction.InvokeAsync())">@ActionText</MudButton>
+</div>
+
+@code {
+	/// <summary>An <c>Icons.Material.Outlined.*</c> icon.</summary>
+	[Parameter, EditorRequired]
+	public required string Icon { get; set; }
+
+	[Parameter, EditorRequired]
+	public required string Title { get; set; }
+
+	/// <summary>The one sentence: what is missing and what to do about it.</summary>
+	[Parameter, EditorRequired]
+	public required string Text { get; set; }
+
+	/// <summary>The label of the action: a verb.</summary>
+	[Parameter, EditorRequired]
+	public required string ActionText { get; set; }
+
+	/// <summary>An <c>Icons.Material.Outlined.*</c> icon for the action's button.</summary>
+	[Parameter]
+	public string? ActionIcon { get; set; }
+
+	/// <summary>The way forward of the view is this action: the filled Primary button (one per view). Otherwise an outlined one.</summary>
+	[Parameter]
+	public bool ActionPrimary { get; set; }
+
+	[Parameter]
+	public EventCallback OnAction { get; set; }
+}
