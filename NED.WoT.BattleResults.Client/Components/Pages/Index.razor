@@ -14,13 +14,14 @@
 @inject ISnackbar Snackbar;
 
 @{
-	// One pass per render: the readable battles that pass the clan, the player and the match type (the totals follow these), then their days.
+	// One pass per render: the readable battles that pass the Clangevechten | Alles switch, the clan and the player (the Map list counts these), then the map (the totals follow these), then their days.
 	var readable = _reports.Where(x => x.Error == null).ToList();
-	var filtered = readable.Where(TableFilter).ToList();
-	// The table shows the battles under the result chips (a day without one drops out by itself); the day header and the footer count the whole day.
-	var battles = filtered.Where(x => _resultVisibility[x.Result]).ToList();
-	// A replay that can't be read is a warning row of its own, never in a count, and only next to battle rows: a clan or player filter hides it, and without a battle row the empty state speaks.
-	var unreadable = UnreadableShown(battles.Count, _clan is null && _player is null, _reports);
+	var scoped = readable.Where(x => InScope(x, _clanOnly, _clan, _player)).ToList();
+	var filtered = scoped.Where(x => OnMaps(x, _maps)).ToList();
+	// The table shows the battles under the Resultaat dropdown (a day without one drops out by itself); the day header and the footer count the whole day.
+	var battles = filtered.Where(x => ShownResult(x, _results)).ToList();
+	// A replay that can't be read is a warning row of its own, never in a count, and only next to battle rows: a clan, player, map or result filter hides it, and without a battle row the empty state speaks.
+	var unreadable = UnreadableShown(battles.Count, _clan is null && _player is null && _maps.Count == 0 && _results.Count == 0, _reports);
 	// The clan and player lookup of the filter bar: one instance, told the battles of this render; it rebuilds its tables on the next search only when _battlesVersion (or your own clan tag) changed.
 	_filters ??= BattleFilters.Build(readable, SettingService.Settings.ClanAbbreviation);
 	_filters.Refresh(readable, _battlesVersion, SettingService.Settings.ClanAbbreviation);
@@ -38,11 +39,12 @@
 	<div class="gl-filters" inert="@_loading">
 		<BattleFilterBar Filters="_filters"
 						 Filtered="filtered"
+						 Scoped="scoped"
 						 @bind-Clan="_clan"
 						 @bind-Player="_player"
-						 @bind-MatchType="_matchType"
-						 ResultVisibility="_resultVisibility"
-						 OnToggleResult="@(r => ToggleResultVisibilty(r))"
+						 @bind-ClanOnly="_clanOnly"
+						 @bind-Maps="_maps"
+						 @bind-Results="_results"
 						 CanToggleBattleStats="_canToggleBattleStats"
 						 @bind-ShowBattleStats="_showBattleStats" />
 	</div>
@@ -220,14 +222,6 @@
 </div>
 
 @code {
-	public enum MatchType
-	{
-		Alles,
-		Normaal,
-		Clan,
-		Onbekend
-	}
-
 	[CascadingParameter]
 	public required Task<AuthenticationState> AuthenticationState { get; set; }
 
@@ -238,19 +232,13 @@
 	private int _battlesVersion;
 	private string? _clan;
 	private string? _player;
-	private MatchType _matchType = MatchType.Clan;
+	private bool _clanOnly = true;
+	private HashSet<string> _maps = [];
+	private HashSet<Result> _results = [];
 	private TimeSpan _loadingTime = TimeSpan.Zero;
 
 	private bool _canToggleBattleStats = false;
 	private bool _showBattleStats = false;
-
-	private Dictionary<Result, bool> _resultVisibility = new Dictionary<Result, bool>
-	{
-		{ Result.Win, true },
-		{ Result.Draw, true },
-		{ Result.Lose, true },
-		{ Result.Unknown, true }
-	};
 
 	private IDialogReference? _clanMatchDialog;
 
@@ -300,7 +288,7 @@
 		.OrderByDescending(x => x.Newest)
 		.ToList();
 
-	/// <summary>The sentence of the "Geen gevechten gevonden" empty state: it names the clan, the player and the match type that hide everything.</summary>
+	/// <summary>The sentence of the "Geen gevechten gevonden" empty state: it names the clan, the player, the maps, the results and the switch that hide everything.</summary>
 	private string FiltersHideAllText()
 	{
 		string search = (_clan, _player) switch
@@ -310,28 +298,21 @@
 			(null, string player) => $" met speler {player}",
 			(string clan, string player) => $" met clan {clan} en speler {player}"
 		};
-		string type = _matchType switch
-		{
-			MatchType.Clan => " in clangevechten",
-			MatchType.Normaal => " in normale gevechten",
-			MatchType.Onbekend => " met een onbekend resultaat",
-			_ => string.Empty
-		};
-		string results = _resultVisibility.Values.All(x => x) ? string.Empty : " Een of meer resultaten staan uit.";
+		string maps = _maps.Count == 0 ? string.Empty : $" op {string.Join(", ", _maps.Order())}";
+		string results = _results.Count == 0 ? string.Empty : $" met resultaat {string.Join(", ", _results.Order().Select(ResultChip.Word))}";
+		string type = _clanOnly ? " in clangevechten" : string.Empty;
 
-		return $"Er is geen gevecht{search}{type}.{results} Probeer andere filters of wis ze.";
+		return $"Er is geen gevecht{search}{maps}{results}{type}. Probeer andere filters of wis ze.";
 	}
 
-	/// <summary>Back to the unfiltered table: no clan, no player, every match type, every result. Alles and not the default Clan, because a folder without clan battles would stay empty.</summary>
+	/// <summary>Back to the unfiltered table: no clan, no player, no map, every result. Alles and not the default Clangevechten, because a folder without clan battles would stay empty.</summary>
 	private void ClearFilters()
 	{
 		_clan = null;
 		_player = null;
-		_matchType = MatchType.Alles;
-		foreach (Result result in _resultVisibility.Keys.ToList())
-		{
-			_resultVisibility[result] = true;
-		}
+		_clanOnly = false;
+		_maps = [];
+		_results = [];
 	}
 
 	/// <summary>Opens the settings, for the empty states that are fixed there. The dialog reloads the battles itself when the folder or the start date changes.</summary>
@@ -419,6 +400,28 @@
 		Debug.Assert(StatPlayers(fights, "Tankgeneraal").Count() == 3 && StatPlayers(fights, null).Count() == 0, "stats of a chosen player: only that player; no own team: nobody");
 		fights[0].OwnTeam = fights[0].Team1;
 		Debug.Assert(StatPlayers(fights, null).Single().Name == "Tankgeneraal" && StatPlayers(fights, "KlompKees").Count() == 3, "stats without a player: the own team; with a player: that player, on either team");
+
+		// The Clangevechten | Alles switch, the map and the result together: 8 clan battles (6 won, 2 lost; 2 on Prokhorovka, both won) and 2 random battles (Onbekend).
+		BattleReport Battle(string? map, Result result, string? own, string? other) => new() { MatchStart = today, MapName = map, Result = result, Team1 = new Team { Abbreviation = own }, Team2 = new Team { Abbreviation = other } };
+		List<BattleReport> ten =
+		[
+			Battle("Prokhorovka", Result.Win, "NED-1", "DUTCH"), Battle("Prokhorovka", Result.Win, "NED-1", "DUTCH"),
+			.. Enumerable.Range(0, 4).Select(_ => Battle("Himmelsdorf", Result.Win, "NED-1", "RHINE")),
+			.. Enumerable.Range(0, 2).Select(_ => Battle("Steppes", Result.Lose, "NED-1", "ZULU")),
+			Battle("Malinovka", Result.Unknown, "?", "?"), Battle(null, Result.Unknown, null, null)
+		];
+		int Rows(bool clanOnly, string? map, Result? result)
+		{
+			HashSet<string> maps = map is null ? [] : [map];
+			HashSet<Result> results = result is null ? [] : [result.Value];
+			return ten.Where(x => InScope(x, clanOnly, null, null)).Where(x => OnMaps(x, maps)).Count(x => ShownResult(x, results));
+		}
+		Debug.Assert(Rows(true, null, null) == 8, "Clangevechten: the 8 clan battles");
+		Debug.Assert(Rows(false, null, null) == 10, "Alles: all 10");
+		Debug.Assert(Rows(false, null, Result.Unknown) == 2, "Alles and Onbekend: the 2 random battles");
+		Debug.Assert(Rows(true, "Prokhorovka", null) == 2, "Clangevechten and Prokhorovka: 2");
+		Debug.Assert(Rows(true, "Prokhorovka", Result.Lose) == 0, "Clangevechten, Prokhorovka and Verloren: 0");
+		Debug.Assert(ten.Where(x => InScope(x, true, null, null)).Count() == 8 && Rows(true, null, Result.Win) == 6, "Resultaat only hides rows: the scoped battles (the totals) stay 8 while 6 rows show");
 
 		BattleTotals.SelfCheck();
 		BattleFilters.SelfCheck();
@@ -556,19 +559,20 @@
 		(clan is null || BattleFilters.SameTag(report.Team1.Abbreviation, clan) || BattleFilters.SameTag(report.Team2.Abbreviation, clan))
 		&& (player is null || report.Team1.Players.Concat(report.Team2.Players).Any(x => string.Equals(x.Name, player, StringComparison.OrdinalIgnoreCase)));
 
-	private bool TableFilter(BattleReport report)
+	/// <summary>Clangevechten hides the battles where both tags are "?" (a random battle); Alles shows them too. Then the clan and the player.</summary>
+	private static bool InScope(BattleReport report, bool clanOnly, string? clan, string? player)
 	{
-		var isNormalMatch = (report.Team1.Abbreviation == null || report.Team1.Abbreviation == "?") &&
-							(report.Team2.Abbreviation == null || report.Team2.Abbreviation == "?");
+		bool normalMatch = (report.Team1.Abbreviation == null || report.Team1.Abbreviation == "?") &&
+						   (report.Team2.Abbreviation == null || report.Team2.Abbreviation == "?");
 
-		return _matchType switch
-		{
-			MatchType.Clan when isNormalMatch => false,
-			MatchType.Normaal when !isNormalMatch => false,
-			MatchType.Onbekend when report.Result is not Result.Unknown => false,
-			_ => Matches(report, _clan, _player)
-		};
+		return !(clanOnly && normalMatch) && Matches(report, clan, player);
 	}
+
+	/// <summary>No map ticked shows every map.</summary>
+	private static bool OnMaps(BattleReport report, HashSet<string> maps) => maps.Count == 0 || (report.MapName != null && maps.Contains(report.MapName));
+
+	/// <summary>Nothing ticked shows every result. This only hides rows: the totals do not follow it.</summary>
+	private static bool ShownResult(BattleReport report, HashSet<Result> results) => results.Count == 0 || results.Contains(report.Result);
 
 	private void CollapseAllBattleReports()
 	{
@@ -655,14 +659,5 @@
 				FullWidth = true,
 				MaxWidth = MaxWidth.Large
 			});
-	}
-
-	private bool ToggleResultVisibilty(Result result)
-	{
-		_resultVisibility[result] = !_resultVisibility[result];
-
-		StateHasChanged();
-
-		return _resultVisibility[result];
 	}
 }
