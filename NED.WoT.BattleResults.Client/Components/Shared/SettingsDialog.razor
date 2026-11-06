@@ -7,7 +7,7 @@
 @inject BattleReportService BattleReportService
 @inject NavigationManager NavigationManager
 
-<EditForm Model="@modal" OnValidSubmit="OnValidSubmit">
+<EditForm Model="@modal" OnValidSubmit="OnValidSubmit" class="d-flex flex-column overflow-hidden">
     <DataAnnotationsValidator />
     <MudDialog Class="wot-dialog overflow-hidden" ContentClass="overflow-y-auto" TitleClass="wot-dialog-bar" Style="max-width: 760px">
         <TitleContent>
