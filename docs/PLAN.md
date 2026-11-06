@@ -113,6 +113,10 @@ Titles match the GitHub milestones one to one.
 | 04 | Replay folders | #15–#16 | Several replay folders in Settings and a folder carousel in the app bar. |
 | 05 | Live battle | #17 | A separate temp-replay path for the live clan lookup. |
 | 06 | Clan battle statistics | #18–#19 | Clan rating, PR and WTR in the Clan battle dialog, from Wargaming's public API. |
+| 07 | Speed and memory | #41–#45 | A reload frees the old battle list; replays are read by block and parsed into a typed model; analyzers run as errors. |
 
 Order inside and across milestones follows each issue's `Depends on:` line
 (CLAUDE.md), not the table.
+
+The numbers stay, but the work order is 07 → 04 → 03 (owner, 2026-11-07), set
+through the `Depends on:` lines of #15 and #10.

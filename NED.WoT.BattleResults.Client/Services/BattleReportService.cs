@@ -13,7 +13,7 @@ using System.Text.RegularExpressions;
 
 namespace NED.WoT.BattleResults.Client.Services;
 
-public partial class BattleReportService
+public partial class BattleReportService : IDisposable
 {
     private const string SEARCH_PATTERN = "*.wotreplay";
 
@@ -124,6 +124,23 @@ public partial class BattleReportService
 
         _timer?.Dispose();
         _timer = new Timer(async _ => await TempFileWatcherAsync(), null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2));
+    }
+
+    /// <summary>A reload makes a new DI scope; the scope disposes this one, so the old timer and watcher stop and the old battle list can be collected.</summary>
+    public void Dispose()
+    {
+        _timer?.Dispose();
+
+        if (_watcher is not null)
+        {
+            _watcher.Created -= OnCreated;
+            _watcher.Renamed -= OnRenamed;
+            _watcher.Deleted -= OnDeleted;
+            _watcher.Error -= OnError;
+            _watcher.Dispose();
+        }
+
+        GC.SuppressFinalize(this);
     }
 
     private async Task TempFileWatcherAsync()
