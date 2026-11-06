@@ -5,7 +5,7 @@
 
 @* The player table of an opened battle (canvas "Component: gevechtsdetails"): two header tiers, the first five columns sticky, one group per team, the HP-bar name cell, the own row and the team-killer.
    The table and its cells are MudBlazor's, so their rules are in mud.css (".mud-table.player-table"); the elements rendered here are styled in Details.razor.css. *@
-<div class="wot-details">
+<MudPaper Elevation="0" Outlined="true" Class="wot-details">
     <MudTable Items="@players"
               RowClassFunc="@RowClass"
               GroupBy="@_groupDefinition"
@@ -163,7 +163,7 @@
             </MudTd>
         </RowTemplate>
     </MudTable>
-</div>
+</MudPaper>
 
 @code {
     [Parameter]

@@ -1,14 +1,5 @@
 /* The elements Details.razor renders itself. The player table and its cells are MudBlazor's: their rules are in wwwroot/css/mud.css (".mud-table.player-table"). */
 
-/* The panel: Surface with the steel edge, 16px of padding. */
-.wot-details {
-    padding: 16px;
-    background: var(--mud-palette-surface);
-    border: 1px solid var(--mud-palette-lines-default);
-    border-radius: var(--mud-default-borderradius);
-    box-shadow: inset 0 1px 0 var(--wot-steel-highlight);
-}
-
 /* The team header: the tag in the result's colour, then the result chip. It stays in view while the table scrolls sideways. */
 .wot-team {
     position: sticky;

@@ -278,6 +278,15 @@
     font-variant-numeric: tabular-nums;
 }
 
+/* ==== MudPaper (the panel around the player table of Details: .wot-details) ==== */
+/* The MudPaper gives the Surface ground, the steel edge (Outlined) and the radius; this adds the 16px of padding and the top highlight. It is here and not in Details.razor.css because Blazor's CSS isolation does not mark the MudPaper's own element.
+   isolation: isolate keeps the z-index of the player table's sticky cells inside the panel: without it they painted over the sticky column header and the day header of the battle table when that scrolls. */
+.mud-paper.wot-details {
+    padding: 16px;
+    box-shadow: inset 0 1px 0 var(--wot-steel-highlight);
+    isolation: isolate;
+}
+
 /* ==== MudTable (the player table of Details: .player-table; the canvas's "Component: gevechtsdetails") ==== */
 /* Two header tiers, one group per team, the first five columns sticky. The widths are fixed because a sticky column needs the left offset of the ones before it:
    expander 44, # 40, Naam 230, Tank 170, Speeltijd 84, then the figures; the last column takes what is left of the panel's width; below 1240px (1426px in stats mode, like the canvas's grid) the table scrolls sideways. The elements Details.razor renders itself are in Details.razor.css. */
