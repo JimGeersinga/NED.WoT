@@ -7,44 +7,66 @@
 @inject BattleReportService BattleReportService
 @inject NavigationManager NavigationManager
 
-<EditForm Model="@modal" OnValidSubmit="OnValidSubmit">
+<EditForm Model="@modal" OnValidSubmit="OnValidSubmit" class="d-flex flex-column overflow-hidden">
     <DataAnnotationsValidator />
-    <MudDialog>
+    <MudDialog Class="wot-dialog overflow-hidden" ContentClass="overflow-y-auto" TitleClass="wot-dialog-bar" Style="max-width: 760px">
         <TitleContent>
-            <MudText Typo="Typo.h6">
-                <MudIcon Icon="@Icons.Material.Filled.Settings" Class="mr-3 mb-n1" />
-                Instellingen
-            </MudText>
+            <WotDialogTitle Dialog="MudDialog" Icon="@Icons.Material.Outlined.Settings" Title="Instellingen" Closable="CanCancel" />
         </TitleContent>
         <DialogContent>
-            <MudTextField Label="WoT replay bestandspad"
-            @bind-Value="@modal.WotReplayDirectory" For="(() => modal.WotReplayDirectory)" Class="mb-3" />
-            <MudDatePicker Label="Laad gevechten sinds"
-            @bind-Date="@modal.LoadBattlesSince" For="(() => modal.LoadBattlesSince)" Class="mb-3" />
-            <MudTextField Label="Clan afkorting"
-            @bind-Value="@modal.ClanAbbreviation" For="(() => modal.ClanAbbreviation)" Class="mb-3" />
-            <MudTextField Label="Spelernaam"
-            @bind-Value="@modal.PlayerName" For="(() => modal.PlayerName)" Class="mb-3" />
+            <MudStack Spacing="3" Class="pt-2">
+                <MudText Typo="Typo.overline" Color="Color.Tertiary">Replays</MudText>
+                <MudTextField Label="Pad naar WoT-replays" Variant="Variant.Filled"
+                              Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.FolderOpen"
+                              @bind-Value="@modal.WotReplayDirectory" For="(() => modal.WotReplayDirectory)" />
+                <MudDatePicker Label="Laad gevechten sinds" Variant="Variant.Filled" Style="max-width: 320px"
+                               DateFormat="dd-MM-yyyy" FirstDayOfWeek="DayOfWeek.Monday"
+                               @bind-Date="@modal.LoadBattlesSince" For="(() => modal.LoadBattlesSince)" />
 
-            <MudSwitch Label="Maximaal één gevecht resultaat open houden" Color="Color.Primary"
-            @bind-Value="@modal.SingleBattleResultOpenedOnly" For="(() => modal.SingleBattleResultOpenedOnly)" />
+                <MudDivider />
+                <MudText Typo="Typo.overline" Color="Color.Tertiary">Identiteit</MudText>
+                <MudTextField Label="Clanafkorting" Variant="Variant.Filled"
+                              @bind-Value="@modal.ClanAbbreviation" For="(() => modal.ClanAbbreviation)" />
+                <MudTextField Label="Spelernaam" Variant="Variant.Filled" HelperText="Hiermee herkent de app jouw team"
+                              @bind-Value="@modal.PlayerName" For="(() => modal.PlayerName)" />
 
-            <MudSwitch Label="Alleen eigen gevechtenresultaten uitlichten" Color="Color.Primary"
-            @bind-Value="@modal.OnlyHighlistOwnMatches" For="(() => modal.OnlyHighlistOwnMatches)" />
-
-            <MudSwitch Label="Update het scherm tijdens het laden van gevechten" Color="Color.Primary"
-            @bind-Value="@modal.UpdateScreeenWhileLoading" For="(() => modal.UpdateScreeenWhileLoading)" />
-
-            <MudSwitch Label="Automatisch clan opzoeken tijdens opstarten van het gevecht" Color="Color.Primary"
-            @bind-Value="@modal.AutoClanLookup" For="(() => modal.AutoClanLookup)" />
+                <MudDivider />
+                <MudText Typo="Typo.overline" Color="Color.Tertiary">Gedrag</MudText>
+                <MudStack Spacing="1">
+                    <MudSwitch Color="Color.Primary" @bind-Value="@modal.SingleBattleResultOpenedOnly" For="(() => modal.SingleBattleResultOpenedOnly)">
+                        <div>
+                            <div>Maximaal één gevechtsresultaat open houden</div>
+                            <MudText Typo="Typo.caption" Class="mud-text-secondary">Een geopend gevecht klapt de andere in.</MudText>
+                        </div>
+                    </MudSwitch>
+                    <MudSwitch Color="Color.Primary" @bind-Value="@modal.OnlyHighlistOwnMatches" For="(() => modal.OnlyHighlistOwnMatches)">
+                        <div>
+                            <div>Alleen eigen gevechten uitlichten</div>
+                            <MudText Typo="Typo.caption" Class="mud-text-secondary">Alleen jouw team krijgt een resultaatkleur.</MudText>
+                        </div>
+                    </MudSwitch>
+                    <MudSwitch Color="Color.Primary" @bind-Value="@modal.UpdateScreeenWhileLoading" For="(() => modal.UpdateScreeenWhileLoading)">
+                        <div>
+                            <div>Scherm bijwerken tijdens het laden</div>
+                            <MudText Typo="Typo.caption" Class="mud-text-secondary">Gevechten verschijnen terwijl ze worden gelezen.</MudText>
+                        </div>
+                    </MudSwitch>
+                    <MudSwitch Color="Color.Primary" @bind-Value="@modal.AutoClanLookup" For="(() => modal.AutoClanLookup)">
+                        <div>
+                            <div>Clan automatisch opzoeken bij de start van een gevecht</div>
+                            <MudText Typo="Typo.caption" Class="mud-text-secondary">Opent Clan gevecht zodra je clan tegen een andere clan speelt.</MudText>
+                        </div>
+                    </MudSwitch>
+                </MudStack>
+            </MudStack>
         </DialogContent>
         <DialogActions>
-            <MudButton OnClick="AppInfo.Current.ShowSettingsUI" Class="mr-auto">Ga naar app settings</MudButton>
+            <MudButton StartIcon="@Icons.Material.Outlined.OpenInNew" OnClick="AppInfo.Current.ShowSettingsUI" Class="mr-auto">Ga naar app-instellingen</MudButton>
             @if (CanCancel)
             {
                 <MudButton OnClick="Cancel">Annuleren</MudButton>
             }
-            <MudButton Color="Color.Primary" ButtonType="ButtonType.Submit">Opslaan</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" ButtonType="ButtonType.Submit">Opslaan</MudButton>
         </DialogActions>
     </MudDialog>
 </EditForm>
@@ -90,7 +112,7 @@
             NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
         }
 
-        Snackbar.Add("Settings succevol opgeslagen", Severity.Success);
+        Snackbar.Add("Opgeslagen · instellingen zijn bewaard", Severity.Success);
         MudDialog.Close(DialogResult.Ok(SettingService.Settings));
     }
 }

@@ -1,18 +1,18 @@
 ﻿@using System.Diagnostics
 
-<MudDialog>
+<MudDialog Class="wot-dialog" TitleClass="wot-dialog-bar">
     <TitleContent>
-        <MudText Typo="Typo.h6">
-            <MudIcon Icon="@Icons.Material.Filled.Update" Class="mr-3 mb-n1" />
-            Update
-        </MudText>
+        <WotDialogTitle Dialog="MudDialog" Icon="@Icons.Material.Outlined.Update" Title="Update" />
     </TitleContent>
     <DialogContent>
-        <MudText Typo="Typo.body1">Er is een nieuwe versie van de applicatie beschikbaar.</MudText>
+        <MudStack Spacing="1">
+            <MudText Typo="Typo.body1">Er is een nieuwe versie van de applicatie beschikbaar.</MudText>
+            <MudText Typo="Typo.body2" Class="mud-text-secondary">Herstarten sluit Gevechtslog en opent daarna de nieuwe versie.</MudText>
+        </MudStack>
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="Cancel">Negeren</MudButton>
-        <MudButton Color="Color.Primary" OnClick="Restart" >Herstarten</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Restart">Herstarten</MudButton>
     </DialogActions>
 </MudDialog>
 

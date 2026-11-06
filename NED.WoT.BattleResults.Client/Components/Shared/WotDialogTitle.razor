@@ -1,0 +1,43 @@
+@* The metal title bar content of a dialog (docs/DESIGN.md, ".wot-dialog-bar"): rivets, an Outlined 20px icon, the title and a close X.
+   Put it in MudDialog's TitleContent and give the MudDialog TitleClass="wot-dialog-bar" Class="wot-dialog" (the bar's and the actions' rules are in mud.css). *@
+<span class="wot-rivet wot-rivet-tl" aria-hidden="true"></span>
+<span class="wot-rivet wot-rivet-bl" aria-hidden="true"></span>
+@if (Icon is not null)
+{
+    <MudIcon Icon="@Icon" Size="Size.Small" Class="mr-3" />
+}
+<MudText Typo="Typo.h5" HtmlTag="h2" Class="wot-dialog-title">
+    @if (ChildContent is not null)
+    {
+        @ChildContent
+    }
+    else
+    {
+        @Title
+    }
+</MudText>
+@if (Closable)
+{
+    <MudIconButton Icon="@Icons.Material.Outlined.Close" Size="Size.Small" Class="mud-button-close" aria-label="Sluiten" title="Sluiten" OnClick="@(() => Dialog.Cancel())" />
+}
+
+@code {
+    /// <summary>The dialog the X cancels: pass the dialog's own <c>MudDialog</c>. It is a parameter because MudBlazor renders the title outside its cascading value.</summary>
+    [Parameter, EditorRequired]
+    public required IMudDialogInstance Dialog { get; set; }
+
+    /// <summary>An <c>Icons.Material.Outlined.*</c> icon.</summary>
+    [Parameter]
+    public string? Icon { get; set; }
+
+    [Parameter]
+    public string? Title { get; set; }
+
+    /// <summary>Replaces <see cref="Title"/> when the title is more than text (the clan match: two tags and "vs").</summary>
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>False for first-run settings: there is no way to close it except saving.</summary>
+    [Parameter]
+    public bool Closable { get; set; } = true;
+}

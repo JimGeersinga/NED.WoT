@@ -1,26 +1,37 @@
-﻿@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components
 
-<MudDialog>
+<MudDialog Class="wot-dialog overflow-hidden" ContentClass="overflow-y-auto" TitleClass="wot-dialog-bar">
+    <TitleContent>
+        <WotDialogTitle Dialog="MudDialog" Icon="@Icons.Material.Outlined.HelpOutline" Title="Onbekende namen" />
+    </TitleContent>
     <DialogContent>
-        <MudList T="string" ReadOnly>
+        <MudStack Spacing="3" Class="pt-2">
+            <MudText Typo="Typo.body2" Class="mud-text-secondary">Deze namen staan nog niet in de naamlijst van de app.</MudText>
             @if (MapNameResolver.UndefinedMapNames.Count > 0)
             {
-                <MudListSubheader>Onbekende map namen</MudListSubheader>
-                @foreach (var name in MapNameResolver.UndefinedMapNames)
-                {
-                    <MudListItem>@name</MudListItem>
-                }
+                <MudText Typo="Typo.overline" Color="Color.Tertiary">Onbekende mapnamen</MudText>
+                <MudList T="string" ReadOnly Dense Gutters="false">
+                    @foreach (var name in MapNameResolver.UndefinedMapNames)
+                    {
+                        <MudListItem>@name</MudListItem>
+                    }
+                </MudList>
+            }
+            @if (MapNameResolver.UndefinedMapNames.Count > 0 && TankNameResolver.UndefinedTankNames.Count > 0)
+            {
                 <MudDivider />
             }
             @if (TankNameResolver.UndefinedTankNames.Count > 0)
             {
-                <MudListSubheader>Onbekende tank namen</MudListSubheader>
-                @foreach (var name in TankNameResolver.UndefinedTankNames)
-                {
-                    <MudListItem>@name</MudListItem>
-                }
+                <MudText Typo="Typo.overline" Color="Color.Tertiary">Onbekende tanknamen</MudText>
+                <MudList T="string" ReadOnly Dense Gutters="false">
+                    @foreach (var name in TankNameResolver.UndefinedTankNames)
+                    {
+                        <MudListItem>@name</MudListItem>
+                    }
+                </MudList>
             }
-        </MudList>
+        </MudStack>
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="Cancel">Sluiten</MudButton>

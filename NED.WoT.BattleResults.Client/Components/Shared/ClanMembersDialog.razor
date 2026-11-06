@@ -1,16 +1,16 @@
-﻿<MudDialog>
+<MudDialog Class="wot-dialog" TitleClass="wot-dialog-bar">
     <TitleContent>
-        <MudText Typo="Typo.h6">Clan leden (@GetClanMembers().Count())</MudText>
+        <WotDialogTitle Dialog="MudDialog" Icon="@Icons.Material.Outlined.Groups" Title="@($"Clanleden ({_members.Count})")" />
     </TitleContent>
     <DialogContent>
-        <MudTable Items="@GetClanMembers()" Hover="true" Breakpoint="Breakpoint.Sm" FixedHeader="true" Dense="false" Height="600px" Bordered="false">
+        <MudTable Items="@_members" Hover="true" Breakpoint="Breakpoint.None" FixedHeader="true" Height="600px">
             <HeaderContent>
                 <MudTh><MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<ClanMember, object?>(x => x.Name)">Speler</MudTableSortLabel></MudTh>
-                <MudTh Style="text-align:right;"><MudTableSortLabel InitialDirection="SortDirection.Descending" SortBy="new Func<ClanMember, object>(x => x.Battles)">Battles</MudTableSortLabel></MudTh>
+                <MudTh Style="text-align:right;"><MudTableSortLabel SortBy="new Func<ClanMember, object>(x => x.Battles)">Gevechten</MudTableSortLabel></MudTh>
             </HeaderContent>
             <RowTemplate>
                 <MudTd DataLabel="Speler">@context.Name</MudTd>
-                <MudTd DataLabel="Battles" Style="text-align:right;">@context.Battles</MudTd>
+                <MudTd DataLabel="Gevechten" Style="text-align:right;">@context.Battles</MudTd>
             </RowTemplate>
         </MudTable>
     </DialogContent>
@@ -25,14 +25,17 @@
     [Parameter] 
     public IEnumerable<BattleReport> Reports { get; set; } = [];
 
-    private IEnumerable<ClanMember> GetClanMembers()
+    private List<ClanMember> _members = [];
+
+    protected override void OnParametersSet()
     {
-        return Reports
-        .SelectMany(x => x.Team1.Players.Concat(x.Team2.Players))
-        .Where(x => x.IsClanMember)
-        .GroupBy(x => x.Name)
-        .Select(x => new ClanMember(x.Key, x.Count()))
-        .OrderBy(x => x.Name).ThenByDescending(x => x.Battles);
+        _members = Reports
+            .SelectMany(x => x.Team1.Players.Concat(x.Team2.Players))
+            .Where(x => x.IsClanMember)
+            .GroupBy(x => x.Name)
+            .Select(x => new ClanMember(x.Key, x.Count()))
+            .OrderBy(x => x.Name).ThenByDescending(x => x.Battles)
+            .ToList();
     }
 
     void Cancel() => MudDialog.Close(DialogResult.Ok(true));
