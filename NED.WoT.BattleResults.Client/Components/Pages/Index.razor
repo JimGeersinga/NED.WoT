@@ -16,8 +16,10 @@
 	// One pass per render: the battles that pass the search and the match type (the totals follow these), then their days.
 	var filtered = _reports.Where(TableFilter).ToList();
 	var days = BuildDays(filtered);
-	// A day without a row under the result chips is not shown at all; its counts and totals still cover the whole day.
-	var visibleDays = days.Where(d => d.Items.Any(x => _resultVisibility[x.Result])).ToList();
+	// The table shows the rows under the result chips (a day without one drops out by itself); the day header and the footer count the whole day.
+	var dayByLabel = days.ToDictionary(d => d.Label);
+	var numbers = days.SelectMany(d => d.Items.Select((r, i) => (r, d.Items.Count - i))).ToDictionary(t => t.r, t => t.Item2);
+	var visible = filtered.Where(x => _resultVisibility[x.Result]).OrderByDescending(x => x.MatchStart).ToList();
 	var template = _showBattleStats ? "g-s" : "g-n";
 	var clanMembers = filtered.SelectMany(x => x.Team1.Players.Concat(x.Team2.Players)).Where(x => x.IsClanMember).Select(x => x.Name).Distinct().Count();
 	var undefinedNames = TankNameResolver.UndefinedTankNames.Count + MapNameResolver.UndefinedMapNames.Count;
@@ -103,135 +105,147 @@
 		</div>
 	</section>
 
-	<section class="gl-table" aria-label="Gevechtslog">
-		<div class="gr @template gh gl-edge">
-			<div class="gc p4">
+	<MudTable T="BattleReport"
+			  Items="visible"
+			  GroupBy="_groupDefinition"
+			  Virtualize="true"
+			  ItemSize="48"
+			  FixedHeader="true"
+			  FixedFooter="true"
+			  Height="100%"
+			  Hover="true"
+			  Elevation="0"
+			  Class="wot-battle-table"
+			  GroupHeaderClass="gl-day"
+			  RowClassFunc="@RowClass"
+			  OnRowClick="@(e => ToggleShowDetailsAsync(e.Item))">
+		<ColGroup>
+			<col class="c-chev" />
+			<col class="c-num" />
+			<col class="c-time" />
+			<col class="c-map" />
+			<col />
+			@if (_showBattleStats)
+			{
+				<col class="c-stat" /><col class="c-stat" /><col class="c-stat" /><col class="c-stat" />
+			}
+			<col class="c-res" />
+			<col class="c-copy" />
+		</ColGroup>
+		<HeaderContent>
+			<MudTh>
 				<button type="button" class="gl-ibtn" aria-label="Alles inklappen" title="Alles inklappen" @onclick="CollapseAllBattleReports">
 					<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Outlined.UnfoldLess)</svg>
 				</button>
-			</div>
-			<div class="gc c">#</div>
-			<div class="gc gl-sorted">Tijd · duur<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Filled.ArrowDownward)</svg></div>
-			<div class="gc mapcol"><div class="mapc"><span>Map</span><span></span></div></div>
-			<div class="gc">Team 1 · Team 2</div>
+			</MudTh>
+			<MudTh Class="c">#</MudTh>
+			<MudTh>
+				<MudTableSortLabel T="BattleReport" SortBy="@(x => x.MatchStart)" InitialDirection="SortDirection.Descending">Tijd · duur</MudTableSortLabel>
+			</MudTh>
+			<MudTh Class="mapcol"><div class="mapc"><span>Map</span><span></span></div></MudTh>
+			<MudTh>Team 1 · Team 2</MudTh>
 			@if (_showBattleStats)
 			{
-				<div class="gc s r">Geschoten</div>
-				<div class="gc s r">Geraakt</div>
-				<div class="gc s r">Gepenetreerd</div>
-				<div class="gc s r">Geblokt</div>
+				<MudTh Class="r">Geschoten</MudTh>
+				<MudTh Class="r">Geraakt</MudTh>
+				<MudTh Class="r">Gepenetreerd</MudTh>
+				<MudTh Class="r">Geblokt</MudTh>
 			}
-			<div class="gc rt">Resultaat</div>
-			<div class="gc"></div>
-		</div>
-
-		<div class="gl-scroll">
-			<Virtualize Items="visibleDays" Context="day" ItemSize="600" OverscanCount="2">
-				@{
-					var shown = 0;
-				}
-
-				<div class="gd" @key="day.Label">
-					<div class="gr @template gg">
-						<div class="gl">
-							<MudText Typo="Typo.h6" HtmlTag="h2">@day.Label</MudText>
-							<MudText Typo="Typo.caption" Class="mud-text-secondary wot-num">@day.Date.ToString("dd-MM-yyyy")</MudText>
-							<BattleTotals Reports="day.Items" ShowRecord="!_showBattleStats" />
-						</div>
-						@if (_showBattleStats)
-						{
-							@StatCells(day.Items)
-						}
-						<div></div>
-						<div class="gc p4">
-							<button type="button" class="gl-ibtn out" aria-label="Kopieer opstellingen van deze dag" title="Kopieer opstellingen van deze dag" @onclick="() => CopyResultAsync(day.Items)">
-								<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Filled.ContentCopy)</svg>
-							</button>
-						</div>
-					</div>
-
-					@for (var i = 0; i < day.Items.Count; i++)
-					{
-						var report = day.Items[i];
-						if (!_resultVisibility[report.Result])
-						{
-							continue;
-						}
-
-						var rowClass = (shown++ % 2 == 1 ? " alt" : string.Empty)
-							+ (report.ShowDetails ? " wot-row-active" : string.Empty)
-							+ (report.FileName == _addedFile ? " gl-new" : string.Empty);
-
-						if (report.Error != null)
-						{
-							<div @key="report.FileName" class="gr @template gb gl-err">
-								<div class="gc"><svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Filled.Warning)</svg>@report.Error</div>
-							</div>
-							continue;
-						}
-
-						var ownTeam = report.OwnTeam;
-						var left = report.Team1;
-						var right = report.Team2;
-						var leftKills = right.Players.Count(x => x.DeathReason.HasValue && x.DeathReason != -1);
-						var rightKills = left.Players.Count(x => x.DeathReason.HasValue && x.DeathReason != -1);
-						var onlyOwn = SettingService.Settings.OnlyHighlistOwnMatches;
-
-						<div @key="report.FileName" id="@($"Timestamp_{report.MatchStart.Ticks + report.MatchDuration.GetValueOrDefault()}_anchor")" class="gr @template gb@(rowClass)" @onclick="() => ToggleShowDetailsAsync(report)">
-							<div class="gc p4">
-								<button type="button" class="gl-ibtn" aria-label="@(report.ShowDetails ? "Details inklappen" : "Details uitklappen")" aria-expanded="@(report.ShowDetails ? "true" : "false")">
-									<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)(report.ShowDetails ? Icons.Material.Filled.KeyboardArrowDown : Icons.Material.Filled.KeyboardArrowRight))</svg>
-								</button>
-							</div>
-							<div class="gc c gl-dim">@(day.Items.Count - i)</div>
-							<div class="gc" title="@report.MatchTimeTooltip">
-								<div class="two"><b>@report.MatchStart.ToString("HH:mm")@(report.MatchEnd.HasValue ? $" – {report.MatchEnd.Value:HH:mm}" : string.Empty)</b><small>@report.MatchDurationDisplay</small></div>
-							</div>
-							<div class="gc mapcol"><div class="mapc"><b title="@report.MapName">@report.MapName</b><span class="gl-chip">@ownTeam?.Base</span></div></div>
-							<div class="gc">
-								<span class="vs">
-									<span class="@TagClass(left, left == ownTeam, onlyOwn)">@left.Abbreviation</span>
-									<span class="score">@(left.Result is Result.Win ? (MarkupString)$"<b>{leftKills}</b>" : (MarkupString)$"<span>{leftKills}</span>")–@(right.Result is Result.Win ? (MarkupString)$"<b>{rightKills}</b>" : (MarkupString)$"<span>{rightKills}</span>")</span>
-									<span class="@TagClass(right, right == ownTeam, onlyOwn)">@right.Abbreviation</span>
-								</span>
-							</div>
-							@if (_showBattleStats)
-							{
-								@StatCells(new[] { report })
-							}
-							<div class="gc rt"><ResultChip Result="report.Result" /></div>
-							<div class="gc p4">
-								<button type="button" class="gl-ibtn out" aria-label="Kopieer opstelling" title="Kopieer opstelling" disabled="@(ownTeam == null)" @onclick="() => CopyResultAsync(report, ownTeam)" @onclick:stopPropagation="true">
-									<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Filled.ContentCopy)</svg>
-								</button>
-							</div>
-						</div>
-
-						@if (report.ShowDetails)
-						{
-							<div @key="@($"{report.FileName}-details")" class="gl-details @(onlyOwn ? "highlight-own-result" : null)" data-report="@report.FileName">
-								<Details Report="@report" ShowBattleStats="_showBattleStats" />
-							</div>
-						}
-					}
+			<MudTh Class="res">Resultaat</MudTh>
+			<MudTh></MudTh>
+		</HeaderContent>
+		<GroupHeaderTemplate>
+			@{
+				var day = dayByLabel[(string)context.Key];
+			}
+			<MudTh colspan="5">
+				<div class="gl">
+					<MudText Typo="Typo.h6" HtmlTag="h2">@day.Label</MudText>
+					<MudText Typo="Typo.caption" Class="mud-text-secondary wot-num">@day.Date.ToString("dd-MM-yyyy")</MudText>
+					<BattleTotals Reports="day.Items" ShowRecord="!_showBattleStats" />
 				</div>
-			</Virtualize>
-		</div>
+			</MudTh>
+			@if (_showBattleStats)
+			{
+				@StatCells(day.Items)
+			}
+			<MudTh></MudTh>
+			<MudTh Class="p4">
+				<button type="button" class="gl-ibtn out" aria-label="Kopieer opstellingen van deze dag" title="Kopieer opstellingen van deze dag" @onclick="() => CopyResultAsync(day.Items)">
+					<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Filled.ContentCopy)</svg>
+				</button>
+			</MudTh>
+		</GroupHeaderTemplate>
+		<RowTemplate>
+			@if (context.Error != null)
+			{
+				<MudTd colspan="@(_showBattleStats ? 11 : 7)" Class="gl-err"><svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Filled.Warning)</svg>@context.Error</MudTd>
+			}
+			else
+			{
+				var ownTeam = context.OwnTeam;
+				var left = context.Team1;
+				var right = context.Team2;
+				var leftKills = right.Players.Count(x => x.DeathReason.HasValue && x.DeathReason != -1);
+				var rightKills = left.Players.Count(x => x.DeathReason.HasValue && x.DeathReason != -1);
+				var onlyOwn = SettingService.Settings.OnlyHighlistOwnMatches;
 
-		<div class="gr @template gg gl-foot gl-edge" aria-label="Totaal">
-			<div class="gl">
-				<MudText Typo="Typo.h6" HtmlTag="h2">Totaal</MudText>
-				<MudText Typo="Typo.caption" Class="mud-text-secondary wot-num">sinds @SettingService.Settings.LoadBattlesSince?.ToString("dd-MM-yyyy")</MudText>
-				<BattleTotals Reports="filtered" ShowRecord="!_showBattleStats" Suffix="@(_loadingTime == TimeSpan.Zero ? null : $" · geladen in {_loadingTime.TotalSeconds.ToString("0.0", BattleReport.DutchCulture)} s")" />
-			</div>
+				<MudTd Class="p4">
+					<a id="@($"Timestamp_{context.MatchStart.Ticks + context.MatchDuration.GetValueOrDefault()}_anchor")" class="gl-anchor"></a>
+					<button type="button" class="gl-ibtn" aria-label="@(context.ShowDetails ? "Details inklappen" : "Details uitklappen")" aria-expanded="@(context.ShowDetails ? "true" : "false")">
+						<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)(context.ShowDetails ? Icons.Material.Filled.KeyboardArrowDown : Icons.Material.Filled.KeyboardArrowRight))</svg>
+					</button>
+				</MudTd>
+				<MudTd Class="c gl-dim">@numbers[context]</MudTd>
+				<MudTd title="@context.MatchTimeTooltip">
+					<div class="two"><b>@context.MatchStart.ToString("HH:mm")@(context.MatchEnd.HasValue ? $" – {context.MatchEnd.Value:HH:mm}" : string.Empty)</b><small>@context.MatchDurationDisplay</small></div>
+				</MudTd>
+				<MudTd Class="mapcol"><div class="mapc"><b title="@context.MapName">@context.MapName</b><span class="gl-chip">@ownTeam?.Base</span></div></MudTd>
+				<MudTd>
+					<span class="vs">
+						<span class="@TagClass(left, left == ownTeam, onlyOwn)">@left.Abbreviation</span>
+						<span class="score">@(left.Result is Result.Win ? (MarkupString)$"<b>{leftKills}</b>" : (MarkupString)$"<span>{leftKills}</span>")–@(right.Result is Result.Win ? (MarkupString)$"<b>{rightKills}</b>" : (MarkupString)$"<span>{rightKills}</span>")</span>
+						<span class="@TagClass(right, right == ownTeam, onlyOwn)">@right.Abbreviation</span>
+					</span>
+				</MudTd>
+				@if (_showBattleStats)
+				{
+					@StatCells(new[] { context })
+				}
+				<MudTd Class="res"><ResultChip Result="context.Result" /></MudTd>
+				<MudTd Class="p4">
+					<button type="button" class="gl-ibtn out" aria-label="Kopieer opstelling" title="Kopieer opstelling" disabled="@(ownTeam == null)" @onclick="() => CopyResultAsync(context, ownTeam)" @onclick:stopPropagation="true">
+						<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Filled.ContentCopy)</svg>
+					</button>
+				</MudTd>
+			}
+		</RowTemplate>
+		<ChildRowContent>
+			@if (context.ShowDetails)
+			{
+				<MudTr>
+					<MudTd colspan="@(_showBattleStats ? 11 : 7)" Class="@("gl-details" + (SettingService.Settings.OnlyHighlistOwnMatches ? " highlight-own-result" : null))" data-report="@context.FileName">
+						<Details Report="@context" ShowBattleStats="_showBattleStats" />
+					</MudTd>
+				</MudTr>
+			}
+		</ChildRowContent>
+		<FooterContent>
+			<MudTh colspan="5">
+				<div class="gl">
+					<MudText Typo="Typo.h6" HtmlTag="h2">Totaal</MudText>
+					<MudText Typo="Typo.caption" Class="mud-text-secondary wot-num">sinds @SettingService.Settings.LoadBattlesSince?.ToString("dd-MM-yyyy")</MudText>
+					<BattleTotals Reports="filtered" ShowRecord="!_showBattleStats" Suffix="@(_loadingTime == TimeSpan.Zero ? null : $" · geladen in {_loadingTime.TotalSeconds.ToString("0.0", BattleReport.DutchCulture)} s")" />
+				</div>
+			</MudTh>
 			@if (_showBattleStats)
 			{
 				@StatCells(filtered)
 			}
-			<div></div>
-			<div></div>
-		</div>
-	</section>
+			<MudTh></MudTh>
+			<MudTh></MudTh>
+		</FooterContent>
+	</MudTable>
 </div>
 
 @code {
@@ -269,6 +283,17 @@
 
 	private List<BattleReport> _reports = new List<BattleReport>();
 	private IEnumerable<BattleReport> _filteredReports => _reports.Where(x => TableFilter(x));
+	private TableGroupDefinition<BattleReport> _groupDefinition = new()
+	{
+		Indentation = false,
+		Expandable = false,
+		Selector = (e) => e.Group
+	};
+
+	private string RowClass(BattleReport report, int index) => "gl-row"
+		+ (index % 2 == 1 ? " alt" : string.Empty)
+		+ (report.ShowDetails ? " wot-row-active" : string.Empty)
+		+ (report.FileName == _addedFile ? " gl-new" : string.Empty);
 
 	/// <summary>One day of battles, newest first. The number of a battle in its day is its place counted from the oldest (oldest = 1).</summary>
 	private sealed record Day(string Label, DateTime Date, List<BattleReport> Items);
@@ -319,7 +344,7 @@
 			var penRatio = totalHits == 0 ? 0 : (int)(100m / totalHits.GetValueOrDefault() * totalPens.GetValueOrDefault());
 			var blockRatio = totalShotsReceived == 0 ? 0 : (int)(100m / totalShotsReceived.GetValueOrDefault() * totalBlocked.GetValueOrDefault());
 		}
-		<div class="gc s">
+		<td class="gc s">
 			<div class="d-flex justify-space-between gap-1 text-nowrap">
 				@if (totalShots.HasValue)
 				{
@@ -329,27 +354,27 @@
 					<span style="color: var(--mud-palette-text-secondary)">@(shotRatio < roundedRatio ? " < " : " > ") @roundedRatio p/m</span>
 				}
 			</div>
-		</div>
-		<div class="gc s">
+		</td>
+		<td class="gc s">
 			<div class="d-flex justify-space-between gap-1 text-nowrap">
 				<span>@totalHits</span>
 				<span style="color: @hitRatio.GetHitRatioColor()">@hitRatio%</span>
 			</div>
-		</div>
-		<div class="gc s">
+		</td>
+		<td class="gc s">
 			<div class="d-flex justify-space-between gap-1 text-nowrap">
 				<span>@totalPens</span>
 				<span style="color: @penRatio.GetPenRatioColor()">@penRatio%</span>
 			</div>
-		</div>
-		<div class="gc s">
+		</td>
+		<td class="gc s">
 			<div class="gap-1 text-nowrap" style="display: grid; grid-template-columns: 1fr auto 1fr 40px">
 				<span class="text-right">@totalBlocked</span>
 				<span class="mx-2">/</span>
 				<span>@totalShotsReceived</span>
 				<span class="text-right" style="color: @blockRatio.GetBlockedRatioColor()">@blockRatio%</span>
 			</div>
-		</div>
+		</td>
 	</text>;
 
 	/// <summary>A team tag in the VS cell (Team 1 left, Team 2 right): coloured by the team's result, and with the clan-chip edge when it is the own team. With "Alleen eigen gevechten uitlichten" only the own tag is coloured.</summary>

@@ -325,3 +325,84 @@
 .mud-table-dense * .mud-table-row .mud-table-cell {
     padding: 6px;
 }
+
+/* ==== MudTable (the battle table: .wot-battle-table; the rows, the day headers and the footer of the Gevechtslog) ==== */
+/* The expanded row nests Details' own MudTable inside this one, so every rule below walks down with child combinators: a descendant selector would restyle the nested table too. */
+.mud-table.wot-battle-table {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    border-radius: 0;
+    background: transparent;
+}
+
+/* Height="100%" is MudBlazor's inline height; it is what makes the container the scroller Virtualize needs. */
+.wot-battle-table > .mud-table-container {
+    flex: 1;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: scroll;
+}
+
+.wot-battle-table > .mud-table-container > .mud-table-root {
+    table-layout: fixed;
+    width: 100%;
+    font-variant-numeric: tabular-nums;
+}
+
+.wot-battle-table > .mud-table-container > .mud-table-root > :is(thead, tbody, tfoot) > tr > .mud-table-cell {
+    height: 48px;
+    padding: 0 12px;
+    border-bottom: 1px solid var(--mud-palette-table-lines);
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+.wot-battle-table > .mud-table-container > .mud-table-root > .mud-table-head > tr > .mud-table-cell {
+    height: 36px;
+    background: var(--wot-surface-dialog);
+    border-bottom: 1px solid var(--mud-palette-lines-default);
+    color: var(--mud-palette-text-secondary);
+    font: 600 13px/1.45 var(--wot-font-text);
+}
+
+/* The day header sticks under the column header (36px). */
+.wot-battle-table > .mud-table-container > .mud-table-root > tbody > tr.gl-day > .mud-table-cell {
+    position: sticky;
+    top: 36px;
+    z-index: 2;
+    height: 44px;
+    padding: 0 12px 0 16px;
+    background: var(--wot-appbar-top);
+    border-top: 1px solid var(--mud-palette-lines-default);
+    border-bottom: 1px solid var(--mud-palette-lines-default);
+}
+
+.wot-battle-table > .mud-table-container > .mud-table-root > tfoot > tr > .mud-table-cell {
+    height: 44px;
+    padding: 0 12px 0 16px;
+    background: var(--wot-appbar-top);
+    border-top: 1px solid var(--mud-palette-lines-default);
+    border-bottom: 0;
+    box-shadow: 0 -6px 16px color-mix(in srgb, var(--mud-palette-overlay-dark) 40%, transparent);
+}
+
+.wot-battle-table > .mud-table-container > .mud-table-root > tbody > tr.gl-row { cursor: pointer; }
+/* The scroll anchor (a.gl-anchor) is absolutely positioned against this cell. */
+.wot-battle-table > .mud-table-container > .mud-table-root > tbody > tr.gl-row > .mud-table-cell:first-child { position: relative; }
+.wot-battle-table > .mud-table-container > .mud-table-root > tbody > tr.gl-row.alt > .mud-table-cell { background: var(--mud-palette-table-striped); }
+.wot-battle-table > .mud-table-container > .mud-table-root > tbody > tr.gl-row:hover > .mud-table-cell { background: var(--mud-palette-table-hover); }
+.wot-battle-table > .mud-table-container > .mud-table-root > tbody > tr.gl-row.wot-row-active > .mud-table-cell { background: var(--wot-primary-soft); }
+.wot-battle-table > .mud-table-container > .mud-table-root > tbody > tr.gl-row.wot-row-active > .mud-table-cell:first-child { box-shadow: inset 2px 0 0 var(--mud-palette-primary); }
+.wot-battle-table > .mud-table-container > .mud-table-root > tbody > tr.gl-row.gl-new > .mud-table-cell { animation: gl-new 2s ease-out; }
+@media (prefers-reduced-motion: reduce) { .wot-battle-table > .mud-table-container > .mud-table-root > tbody > tr.gl-row.gl-new > .mud-table-cell { animation: none; background-color: color-mix(in srgb, var(--mud-palette-text-primary) 16%, transparent); } }
+
+.wot-battle-table > .mud-table-container > .mud-table-root > :is(thead, tbody, tfoot) > tr > .mud-table-cell.p4 { padding: 0 4px; text-align: center; }
+.wot-battle-table > .mud-table-container > .mud-table-root > :is(thead, tbody, tfoot) > tr > .mud-table-cell.c { text-align: center; }
+.wot-battle-table > .mud-table-container > .mud-table-root > :is(thead, tbody, tfoot) > tr > .mud-table-cell.r { text-align: right; }
+.wot-battle-table > .mud-table-container > .mud-table-root > :is(thead, tbody, tfoot) > tr > .mud-table-cell.res { text-align: right; }
+.wot-battle-table > .mud-table-container > .mud-table-root > :is(thead, tbody, tfoot) > tr > .mud-table-cell.mapcol { padding-right: 28px; }
+.wot-battle-table > .mud-table-container > .mud-table-root > tbody > tr > .mud-table-cell.gl-err { color: var(--mud-palette-warning); }
+.wot-battle-table > .mud-table-container > .mud-table-root > tbody > tr > .mud-table-cell.gl-details { height: auto; padding: 16px; background: var(--mud-palette-background); white-space: normal; }
+.wot-battle-table > .mud-table-container > .mud-table-root > .mud-table-head .mud-table-sort-label { color: var(--mud-palette-text-primary); }

@@ -124,6 +124,25 @@
 *::-webkit-scrollbar-button:single-button:vertical:decrement { background-image: linear-gradient(to top left, var(--mud-palette-text-secondary) 50%, transparent 50%), linear-gradient(to top right, var(--mud-palette-text-secondary) 50%, transparent 50%); background-size: 4px 5px, 4px 5px; background-position: calc(50% - 2px) center, calc(50% + 2px) center; }
 *::-webkit-scrollbar-button:single-button:vertical:increment { background-image: linear-gradient(to bottom left, var(--mud-palette-text-secondary) 50%, transparent 50%), linear-gradient(to bottom right, var(--mud-palette-text-secondary) 50%, transparent 50%); background-size: 4px 5px, 4px 5px; background-position: calc(50% - 2px) center, calc(50% + 2px) center; }
 
+/* The battle table's column widths (the MudTable's <col>s); the same numbers as the grid templates. */
+.wot-battle-table col.c-chev { width: 44px; }
+.wot-battle-table col.c-num { width: 36px; }
+.wot-battle-table col.c-time { width: 132px; }
+.wot-battle-table col.c-map { width: 170px; }
+.wot-battle-table col.c-stat { width: 128px; }
+.wot-battle-table col.c-res { width: 128px; }
+.wot-battle-table col.c-copy { width: 40px; }
+@media (min-width: 1600px) {
+    .wot-battle-table col.c-chev { width: 52px; }
+    .wot-battle-table col.c-num { width: 44px; }
+    .wot-battle-table col.c-time { width: 190px; }
+    .wot-battle-table col.c-map { width: 220px; }
+    .wot-battle-table col.c-stat { width: 150px; }
+    .wot-battle-table col.c-res { width: 160px; }
+    .wot-battle-table col.c-copy { width: 48px; }
+}
+.gl-anchor { position: absolute; margin-top: -80px; }
+
 /* Player details table (two header tiers, sticky left columns). Row grounds: the canvas's are Surface and the app bar's top steel;
    its own-row ground is Primary at 14% over Surface. */
 .pt { display: grid; grid-template-columns: var(--pc); align-items: center; min-width: var(--pw); font-variant-numeric: tabular-nums; --bgc: var(--mud-palette-surface); }
@@ -141,3 +160,4 @@
 .pt .nm { gap: 6px; overflow: hidden; }
 .pt .tk { color: var(--mud-palette-info); }
 .tm { display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 16px; background: color-mix(in srgb, var(--mud-palette-text-primary) 4%, transparent); border-bottom: 1px solid var(--mud-palette-lines-default); position: sticky; left: 0; width: var(--vw); }
+.wot-battle-table .gl { display: flex; align-items: center; gap: 12px; min-width: 0; }
