@@ -1,170 +1,169 @@
-﻿@inject SettingService SettingService
+﻿﻿@using System.Diagnostics
+@using System.Globalization
+@inject SettingService SettingService
 @inject IJSRuntime JSRuntime
 
-<MudPaper Elevation="4" Outlined="true">
-    <MudTable @ref="_tableRef"
-              Items="@players"
-              RowClassFunc="@HighlightPlayerClassFunc"
+@* The player table of an opened battle (canvas "Component: gevechtsdetails"): two header tiers, the first five columns sticky, one group per team, the HP-bar name cell, the own row and the team-killer.
+   The table and its cells are MudBlazor's, so their rules are in mud.css (".mud-table.player-table"); the elements rendered here are styled in Details.razor.css. *@
+<div class="wot-details">
+    <MudTable Items="@players"
+              RowClassFunc="@RowClass"
               GroupBy="@_groupDefinition"
               SortLabel="Sort By"
               GroupHeaderClass="teams"
-              GroupHeaderStyle="background-color:var(--mud-palette-background-gray)"
-              Class="player-table"
-              Striped="true"
+              Class="@("player-table" + (ShowBattleStats ? " stats" : ""))"
+              Elevation="0"
               Dense="true"
-              Bordered="true"
               CustomHeader="true"
               AllowUnsorted="false">
+        @* The expander of the group, #, then the four sticky columns, then the eight figures. Their widths are fixed (mud.css), because the sticky columns need to know their left offset. *@
         <ColGroup>
-            <col style="width: 60px;" />
-            <col style="width: 50px" />
-            <col />
-            <col />
-            <col />
-            <col />
-            <col />
-            <col />
-            <col />
-            <col />
-            <col />
-            <col />
-            <col />
+            <col class="c-lead" />
+            <col class="c-num" />
+            <col class="c-name" />
+            <col class="c-tank" />
+            <col class="c-life" />
+            <col class="c-xp" />
+            <col class="c-kills" />
+            <col class="c-dmg" />
+            <col class="c-blk" />
+            <col class="c-recv" />
+            <col class="c-shots" />
+            <col class="c-hits" />
             <col />
         </ColGroup>
         <HeaderContent>
-            <MudTHeadRow Class="header-centered">
-                <MudTh colspan="5" Class="sticky-left"></MudTh>
+            <MudTHeadRow Class="header-centered tier">
+                <MudTh colspan="5" Class="sticky-left lead"></MudTh>
                 <MudTh colspan="2">Prestatie</MudTh>
                 <MudTh colspan="3">Schade</MudTh>
                 <MudTh colspan="3">Schoten</MudTh>
             </MudTHeadRow>
             <MudTHeadRow>
-                <MudTh Class="sticky-left" />
-                <MudTh Class="sticky-left" Style="text-align: center">#</MudTh>
+                <MudTh Class="sticky-left lead" />
+                <MudTh Class="sticky-left num">#</MudTh>
                 <MudTh Class="sticky-left name"><MudTableSortLabel SortBy="new Func<Player, object>(x=>x.DisplayName)">Naam</MudTableSortLabel></MudTh>
                 <MudTh Class="sticky-left vehicle"><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.Vehicle)">Tank</MudTableSortLabel></MudTh>
-                <MudTh Class="sticky-left lifetime"><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.LifeTime)">Speeltijd</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel InitialDirection="SortDirection.Descending" SortBy="new Func<Player, object?>(x=>x.ExperienceEarned)">XP</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.Kills)">Kills</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.DamageDealt)">Gedaan</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.DamageBlocked)">Geblokt</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.DamageReceived)">Ontvangen</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.Shots)">Geschoten</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.DirectHits)">Geraakt</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.Piercings)">Gepenetreerd</MudTableSortLabel></MudTh>
+                <MudTh Class="sticky-left lifetime r"><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.LifeTime)">Speeltijd</MudTableSortLabel></MudTh>
+                <MudTh Class="r"><MudTableSortLabel InitialDirection="SortDirection.Descending" SortBy="new Func<Player, object?>(x=>x.ExperienceEarned)">XP</MudTableSortLabel></MudTh>
+                <MudTh Class="r"><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.Kills)">Kills</MudTableSortLabel></MudTh>
+                <MudTh Class="r"><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.DamageDealt)">Gedaan</MudTableSortLabel></MudTh>
+                <MudTh Class="r"><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.DamageBlocked)">Geblokt</MudTableSortLabel></MudTh>
+                <MudTh Class="r"><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.DamageReceived)">Ontvangen</MudTableSortLabel></MudTh>
+                <MudTh Class="r"><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.Shots)">Geschoten</MudTableSortLabel></MudTh>
+                <MudTh Class="r"><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.DirectHits)">Geraakt</MudTableSortLabel></MudTh>
+                <MudTh Class="r"><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.Piercings)">Gepenetreerd</MudTableSortLabel></MudTh>
             </MudTHeadRow>
         </HeaderContent>
         <GroupHeaderTemplate>
             @{
                 Team? team = context.Key as Team;
-                string classes = $"d-inline {team?.Result} ";
-                classes += Report.OwnTeam?.Number == team?.Number ? "highlight" : string.Empty;
                 bool isOwnTeam = team?.IsOwnTeam ?? false;
             }
-            <MudTh colspan="14" Class="mud-table-cell-custom-group" data-ownteam="@isOwnTeam.ToString()">
-                <MudText Typo="Typo.subtitle1" Class="@classes"><b>@(team?.Abbreviation ?? "?")</b></MudText>
+            <MudTh colspan="12" Class="mud-table-cell-custom-group" data-ownteam="@isOwnTeam.ToString()">
+                <div class="wot-team">
+                    <span class="@(team == null ? "tag u" : BattleRow.TagClass(team, isOwnTeam, SettingService.Settings.OnlyHighlistOwnMatches))">@(team?.Abbreviation ?? "?")</span>
+                    <ResultChip Result="@(team?.Result ?? Result.Unknown)" />
+                </div>
             </MudTh>
         </GroupHeaderTemplate>
         <RowTemplate>
             @{
-                decimal hpPercentage = Math.Round(context.MaxHealth.HasValue
-                ? 100m / context.MaxHealth.GetValueOrDefault() * context.Health.GetValueOrDefault()
-                : 0, 0);
-                string style = context.DeathReason.HasValue && context.DeathReason != -1
-                ? "background: #ff838340"
-                : $"background: linear-gradient(90deg, #8cff8570 {hpPercentage}%, transparent 0%)";
+                bool dead = IsDead(context);
+                bool own = IsOwn(context);
+                bool teamKiller = context.IsTeamKiller.GetValueOrDefault();
+                BattleStats stats = BattleStats.Of([context]);
+                // The tooltip carries the full name too: the name cell cuts a long name off with an ellipsis.
+                string tooltip = $"{context.DisplayName}{'\n'}Pantser {Fmt(context.Health)} / {Fmt(context.MaxHealth)} HP · Leefde {Duration(context.LifeTime)}";
             }
-            <MudTd DataLabel="Number" Class="sticky-left" Style="text-align: center">@context.Number</MudTd>
-            <MudTd DataLabel="Name" Class="no-break sticky-left name" Style="@style" title="@($"{context.Health} / {context.MaxHealth} HP | Alive: {context.LifeTime} seconds")">
-                @context.DisplayName
-            </MudTd>
-            <MudTd DataLabel="Vehicle" Class="no-break sticky-left vehicle">@context.Vehicle</MudTd>
-            <MudTd DataLabel="LifeTime" Class="no-break sticky-left lifetime text-right">
-                @{
-                    string duration = string.Empty;
-                    if (context.LifeTime.HasValue)
+            <MudTd DataLabel="Number" Class="sticky-left num">@context.Number</MudTd>
+            <MudTd DataLabel="Name" Class="@("sticky-left name " + (dead ? "dead" : "hp"))" Style="@($"--hp: {HealthPercent(context)}%")" title="@tooltip">
+                <div class="wot-name">
+                    <span class="wot-name-slot">
+                        @if (own)
+                        {
+                            <svg class="wot-name-person" viewBox="0 0 24 24" role="img" aria-label="Jij"><title>Jij</title>@((MarkupString)Icons.Material.Filled.Person)</svg>
+                        }
+                        else if (dead)
+                        {
+                            <img src="img/destroyed.png" alt="Uitgeschakeld" />
+                        }
+                    </span>
+                    <span class="@("wot-name-text" + (own ? " me" : string.Empty) + (teamKiller ? " tk" : string.Empty))">@context.DisplayName</span>
+                    @if (own && dead)
                     {
-                        TimeSpan time = new(context.LifeTime.Value * TimeSpan.TicksPerSecond);
-                        string minutes = time.Minutes.ToString();
-                        if (minutes.Length == 1)
-                        {
-                            minutes = "&nbsp;&nbsp;" + minutes;
-                        }
-
-                        string seconds = time.Seconds.ToString();
-                        if (seconds.Length == 1)
-                        {
-                            seconds = "&nbsp;&nbsp;" + seconds;
-                        }
-
-                        duration = $"{minutes}m {seconds}s";
+                        <img src="img/destroyed.png" alt="Uitgeschakeld" />
                     }
-                }
-                @((MarkupString)duration)
-            </MudTd>
-            <MudTd DataLabel="ExperienceEarned">@context.ExperienceEarned</MudTd>
-            <MudTd DataLabel="Kills">@context.Kills</MudTd>
-
-            <MudTd DataLabel="DamageDealt">@context.DamageDealt</MudTd>
-            <MudTd DataLabel="DamageBlocked">
-                <div class="text-nowrap d-flex justify-space-between gap-1">
-                    @if (context.DamageBlocked.HasValue)
+                    @if (teamKiller)
                     {
-                        <div>@context.DamageBlocked</div>
-                        <div class="gap-1" style="display: grid; grid-template-columns: 1fr auto 1fr 40px">
-                            <span>@context.ShotsBlocked</span>
-                            @if (ShowBattleStats)
-                            {
-                                <span class="mx-2 grey-text text-darken-1">/</span>
-                                <span>@context.ShotsReceived</span>
-                                <span class="text-right" style="color: @context.BlockRatio.GetBlockedRatioColor() !important">@context.BlockRatio%</span>
-                            }
+                        <svg class="wot-name-tk" viewBox="0 0 24 24" role="img" aria-label="Teamkiller"><title>Teamkiller</title>@((MarkupString)Icons.Material.Filled.Report)</svg>
+                    }
+                </div>
+            </MudTd>
+            <MudTd DataLabel="Vehicle" Class="sticky-left vehicle" title="@context.Vehicle">@context.Vehicle</MudTd>
+            <MudTd DataLabel="LifeTime" Class="sticky-left lifetime r">@Duration(context.LifeTime)</MudTd>
+            <MudTd DataLabel="ExperienceEarned" Class="r">@Fmt(context.ExperienceEarned)</MudTd>
+            <MudTd DataLabel="Kills" Class="r">@Fmt(context.Kills)</MudTd>
+            <MudTd DataLabel="DamageDealt" Class="r">@Fmt(context.DamageDealt)</MudTd>
+            <MudTd DataLabel="DamageBlocked" Class="r">
+                @if (context.DamageBlocked.HasValue)
+                {
+                    @if (ShowBattleStats)
+                    {
+                        <div class="wot-pair">
+                            <span>@Fmt(context.DamageBlocked)</span>
+                            <RatioCell Count="@($"{Fmt(context.ShotsBlocked)} / {Fmt(context.ShotsReceived)}")" Ratio="stats.BlockRatio" Level="stats.BlockRatio.GetBlockLevel()" />
                         </div>
                     }
-                </div>
-            </MudTd>
-            <MudTd DataLabel="DamageReceived">@context.DamageReceived</MudTd>
-            <MudTd DataLabel="Shots">
-                <div class="d-flex justify-space-between gap-1 text-nowrap">
-                    @if (context.Shots.HasValue)
+                    else
                     {
-                        var roundedRatio = Math.Round(context.ShotRatio);
-
-                        <span>@context.Shots</span>
-                        @if (ShowBattleStats)
-                        {
-                            <span style="color: cornflowerblue">@(context.ShotRatio < roundedRatio ? " < " : " > ") @roundedRatio p/m</span>
-                        }
+                        <span>@Fmt(context.DamageBlocked) <span class="mud-text-secondary">(@Fmt(context.ShotsBlocked))</span></span>
                     }
-                </div>
+                }
             </MudTd>
-            <MudTd DataLabel="DirectHits">
-                <div class="d-flex justify-space-between gap-1 text-nowrap">
-                    @if (context.DirectHits.HasValue)
+            <MudTd DataLabel="DamageReceived" Class="r">@Fmt(context.DamageReceived)</MudTd>
+            <MudTd DataLabel="Shots" Class="r">
+                @if (context.Shots.HasValue)
+                {
+                    @if (ShowBattleStats)
                     {
-                        <span>@context.DirectHits</span>
-                        @if (ShowBattleStats)
-                        {
-                            <span style="color: @context.HitRatio.GetHitRatioColor() !important">@(context.HitRatio)%</span>
-                        }
+                        <RatioCell Count="@Fmt(context.Shots)" Detail="@($"{stats.ShotsPerMinute.ToString("0.0", BattleReport.DutchCulture)} p/m")" />
                     }
-                </div>
+                    else
+                    {
+                        <span>@Fmt(context.Shots)</span>
+                    }
+                }
             </MudTd>
-            <MudTd DataLabel="Piercings">
-                <div class="d-flex justify-space-between gap-1 text-nowrap">
-                    @if (context.Piercings.HasValue)
+            <MudTd DataLabel="DirectHits" Class="r">
+                @if (context.DirectHits.HasValue)
+                {
+                    @if (ShowBattleStats)
                     {
-                        <span>@context.Piercings</span>
-                        @if (ShowBattleStats)
-                        {
-                            <span style="color: @context.PenRatio.GetPenRatioColor() !important">@(context.PenRatio)%</span>
-                        }
+                        <RatioCell Count="@Fmt(context.DirectHits)" Ratio="stats.HitRatio" Level="stats.HitRatio.GetHitLevel()" />
                     }
-                </div>
+                    else
+                    {
+                        <span>@Fmt(context.DirectHits)</span>
+                    }
+                }
+            </MudTd>
+            <MudTd DataLabel="Piercings" Class="r">
+                @if (context.Piercings.HasValue)
+                {
+                    @if (ShowBattleStats)
+                    {
+                        <RatioCell Count="@Fmt(context.Piercings)" Ratio="stats.PenRatio" Level="stats.PenRatio.GetPenLevel()" />
+                    }
+                    else
+                    {
+                        <span>@Fmt(context.Piercings)</span>
+                    }
+                }
             </MudTd>
         </RowTemplate>
     </MudTable>
-</MudPaper>
+</div>
 
 @code {
     [Parameter]
@@ -173,16 +172,28 @@
     [Parameter]
     public required bool ShowBattleStats { get; set; }
 
-    private MudTable<Player>? _tableRef;
-
     private IEnumerable<Player> players => Report.Team1.Players.Concat(Report.Team2.Players).OrderBy(x => x.Team?.Number);
+
+    private static readonly NumberFormatInfo ThinSpace = new() { NumberGroupSeparator = " " };
+
+    /// <summary>Whole numbers with a thin space between the thousands ("1 230"); empty for a missing value.</summary>
+    private static string Fmt(int? value) => value.HasValue ? value.Value.ToString("N0", ThinSpace) : string.Empty;
+
+    /// <summary>Time alive as "6m 12s"; empty for a missing value.</summary>
+    private static string Duration(int? seconds) => seconds.HasValue ? $"{seconds.Value / 60}m {seconds.Value % 60:00}s" : string.Empty;
+
+    /// <summary>A player who was destroyed (the death reason is set and not -1).</summary>
+    private static bool IsDead(Player player) => player.DeathReason.HasValue && player.DeathReason != -1;
+
+    /// <summary>The remaining HP of the player's tank in whole percent of its maximum, 0 to 100.</summary>
+    private static int HealthPercent(Player player) => player.MaxHealth.GetValueOrDefault() <= 0 ? 0 : (int)Math.Clamp(Math.Round(100m * player.Health.GetValueOrDefault() / player.MaxHealth.GetValueOrDefault()), 0, 100);
+
+    protected override void OnInitialized() => SelfCheck();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            await JSRuntime.InvokeVoidAsync("keepElementOffset", $".mud-table.player-table .sticky-left.name");
-            await JSRuntime.InvokeVoidAsync("keepElementOffset", $".mud-table.player-table .sticky-left.vehicle");
             await JSRuntime.InvokeVoidAsync("openOwnTeam", $"[data-report='{Report.FileName}'] td:has(+ [data-ownteam='True']) button");
         }
     }
@@ -195,18 +206,21 @@
             Selector = (e) => e.Team
         };
 
-    private string HighlightPlayerClassFunc(Player player, int rowNumber)
+    private bool IsOwn(Player player) => !string.IsNullOrEmpty(player.Name) && string.Equals(player.Name, SettingService.Settings.PlayerName, StringComparison.OrdinalIgnoreCase);
+
+    private string RowClass(Player player, int rowNumber)
     {
-        if (player.Name != null && player.Name?.ToLower() == SettingService.Settings.PlayerName?.ToLower())
-        {
-            return "highlight";
-        }
+        string alt = rowNumber % 2 == 1 ? "alt" : string.Empty;
+        return IsOwn(player) ? $"{alt} wot-row-active" : alt;
+    }
 
-        if (player.IsTeamKiller.GetValueOrDefault())
-        {
-            return "teamkiller";
-        }
-
-        return string.Empty;
+    [Conditional("DEBUG")]
+    public static void SelfCheck()
+    {
+        Debug.Assert(HealthPercent(new Player(new Team()) { Health = 340, MaxHealth = 1850 }) == 18, "340 of 1850 HP is 18%");
+        Debug.Assert(HealthPercent(new Player(new Team()) { Health = 0, MaxHealth = 1850 }) == 0 && HealthPercent(new Player(new Team())) == 0, "no HP or no maximum is 0%, no division by zero");
+        Debug.Assert(IsDead(new Player(new Team()) { DeathReason = 2 }) && !IsDead(new Player(new Team()) { DeathReason = -1 }) && !IsDead(new Player(new Team())), "dead is a death reason other than -1");
+        Debug.Assert(Fmt(1230) == "1 230" && Fmt(null) == string.Empty, "a thin space between the thousands");
+        Debug.Assert(Duration(372) == "6m 12s" && Duration(65) == "1m 05s", "6m 12s, seconds with two digits");
     }
 }

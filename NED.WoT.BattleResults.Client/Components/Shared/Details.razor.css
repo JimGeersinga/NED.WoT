@@ -1,0 +1,77 @@
+/* The elements Details.razor renders itself. The player table and its cells are MudBlazor's: their rules are in wwwroot/css/mud.css (".mud-table.player-table"). */
+
+/* The panel: Surface with the steel edge, 16px of padding. */
+.wot-details {
+    padding: 16px;
+    background: var(--mud-palette-surface);
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: var(--mud-default-borderradius);
+    box-shadow: inset 0 1px 0 var(--wot-steel-highlight);
+}
+
+/* The team header: the tag in the result's colour, then the result chip. It stays in view while the table scrolls sideways. */
+.wot-team {
+    position: sticky;
+    left: 60px; /* the expander column (44px) plus the header cell's padding (16px) */
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* The name cell: a fixed slot for the "jij" and destroyed icons, the name (an ellipsis when it is too long), the team-killer icon. */
+.wot-name {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+.wot-name-slot {
+    flex: none;
+    display: inline-flex;
+    justify-content: center;
+    width: 22px;
+}
+
+.wot-name img {
+    flex: none;
+    width: 20px;
+    height: 21px;
+    display: block;
+}
+
+.wot-name svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+}
+
+.wot-name-person {
+    color: var(--mud-palette-primary);
+}
+
+.wot-name-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.wot-name-text.me {
+    font-weight: 600;
+}
+
+/* A team-killer: the info colour, plus the Report icon (colour is never alone). */
+.wot-name-text.tk,
+.wot-name-tk {
+    color: var(--mud-palette-info);
+}
+
+/* Geblokt in stats mode: the damage right-aligned in the room that is left, then the ratio cell (shots blocked / received and the ratio) in a fixed column, so every row lines up. */
+.wot-pair {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 108px;
+    align-items: center;
+    column-gap: 10px;
+}
