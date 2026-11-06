@@ -1,0 +1,140 @@
+@* The shared look of a filter box in the filter bar (design board "Filters: speler, clan, map"): the icon, an optional prefix, the value, a clear button once filled (with an orange underline) and the dropdown arrow. It owns only the open state and the text being typed; the parent owns the chosen value and builds the list in ChildContent (context = the typed text). A click inside the list closes it. *@
+
+<div class="fld dd@(Filled ? " filled" : string.Empty)">
+	<div class="fld-box" @onclick="OpenList">
+		@Icon
+		@if (!string.IsNullOrEmpty(Prefix))
+		{
+			<span class="fld-pfx">[@Prefix]</span>
+		}
+		<input class="fld-in"
+			   role="combobox"
+			   aria-label="@AriaLabel"
+			   aria-expanded="@(_open ? "true" : "false")"
+			   aria-haspopup="listbox"
+			   autocomplete="off"
+			   placeholder="@Placeholder"
+			   value="@(_typed ?? Value)"
+			   @oninput="OnInput"
+			   @onfocus="OpenList"
+			   @onkeydown="OnKeyDown" />
+		@if (Filled || !string.IsNullOrEmpty(_typed))
+		{
+			<button type="button" class="fld-btn" aria-label="@($"{AriaLabel} wissen")" title="Wissen" @onclick="ClearAsync" @onclick:stopPropagation="true">
+				<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Filled.Close)</svg>
+			</button>
+		}
+		else
+		{
+			<button type="button" class="fld-btn" tabindex="-1" aria-label="@($"{AriaLabel}: lijst {(_open ? "sluiten" : "openen")}")" @onclick="Toggle" @onclick:stopPropagation="true">
+				<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)(_open ? Icons.Material.Filled.ArrowDropUp : Icons.Material.Filled.ArrowDropDown))</svg>
+			</button>
+		}
+	</div>
+
+	@if (_open)
+	{
+		<div class="fld-backdrop" @onclick="Close"></div>
+		<div class="pop" role="listbox" aria-label="@AriaLabel" @onclick="Close">
+			@Content?.Invoke(_typed ?? string.Empty)
+		</div>
+	}
+</div>
+
+@code {
+	/// <summary>The game-art icon on the left (see <see cref="Glyph"/>).</summary>
+	[Parameter]
+	public RenderFragment? Icon { get; set; }
+
+	/// <summary>A tag shown in front of the value, without the brackets.</summary>
+	[Parameter]
+	public string? Prefix { get; set; }
+
+	/// <summary>The chosen value. Empty means no filter.</summary>
+	[Parameter]
+	public string? Value { get; set; }
+
+	[Parameter]
+	public string? Placeholder { get; set; }
+
+	[Parameter, EditorRequired]
+	public required string AriaLabel { get; set; }
+
+	/// <summary>The list. Its context is the text typed so far, empty when nothing was typed.</summary>
+	[Parameter]
+	public RenderFragment<string>? Content { get; set; }
+
+	/// <summary>The clear button was pressed: the parent drops its value.</summary>
+	[Parameter]
+	public EventCallback OnClear { get; set; }
+
+	private bool Filled => !string.IsNullOrEmpty(Value);
+
+	private bool _open;
+	private string? _typed;
+
+	/// <summary>The icon paths of the board's custom glyphs (24px grid).</summary>
+	public const string Helmet = "M12 3C7.6 3 4.5 6.4 4.5 10.8V15l1.5 1.5V19h12v-2.5l1.5-1.5v-4.2C19.5 6.4 16.4 3 12 3zM6.8 10.4h10.4v3.2H6.8z";
+	public const string Shield = "M12 2.5l7.5 2.8v6.2c0 4.6-3.1 8.6-7.5 10.5-4.4-1.9-7.5-5.9-7.5-10.5V5.3zM12 7.4L8 9.9v1.3l4-2.2 4 2.2V9.9zM12 12.2l-4 2.5V16l4-2.2 4 2.2v-1.3z";
+
+	public static RenderFragment Glyph(string path) => @<svg class="wi" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="@path" /></svg>;
+
+	/// <summary>The text with every occurrence of the typed term in bold (case-insensitive); the text is encoded by Razor.</summary>
+	public static RenderFragment Highlighted(string text, string term) => builder =>
+	{
+		int at = 0;
+		int hit = term.Length == 0 ? -1 : text.IndexOf(term, StringComparison.InvariantCultureIgnoreCase);
+		while (hit >= 0)
+		{
+			builder.AddContent(0, text[at..hit]);
+			builder.OpenElement(1, "b");
+			builder.AddContent(2, text.Substring(hit, term.Length));
+			builder.CloseElement();
+			at = hit + term.Length;
+			hit = text.IndexOf(term, at, StringComparison.InvariantCultureIgnoreCase);
+		}
+
+		builder.AddContent(3, text[at..]);
+	};
+
+	private void OpenList() => _open = true;
+
+	private void Toggle()
+	{
+		if (_open)
+		{
+			Close();
+		}
+		else
+		{
+			_open = true;
+		}
+	}
+
+	/// <summary>Closes the list and drops the text that was typed but not chosen.</summary>
+	private void Close()
+	{
+		_open = false;
+		_typed = null;
+	}
+
+	private void OnInput(ChangeEventArgs e)
+	{
+		_typed = e.Value?.ToString();
+		_open = true;
+	}
+
+	private void OnKeyDown(KeyboardEventArgs e)
+	{
+		if (e.Key == "Escape")
+		{
+			Close();
+		}
+	}
+
+	private async Task ClearAsync()
+	{
+		Close();
+		await OnClear.InvokeAsync();
+	}
+}

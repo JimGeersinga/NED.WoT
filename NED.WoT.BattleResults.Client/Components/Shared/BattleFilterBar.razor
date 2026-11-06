@@ -1,37 +1,27 @@
+@using System.Diagnostics
 @using IndexPage = NED.WoT.BattleResults.Client.Components.Pages.Index
 
 @inject IDialogService DialogService
+@inject SettingService SettingService
 
-@* The filter bar over the battle table. It owns the search and the tool buttons; Index owns the state and gets it back through the callbacks. Milestone 03 replaces its contents. *@
+@* The filter bar over the battle table: the Clan and Speler dropdowns, the match type and result chips (#14 replaces those) and the tool buttons. Index owns the state and gets it back through the callbacks. *@
 @{
 	var clanMembers = Filtered.SelectMany(x => x.Team1.Players.Concat(x.Team2.Players)).Where(x => x.IsClanMember).Select(x => x.Name).Distinct().Count();
 	var undefinedNames = TankNameResolver.UndefinedTankNames.Count + MapNameResolver.UndefinedMapNames.Count;
 }
 
 <section class="gl-bar" aria-label="Filters">
-	<div class="gl-search">
-		<MudAutocomplete T="IndexPage.SearchValue"
-						 Value="Search"
-						 ValueChanged="SearchChanged"
-						 SearchFunc="SearchAllAsync"
-						 ToStringFunc="@(e=> e == null ? null : $"{e.Value} ({e.Type})")"
-						 DebounceInterval="500"
-						 Placeholder="Zoek op spelernaam of clan tag"
-						 Adornment="Adornment.Start"
-						 AdornmentIcon="@Icons.Material.Filled.Search"
-						 IconSize="Size.Medium"
-						 Variant="Variant.Outlined"
-						 Margin="Margin.Dense"
-						 Clearable="true"
-						 Class="mt-0">
-			<ItemTemplate Context="e">
-				<div class="d-flex justify-space-between align-center">
-					<MudText Typo="Typo.inherit">@e.Value</MudText>
-					<MudText Typo="Typo.caption">@e.Type</MudText>
-				</div>
-			</ItemTemplate>
-		</MudAutocomplete>
-	</div>
+	<FilterBox AriaLabel="Clan" Placeholder="Clan kiezen" Icon="@FilterBox.Glyph(FilterBox.Shield)" Value="@Clan" OnClear="@(() => ClanChanged.InvokeAsync(null))">
+		<Content Context="term">
+			@OptionList(ClanRows(term), term, "Geen clan gevonden")
+		</Content>
+	</FilterBox>
+
+	<FilterBox AriaLabel="Speler" Placeholder="Speler zoeken" Icon="@FilterBox.Glyph(FilterBox.Helmet)" Prefix="@(Clan ?? (Player != null ? _playerClan : null))" Value="@Player" OnClear="@(() => PlayerChanged.InvokeAsync(null))">
+		<Content Context="term">
+			@OptionList(PlayerRows(term), term, "Geen speler gevonden")
+		</Content>
+	</FilterBox>
 
 	<MudToggleGroup T="IndexPage.MatchType" Value="MatchType" ValueChanged="MatchTypeChanged" Class="wot-view-toggle" aria-label="Soort gevechten">
 		@foreach (var matchType in Enum.GetValues<IndexPage.MatchType>())
@@ -53,24 +43,6 @@
 	<div class="gl-tools">
 		@if (CanToggleBattleStats)
 		{
-			if (ShowBattleStats)
-			{
-				<div class="gl-player">
-					<MudAutocomplete Value="DetailedInfoForPlayer"
-									 ValueChanged="DetailedInfoForPlayerChanged"
-									 SearchFunc="SearchPlayerAsync"
-									 DebounceInterval="500"
-									 Placeholder="Filter speler stats"
-									 Adornment="Adornment.Start"
-									 AdornmentIcon="@Icons.Material.Filled.AutoGraph"
-									 IconSize="Size.Medium"
-									 Margin="Margin.Dense"
-									 Variant="Variant.Outlined"
-									 Clearable="true"
-									 Class="mt-0"></MudAutocomplete>
-				</div>
-			}
-
 			<button type="button" class="gl-imgbtn gl-icon-only gl-book" aria-pressed="@(ShowBattleStats ? "true" : "false")" aria-label="Statistieken" title="Uitgebreide statistieken&#10;▲ hoog · ▬ gemiddeld · ▼ laag&#10;Geraakt: ≤ 50% laag, ≥ 70% hoog&#10;Gepenetreerd: ≤ 55% laag, ≥ 70% hoog&#10;Geblokt: ≥ 25% hoog" @onclick="() => ShowBattleStatsChanged.InvokeAsync(!ShowBattleStats)">
 				<img src="@(ShowBattleStats ? "images/book-open.png" : "images/book-closed.png")" alt="" />
 			</button>
@@ -90,19 +62,27 @@
 </section>
 
 @code {
-	/// <summary>All the battles: the search suggestions come from these.</summary>
+	/// <summary>All the readable battles: the clan and player lists are built from these.</summary>
 	[Parameter, EditorRequired]
 	public required IReadOnlyCollection<BattleReport> Reports { get; set; }
 
-	/// <summary>The battles that pass the search and the match type: the result counts and the clan member count follow these.</summary>
+	/// <summary>The battles that pass the filters and the match type: the result counts and the clan member count follow these.</summary>
 	[Parameter, EditorRequired]
 	public required IReadOnlyCollection<BattleReport> Filtered { get; set; }
 
+	/// <summary>The chosen clan tag; null shows every clan.</summary>
 	[Parameter]
-	public IndexPage.SearchValue? Search { get; set; }
+	public string? Clan { get; set; }
 
 	[Parameter]
-	public EventCallback<IndexPage.SearchValue?> SearchChanged { get; set; }
+	public EventCallback<string?> ClanChanged { get; set; }
+
+	/// <summary>The chosen player name; null shows every player.</summary>
+	[Parameter]
+	public string? Player { get; set; }
+
+	[Parameter]
+	public EventCallback<string?> PlayerChanged { get; set; }
 
 	[Parameter]
 	public IndexPage.MatchType MatchType { get; set; }
@@ -125,43 +105,188 @@
 	[Parameter]
 	public EventCallback<bool> ShowBattleStatsChanged { get; set; }
 
-	[Parameter]
-	public string DetailedInfoForPlayer { get; set; } = string.Empty;
+	/// <summary>The clan tag of the player picked last: the Speler box shows it in front of the name when no clan is chosen.</summary>
+	private string? _playerClan;
 
-	[Parameter]
-	public EventCallback<string> DetailedInfoForPlayerChanged { get; set; }
+	// The player list of the open Speler box, built once per set of battles and clan and narrowed per typed term: building it walks every player of every battle.
+	// ponytail: keyed on the battle count, so a replaced battle that leaves the count the same shows a stale list until the next count change.
+	private (int Battles, string? Clan, string OwnTag) _playersKey;
+	private List<PlayerOption> _allPlayers = [];
 
-	private Task<IEnumerable<IndexPage.SearchValue>> SearchAllAsync(string value, CancellationToken token)
+	private List<PlayerOption> PlayersFor(string ownTag, string term)
 	{
-		var playerNames = Reports
-		.SelectMany(x => x.Team1.Players.Concat(x.Team2.Players))
-		.Select(x => new IndexPage.SearchValue(x.Name, "Speler"))
-		.Distinct();
-
-		var teamNames = Reports
-		.SelectMany(x => new[] { x.Team1.Abbreviation, x.Team2.Abbreviation })
-		.Select(x => new IndexPage.SearchValue(x, "Clan"))
-		.Distinct();
-
-		var names = teamNames.Concat(playerNames);
-
-		if (string.IsNullOrEmpty(value))
+		if (_playersKey != (Reports.Count, Clan, ownTag))
 		{
-			return Task.FromResult(names);
+			_allPlayers = Players(Reports, Clan, ownTag, string.Empty);
+			_playersKey = (Reports.Count, Clan, ownTag);
 		}
 
-		return Task.FromResult(names.Where(x => x?.Value?.Contains(value, StringComparison.InvariantCultureIgnoreCase) ?? false));
+		return term.Length == 0 ? _allPlayers : _allPlayers.Where(x => Contains(x.Name, term)).ToList();
 	}
 
-	private Task<IEnumerable<string>> SearchPlayerAsync(string value, CancellationToken token)
+	/// <summary>One line of a dropdown: a section header (with the number of options under it), a clan or a player.</summary>
+	internal record ListRow(string? Header = null, int? Count = null, bool Sep = false, ClanOption? Clan = null, PlayerOption? Player = null);
+
+	private List<ListRow> ClanRows(string term)
 	{
-		var playerNames = Reports.SelectMany(x => x.Team1.Players.Concat(x.Team2.Players)).Select(x => x.Name ?? string.Empty).Distinct();
-		if (string.IsNullOrEmpty(value))
+		string ownTag = SettingService.Settings.ClanAbbreviation ?? string.Empty;
+		List<ClanOption> clans = Clans(Reports);
+		ClanOption? mine = ownTag.Length == 0 ? null : clans.FirstOrDefault(x => SameTag(x.Tag, ownTag)) ?? new ClanOption(ownTag, 0);
+		List<ClanOption> others = clans.Where(x => !SameTag(x.Tag, ownTag) && Contains(x.Tag, term)).ToList();
+		List<ListRow> rows = [];
+
+		if (mine != null && Contains(mine.Tag, term))
 		{
-			return Task.FromResult(playerNames);
+			rows.Add(new ListRow(Header: "Jouw clan"));
+			rows.Add(new ListRow(Clan: mine));
 		}
 
-		return Task.FromResult(playerNames.Where(x => x?.Contains(value, StringComparison.InvariantCultureIgnoreCase) ?? false));
+		if (others.Count > 0)
+		{
+			rows.Add(new ListRow(Header: "Tegenstanders", Count: others.Count, Sep: rows.Count > 0));
+			rows.AddRange(others.Select(x => new ListRow(Clan: x)));
+		}
+
+		return rows;
+	}
+
+	/// <summary>Every player of the battles: with a clan chosen only that clan's players, without it your own clan's players first, then the others.</summary>
+	private List<ListRow> PlayerRows(string term)
+	{
+		string ownTag = SettingService.Settings.ClanAbbreviation ?? string.Empty;
+		List<PlayerOption> players = PlayersFor(ownTag, term);
+		List<ListRow> rows = [];
+
+		if (Clan != null)
+		{
+			if (players.Count > 0)
+			{
+				rows.Add(new ListRow(Header: $"Spelers van [{Clan}]", Count: players.Count));
+				rows.AddRange(players.Select(x => new ListRow(Player: x)));
+			}
+
+			return rows;
+		}
+
+		List<PlayerOption> mine = players.Where(x => SameTag(x.Clan, ownTag)).ToList();
+		List<PlayerOption> rest = players.Skip(mine.Count).ToList();
+
+		if (mine.Count > 0)
+		{
+			rows.Add(new ListRow(Header: $"{ownTag} · A tot Z", Count: mine.Count));
+			rows.AddRange(mine.Select(x => new ListRow(Player: x)));
+		}
+
+		if (rest.Count > 0)
+		{
+			rows.Add(new ListRow(Header: "Overige spelers · A tot Z", Count: rest.Count, Sep: mine.Count > 0));
+			rows.AddRange(rest.Select(x => new ListRow(Player: x)));
+		}
+
+		return rows;
+	}
+
+	/// <summary>The rows of a dropdown, virtualized: a real log holds a thousand opponent clans and many thousand players, and that many buttons at once would freeze the window.</summary>
+	private RenderFragment OptionList(List<ListRow> rows, string term, string none) => @<text>
+		@if (rows.Count == 0)
+		{
+			<p class="fld-none">@none</p>
+		}
+		else
+		{
+			<Virtualize Items="rows" ItemSize="38" Context="row">
+				@if (row.Header != null)
+				{
+					<div class="opt-h@(row.Sep ? " sep" : string.Empty)"><span>@row.Header</span>@if (row.Count != null)
+					{
+						<span class="wot-num">@row.Count</span>
+					}</div>
+				}
+				else if (row.Clan != null)
+				{
+					@ClanRow(row.Clan, term)
+				}
+				else
+				{
+					@PlayerRow(row.Player!, term)
+				}
+			</Virtualize>
+		}
+	</text>;
+
+	internal record ClanOption(string Tag, int Battles);
+
+	internal record PlayerOption(string Name, string? Clan, int Battles, DateTime Latest);
+
+	internal static bool SameTag(string? tag, string? other) => !string.IsNullOrWhiteSpace(tag) && string.Equals(tag, other, StringComparison.OrdinalIgnoreCase);
+
+	private static bool Contains(string text, string term) => text.Contains(term, StringComparison.InvariantCultureIgnoreCase);
+
+	private static string BattleCount(int battles) => $"{battles} {(battles == 1 ? "gevecht" : "gevechten")}";
+
+	/// <summary>Every clan tag in the battles with the number of battles it is in (either team), the most battles first. A normal battle's "?" is no clan.</summary>
+	internal static List<ClanOption> Clans(IEnumerable<BattleReport> reports) => reports
+		.SelectMany(x => new[] { x.Team1.Abbreviation, x.Team2.Abbreviation }.OfType<string>().Where(t => t.Length > 0 && t != "?").Distinct(StringComparer.OrdinalIgnoreCase))
+		.GroupBy(x => x, StringComparer.OrdinalIgnoreCase)
+		.Select(x => new ClanOption(x.Key, x.Count()))
+		.OrderByDescending(x => x.Battles)
+		.ThenBy(x => x.Tag, StringComparer.InvariantCultureIgnoreCase)
+		.ToList();
+
+	/// <summary>The players that contain the typed term, A to Z. With a clan: only the players of that team, each with the number of battles. Without: everybody, the players of your own clan first, each with the clan tag of their latest battle.</summary>
+	internal static List<PlayerOption> Players(IEnumerable<BattleReport> reports, string? clan, string? ownTag, string term)
+	{
+		Dictionary<string, PlayerOption> players = new(StringComparer.OrdinalIgnoreCase);
+
+		foreach (BattleReport report in reports)
+		{
+			IEnumerable<Team> teams = new[] { report.Team1, report.Team2 }.Where(x => clan == null || SameTag(x.Abbreviation, clan));
+
+			foreach (Player player in teams.SelectMany(x => x.Players).Where(x => !string.IsNullOrEmpty(x.Name)).DistinctBy(x => x.Name, StringComparer.OrdinalIgnoreCase))
+			{
+				PlayerOption known = players.GetValueOrDefault(player.Name!) ?? new PlayerOption(player.Name!, null, 0, DateTime.MinValue);
+				bool newest = report.MatchStart >= known.Latest;
+				players[player.Name!] = known with
+				{
+					Clan = newest ? (clan ?? (string.IsNullOrEmpty(player.Clan) ? null : player.Clan)) : known.Clan,
+					Battles = known.Battles + 1,
+					Latest = newest ? report.MatchStart : known.Latest
+				};
+			}
+		}
+
+		return players.Values
+			.Where(x => Contains(x.Name, term))
+			.OrderBy(x => clan == null && SameTag(x.Clan, ownTag) ? 0 : 1)
+			.ThenBy(x => x.Name, StringComparer.InvariantCultureIgnoreCase)
+			.ToList();
+	}
+
+	private RenderFragment ClanRow(ClanOption clan, string term) => @<button type="button" class="opt@(SameTag(clan.Tag, Clan) ? " sel" : string.Empty)" role="option" aria-selected="@(SameTag(clan.Tag, Clan) ? "true" : "false")" @onclick="() => ClanChanged.InvokeAsync(clan.Tag)">
+		<span class="t">[@FilterBox.Highlighted(clan.Tag, term)]</span>
+		@if (SameTag(clan.Tag, Clan))
+		{
+			<svg class="opt-check" viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Filled.Check)</svg>
+		}
+		<span class="n wot-num">@BattleCount(clan.Battles)</span>
+	</button>;
+
+	private RenderFragment PlayerRow(PlayerOption player, string term) => @<button type="button" class="opt@(string.Equals(player.Name, Player, StringComparison.OrdinalIgnoreCase) ? " sel" : string.Empty)" role="option" aria-selected="@(string.Equals(player.Name, Player, StringComparison.OrdinalIgnoreCase) ? "true" : "false")" @onclick="() => PickPlayer(player)">
+		@if (Clan == null)
+		{
+			<span class="t">[@(player.Clan ?? "?")]</span>
+		}
+		<span>@FilterBox.Highlighted(player.Name, term)</span>
+		@if (Clan != null)
+		{
+			<span class="n wot-num">@BattleCount(player.Battles)</span>
+		}
+	</button>;
+
+	private Task PickPlayer(PlayerOption player)
+	{
+		_playerClan = player.Clan;
+		return PlayerChanged.InvokeAsync(player.Name);
 	}
 
 	private async Task OpenUndefinedNamesDialog()
@@ -182,5 +307,43 @@
 				FullWidth = true,
 				MaxWidth = MaxWidth.Small
 			});
+	}
+
+	[Conditional("DEBUG")]
+	public static void SelfCheck()
+	{
+		DateTime day = new(2026, 3, 1, 20, 0, 0);
+		BattleReport Battle(int hours, string own, string other, string[] ownPlayers, string[] otherPlayers)
+		{
+			BattleReport report = new() { MatchStart = day.AddHours(hours) };
+			report.Team1 = new Team { Number = 1, Abbreviation = own };
+			report.Team2 = new Team { Number = 2, Abbreviation = other };
+			report.Team1.Players = ownPlayers.Select(x => new Player(report.Team1) { Name = x, Clan = own }).ToList();
+			report.Team2.Players = otherPlayers.Select(x => new Player(report.Team2) { Name = x, Clan = other }).ToList();
+			return report;
+		}
+
+		List<BattleReport> reports =
+		[
+			Battle(1, "NED-1", "DUTCH", ["Tankgeneraal", "Klompenklopper"], ["KlompKees", "KaasKoning"]),
+			Battle(2, "NED-1", "DUTCH", ["Tankgeneraal"], ["KlompKees"]),
+			Battle(3, "NED-1", "DUTCH", ["Dijkdoorbraak"], ["KlompKees"]),
+			Battle(4, "NED-1", "RHINE", ["Tankgeneraal"], ["Kapitein_Kees"]),
+			Battle(5, "?", "?", ["Zonder"], ["Clan"])
+		];
+
+		List<ClanOption> clans = Clans(reports);
+		Debug.Assert(clans.Select(x => x.Tag).SequenceEqual(["NED-1", "DUTCH", "RHINE"]) && clans.Select(x => x.Battles).SequenceEqual([4, 3, 1]), "clans: most battles first, a normal battle is no clan");
+
+		// No clan, typed "k": NED-1 players first, A to Z, then the others A to Z.
+		Debug.Assert(Players(reports, null, "ned-1", "k").Select(x => x.Name).SequenceEqual(["Dijkdoorbraak", "Klompenklopper", "Tankgeneraal", "KaasKoning", "Kapitein_Kees", "KlompKees"]), "players without a clan: own clan first, then the others, A to Z");
+		Debug.Assert(Players(reports, null, "NED-1", "").Single(x => x.Name == "KlompKees").Clan == "DUTCH", "a player carries the clan of the latest battle");
+
+		// Every player of every battle is in the list without a clan: 8 distinct names, whatever the rows.
+		Debug.Assert(Players(reports, null, "NED-1", string.Empty).Count == 8, "players without a clan: every player seen in the battles");
+
+		// A clan: only its players, with their battle count.
+		List<PlayerOption> dutch = Players(reports, "DUTCH", "NED-1", "");
+		Debug.Assert(dutch.Select(x => x.Name).SequenceEqual(["KaasKoning", "KlompKees"]) && dutch.Select(x => x.Battles).SequenceEqual([1, 3]), "players of a clan: only that clan's, with battle counts");
 	}
 }
