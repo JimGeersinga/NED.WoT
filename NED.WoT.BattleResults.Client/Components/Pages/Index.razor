@@ -298,8 +298,8 @@
 			(null, string player) => $" met speler {player}",
 			(string clan, string player) => $" met clan {clan} en speler {player}"
 		};
-		string maps = _maps.Count == 0 ? string.Empty : $" op {string.Join(", ", _maps.Order())}";
-		string results = _results.Count == 0 ? string.Empty : $" met resultaat {string.Join(", ", _results.Order().Select(ResultChip.Word))}";
+		string maps = _maps.Count == 0 ? string.Empty : $" op {BattleFilters.MapSummary(_maps)}";
+		string results = _results.Count == 0 ? string.Empty : $" met resultaat {string.Join(", ", ResultChip.Order.Where(_results.Contains).Select(ResultChip.Word))}";
 		string type = _clanOnly ? " in clangevechten" : string.Empty;
 
 		return $"Er is geen gevecht{search}{maps}{results}{type}. Probeer andere filters of wis ze.";

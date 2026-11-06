@@ -181,7 +181,7 @@ public sealed class BattleFilters
     /// <summary>The Map list for the typed term: every map in the battles with its number of battles, A to Z. A ticked map without a battle in <paramref name="battles"/> stays listed (with 0) so it can be unticked. Battles without a map name are not listed.</summary>
     public static List<Option> MapOptions(IEnumerable<BattleReport> battles, IEnumerable<string> ticked, string? term)
     {
-        Dictionary<string, int> counts = new(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, int> counts = new(StringComparer.Ordinal);
         foreach (string map in battles.Select(x => x.MapName).OfType<string>())
         {
             counts[map] = counts.GetValueOrDefault(map) + 1;

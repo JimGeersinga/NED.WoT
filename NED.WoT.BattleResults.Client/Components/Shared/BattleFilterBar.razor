@@ -57,7 +57,6 @@
 	@* Map: a MudMenu whose popover holds a search box, a checkbox per map and the Wissen and Alles buttons; the field is its activator. *@
 	<MudMenu @bind-Open="_mapOpen" Class="wot-pick" PopoverClass="wot-filter-pop wot-map-pop" RelativeWidth="DropdownWidth.Adaptive" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft">
 		<ActivatorContent>
-			@{ _menu = context; }
 			<div class="wot-pick-field" @onclick="() => ToggleMap(context)">
 				<MudTextField T="string" ReadOnly="true" Text="@BattleFilters.MapSummary(Maps)" Placeholder="Alle maps" aria-label="Map" aria-haspopup="listbox"
 							  Variant="Variant.Filled" Margin="Margin.Dense" Class="@("wot-filter" + (Maps.Count > 0 ? " filled" : string.Empty))"
@@ -104,10 +103,10 @@
 	</MudMenu>
 
 	@* Resultaat: a multi-select; nothing ticked shows every result. *@
-	<MudSelect T="Result" MultiSelection="true" CheckBoxColor="Color.Primary" SelectedValues="Results" SelectedValuesChanged="PickResults" ToStringFunc="ResultChip.Word" MultiSelectionTextFunc="ResultText"
+	<MudSelect T="Result" MultiSelection="true" SelectedValues="Results" SelectedValuesChanged="PickResults" ToStringFunc="ResultChip.Word" MultiSelectionTextFunc="ResultText"
 			   Placeholder="Alle resultaten" aria-label="Resultaat" Variant="Variant.Filled" Margin="Margin.Dense" Class="@("wot-filter wot-result" + (Results.Count > 0 ? " filled" : string.Empty))" PopoverClass="wot-filter-pop"
 			   Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.EmojiEvents" Clearable="@(Results.Count > 0)" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft">
-		@foreach (var result in ResultOrder)
+		@foreach (var result in ResultChip.Order)
 		{
 			<MudSelectItem T="Result" Value="result">
 				<span class="wot-opt"><ResultChip Result="result" /><span class="wot-opt-n wot-num">@Filtered.Count(x => x.Result == result)</span></span>
@@ -203,11 +202,8 @@
 	private int _clanCount;
 	private int _playerCount;
 	private bool _mapOpen;
-	private MenuContext? _menu;
 	private string? _mapTerm;
 
-	/// <summary>The order of the Resultaat list (and of the old chips): won, drawn, lost, unknown.</summary>
-	private static readonly Result[] ResultOrder = [Result.Win, Result.Draw, Result.Lose, Result.Unknown];
 
 	protected override void OnParametersSet()
 	{
@@ -278,11 +274,11 @@
 	}
 
 	/// <summary>Escape in the search box closes the list (MudMenu only hears it on the list itself).</summary>
-	private async Task MapKey(KeyboardEventArgs e)
+	private void MapKey(KeyboardEventArgs e)
 	{
-		if (e.Key == "Escape" && _menu != null)
+		if (e.Key == "Escape")
 		{
-			await _menu.CloseAsync();
+			_mapOpen = false;
 		}
 	}
 
@@ -308,5 +304,10 @@
 
 	private Task PickResults(IEnumerable<Result>? results) => ResultsChanged.InvokeAsync([.. results ?? []]);
 
-	private static string ResultText(IReadOnlyList<string> words) => words.Count == 0 ? string.Empty : words.Count == 1 ? words[0] : $"{words[0]} +{words.Count - 1}";
+	/// <summary>The box text: the first ticked result in the order of the list and "+n" for the rest.</summary>
+	private static string ResultText(IReadOnlyList<string> words)
+	{
+		List<string> sorted = [.. words.OrderBy(w => Array.FindIndex(ResultChip.Order, r => ResultChip.Word(r) == w))];
+		return sorted.Count == 0 ? string.Empty : sorted.Count == 1 ? sorted[0] : $"{sorted[0]} +{sorted.Count - 1}";
+	}
 }
