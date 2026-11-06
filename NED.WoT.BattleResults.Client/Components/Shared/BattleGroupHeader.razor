@@ -1,0 +1,40 @@
+@* The day header of the battle table: the content of the MudTable's GroupHeaderTemplate. It renders cells, so it sits inside the group header row. *@
+<MudTh colspan="5" scope="rowgroup">
+	<div class="gl">
+		<MudText Typo="Typo.h6" HtmlTag="h2">@Label</MudText>
+		<MudText Typo="Typo.caption" Class="mud-text-secondary wot-num">@Date.ToString("dd-MM-yyyy")</MudText>
+		<BattleTotals Reports="Reports" ShowRecord="!ShowBattleStats" />
+	</div>
+</MudTh>
+@if (ShowBattleStats && Stats != null)
+{
+	@Stats(Reports)
+}
+<MudTd></MudTd>
+<MudTd Class="p4">
+	<button type="button" class="gl-ibtn out" aria-label="Kopieer opstellingen van deze dag" title="Kopieer opstellingen van deze dag" @onclick="() => OnCopy.InvokeAsync(Reports)">
+		<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Filled.ContentCopy)</svg>
+	</button>
+</MudTd>
+
+@code {
+	[Parameter, EditorRequired]
+	public required string Label { get; set; }
+
+	[Parameter, EditorRequired]
+	public DateTime Date { get; set; }
+
+	/// <summary>All the battles of the day that pass the search and the match type, newest first; the result chips do not change the day's counts.</summary>
+	[Parameter, EditorRequired]
+	public required IReadOnlyList<BattleReport> Reports { get; set; }
+
+	[Parameter]
+	public bool ShowBattleStats { get; set; }
+
+	/// <summary>The stat columns of stats mode for a set of battles (Index owns them: the footer uses them too).</summary>
+	[Parameter]
+	public RenderFragment<IEnumerable<BattleReport>>? Stats { get; set; }
+
+	[Parameter]
+	public EventCallback<IReadOnlyList<BattleReport>> OnCopy { get; set; }
+}

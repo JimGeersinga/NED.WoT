@@ -12,497 +12,115 @@
 @inject IJSRuntime JSRuntime;
 @inject IDialogService DialogService;
 
-<MudToolBar Style="background-color:var(--mud-palette-surface)">
-	<MudGrid Justify="Justify.SpaceBetween">
-		<MudItem sm="4" Class="d-flex align-center">
-			<MudText Typo="Typo.subtitle1">Gevechten sinds @SettingService.Settings.LoadBattlesSince?.ToString("dd/MM/yyyy")</MudText>
+@{
+	// One pass per render: the battles that pass the search and the match type (the totals follow these), then their days.
+	var filtered = _reports.Where(TableFilter).ToList();
+	var days = BuildDays(filtered);
+	// The table shows the rows under the result chips (a day without one drops out by itself); the day header and the footer count the whole day.
+	var dayByLabel = days.ToDictionary(d => d.Label);
+	var visible = filtered.Where(x => _resultVisibility[x.Result]).OrderByDescending(x => x.MatchStart).ToList();
+}
 
-			<MudButton Size="Size.Small" Class="ml-4" OnClick="OpenClanMembersDialog" Style="min-width: unset;" title="Clan leden">
-				<MudImage Src="images/crew.png" Height="30" />
-			</MudButton>
+<div class="gl-page">
+	<BattleFilterBar Reports="_reports"
+					 Filtered="filtered"
+					 @bind-Search="_search"
+					 @bind-MatchType="_matchType"
+					 ResultVisibility="_resultVisibility"
+					 OnToggleResult="@(r => ToggleResultVisibilty(r))"
+					 CanToggleBattleStats="_canToggleBattleStats"
+					 @bind-ShowBattleStats="_showBattleStats"
+					 @bind-DetailedInfoForPlayer="_detailedInfoForPlayer" />
 
-			@if (TankNameResolver.UndefinedTankNames.Any() || MapNameResolver.UndefinedMapNames.Any())
-			{
-				<MudButton Size="Size.Small" Class="ml-4" OnClick="OpenUndefinedNamesDialog" Style="min-width: unset;" title="Onbekende mappen en tanks">
-					<MudImage Src="images/CrewSkill_Commander_sixthSense.png" Height="30" />
-				</MudButton>
-			}
-		</MudItem>
-		<MudItem sm="4" Class="d-flex align-center">
-			<MudAutocomplete T="SearchValue"
-							 @bind-Value="_search"
-							 SearchFunc="SearchAllAsync"
-							 ToStringFunc="@(e=> e == null ? null : $"{e.Value} ({e.Type})")"
-							 DebounceInterval="500"
-							 Placeholder="Zoek op spelernaam of clan tag"
-							 Adornment="Adornment.Start"
-							 AdornmentIcon="@Icons.Material.Filled.Search"
-							 IconSize="Size.Medium"
-							 Clearable="true"
-							 Class="mt-0">
-				<ItemTemplate Context="e">
-					<div class="d-flex justify-space-between align-center">
-						<MudText Typo="Typo.inherit">@e.Value</MudText>
-						<MudText Typo="Typo.caption">@e.Type</MudText>
-					</div>
-				</ItemTemplate>
-			</MudAutocomplete>
-		</MudItem>
-		<MudItem sm="4" Class="d-flex align-center justify-end gap-3">
-
-			@if (_canToggleBattleStats && _showBattleStats)
-			{
-				<div style="width: auto">
-					<MudAutocomplete @bind-Value="_detailedInfoForPlayer"
-									 SearchFunc="SearchPlayerAsync"
-									 DebounceInterval="500"
-									 Placeholder="Filter speler stats"
-									 Adornment="Adornment.Start"
-									 AdornmentIcon="@Icons.Material.Filled.AutoGraph"
-									 AdornmentColor="Color.Primary"
-									 IconSize="Size.Medium"
-									 Dense="true"
-									 Margin="Margin.Dense"
-									 Clearable="true"
-									 FullWidth="false"
-									 Variant="Variant.Outlined"
-									 OnAdornmentClick="() => _showBattleStats = false"
-									 Class="mt-1"></MudAutocomplete>
-				</div>
-			}
-			else if (_canToggleBattleStats)
-			{
-				<MudIconButton Icon="@Icons.Material.Filled.AutoGraph" Color="Color.Default" OnClick="() => _showBattleStats = true" />
-			}
-			<MudButtonGroup Color="Color.Primary" Variant="Variant.Filled">
-				<MudButton>@_matchType.ToString()</MudButton>
-				<MudMenu Icon="@Icons.Material.Filled.ArrowDropDown" Style="align-self: auto;">
-					@foreach (var matchType in Enum.GetValues<MatchType>())
-					{
-						<MudMenuItem OnClick="() => _matchType = matchType">@matchType.ToString()</MudMenuItem>
-					}
-				</MudMenu>
-			</MudButtonGroup>
-		</MudItem>
-	</MudGrid>
-</MudToolBar>
-
-<MudTable Items="@_reports"
-		  FixedHeader="true"
-		  FixedFooter="true"
-		  Dense="true"
-		  Hover="true"
-		  Virtualize="true"
-		  Bordered="true"
-		  Loading="@_loading"
-		  GroupHeaderStyle="background-color:var(--mud-palette-background-gray)"
-		  GroupHeaderClass="group-info"
-		  RowClassFunc="@SelectedRowClass"
-		  Filter="new Func<BattleReport,bool>(TableFilter)"
-		  Height="calc(100vh - 128px);"
-		  Class="report-table"
-		  RowClass="@(SettingService.Settings.OnlyHighlistOwnMatches ? "highlight-own-result match-info" : "match-info")"
-		  GroupBy="@_groupDefinition"
-		  AllowUnsorted="false">
-	<ColGroup>
-		<col style="width: 50px" />
-		<col style="width: 50px" />
-		<col style="width: 150px;" />
-		<col style="width: 100px;" />
-		<col style="width: 200px;" />
-		<col />
-		@if (_showBattleStats)
-		{
-			<col style="width: 0px;" />
-			<col style="width: 0px;" />
-			<col style="width: 0px;" />
-			<col style="width: 0px;" />
-		}
-		<col style="width: 50px" />
-	</ColGroup>
-	<HeaderContent>
-		<MudTh Style="text-align:center; cursor: pointer;" @onclick="CollapseAllBattleReports"><MudIconButton Icon="@Icons.Material.Filled.KeyboardArrowUp" OnClick="CollapseAllBattleReports" Variant="Variant.Text" Size="Size.Small" /></MudTh>
-		<MudTh Style="text-align: center">#</MudTh>
-		<MudTh Style="text-align: center"><MudTableSortLabel SortBy="new Func<BattleReport, object>(x => x.MatchTimeDisplay)">Datum</MudTableSortLabel></MudTh>
-		<MudTh><MudTableSortLabel SortBy="new Func<BattleReport, object?>(x => x.MatchDuration)">Duratie</MudTableSortLabel></MudTh>
-		<MudTh><MudTableSortLabel SortBy="new Func<BattleReport, object?>(x => x.MapName)">Map</MudTableSortLabel></MudTh>
-		<MudTh>VS</MudTh>
-		@if (_showBattleStats)
-		{
-			<MudTh Style="text-align: center">Geschoten</MudTh>
-			<MudTh Style="text-align: center">Geraakt</MudTh>
-			<MudTh Style="text-align: center">Gepenetreerd</MudTh>
-			<MudTh Style="text-align: center">Geblokt</MudTh>
-		}
-		<MudTh Style="text-align: center">#</MudTh>
-	</HeaderContent>
-	<GroupHeaderTemplate>
-		<MudTh Class="mud-table-cell-custom-group " colspan="6">
-			@{
-				var wins = context.Items.Count(x => x.Result is Result.Win);
-				var loses = context.Items.Count(x => x.Result is Result.Lose);
-				var draws = context.Items.Count(x => x.Result is Result.Draw);
-				var unknowns = context.Items.Count(x => x.Result is Result.Unknown);
-
-				var totalBattles = wins + loses + draws;
-				var winPercentage = totalBattles > 0 ? (100m * wins / totalBattles) : 0m;
-			}
-			<div class="d-flex justify-space-between text-nowrap flex-nowrap">
-				<MudText Typo="Typo.subtitle1" Class="d-inline"><b>@context.Key</b>, <b>@context.Items.Count()</b> gevechten <span class="ml-2 @winPercentage.GetWinRatioColor()">@winPercentage.ToString("0.00")%</span> </MudText>
-				<div>
-					<div class="d-inline mr-4">
-						<MudButton Size="Size.Small"
-								   Class="d-inline"
-								   Variant="(_resultVisibility[Result.Win] ? Variant.Filled : Variant.Text)"
-								   DropShadow="false"
-								   Style="text-transform:none"
-								   OnClick="() => ToggleResultVisibilty(Result.Win)">
-							<b class="@Result.Win.ToString()">@wins</b> Gewonnen
-						</MudButton>
-						<span class="mx-2 grey-text text-darken-1">|</span>
-						<MudButton Size="Size.Small"
-								   Class="d-inline"
-								   Variant="(_resultVisibility[Result.Draw] ? Variant.Filled : Variant.Text)"
-								   DropShadow="false"
-								   Style="text-transform:none"
-								   OnClick="() => ToggleResultVisibilty(Result.Draw)">
-							<b class="@Result.Draw.ToString()">@draws</b> Gelijkspel
-						</MudButton>
-						<span class="mx-2 grey-text text-darken-1">|</span>
-						<MudButton Size="Size.Small"
-								   Class="d-inline"
-								   Variant="(_resultVisibility[Result.Lose] ? Variant.Filled : Variant.Text)"
-								   DropShadow="false"
-								   Style="text-transform:none"
-								   OnClick="() => ToggleResultVisibilty(Result.Lose)">
-							<b class="@Result.Lose.ToString()">@loses</b> Verloren
-						</MudButton>
-						<span class="mx-2 grey-text text-darken-1">|</span>
-						<MudButton Size="Size.Small"
-								   Class="d-inline"
-								   Variant="(_resultVisibility[Result.Unknown] ? Variant.Filled : Variant.Text)"
-								   DropShadow="false"
-								   Style="text-transform:none"
-								   OnClick="() => ToggleResultVisibilty(Result.Unknown)">
-							<b>@unknowns</b> Onbekend
-						</MudButton>
-					</div>
-
-					<MudIconButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small" Icon="@Icons.Material.Filled.ContentCopy" OnClick="(e) => CopyResultAsync(context.Items)" Style="float:right;" Disabled="(context.Items.Count() == 0)" />
-				</div>
-			</div>
-		</MudTh>
-		@if (_showBattleStats)
-		{
-			var players = context.Items.SelectMany(x => x.OwnTeam?.Players ?? []).ToList();
-
-			if (!string.IsNullOrEmpty(_detailedInfoForPlayer))
-			{
-				players = players.Where(x => x.Name?.Equals(_detailedInfoForPlayer, StringComparison.OrdinalIgnoreCase) ?? false).ToList();
-			}
-
-			var totalLifeTime = players.Sum(x => x.LifeTime);
-			var totalShots = players.Sum(x => x.Shots);
-			var totalHits = players.Sum(x => x.DirectHits);
-			var totalPens = players.Sum(x => x.Piercings);
-			var totalShotsReceived = players.Sum(x => x.ShotsReceived);
-			var totalBlocked = players.Sum(x => x.ShotsBlocked);
-
-			var shotRatio = totalShots == 0 ? 0 : totalShots.GetValueOrDefault() / (totalLifeTime.GetValueOrDefault() / 60m);
-			var hitRatio = totalShots == 0 ? 0 : (int)(100m / totalShots.GetValueOrDefault() * totalHits.GetValueOrDefault());
-			var penRatio = totalHits == 0 ? 0 : (int)(100m / totalHits.GetValueOrDefault() * totalPens.GetValueOrDefault());
-			var blockRatio = totalShotsReceived == 0 ? 0 : (int)(100m / totalShotsReceived.GetValueOrDefault() * totalBlocked.GetValueOrDefault());
-
-			<MudTd Class="text-right">
-				<div class="d-flex justify-space-between gap-1 text-nowrap">
-					@if (totalShots.HasValue)
-					{
-						var roundedRatio = Math.Round(shotRatio);
-
-						<span>@totalShots</span>
-						<span style="color: cornflowerblue">@(shotRatio < roundedRatio ? " < " : " > ") @roundedRatio p/m</span>
-					}
-				</div>
-			</MudTd>
-			<MudTh>
-				<div class="d-flex justify-space-between gap-1 text-nowrap">
-					<span>@totalHits</span>
-					<span style="color: @hitRatio.GetHitRatioColor() !important">@hitRatio%</span>
-				</div>
-			</MudTh>
-			<MudTh>
-				<div class="d-flex justify-space-between gap-1 text-nowrap">
-					<span>@totalPens</span>
-					<span style="color: @penRatio.GetPenRatioColor() !important">@penRatio%</span>
-				</div>
-			</MudTh>
-			<MudTh>
-				<div class="gap-1 text-nowrap" style="display: grid; grid-template-columns: 1fr auto 1fr 40px">
-					<span class="text-right">@totalBlocked</span>
-					<span class="mx-2 grey-text text-darken-1">/</span>
-					<span>@totalShotsReceived</span>
-					<span class="text-right" style="color: @blockRatio.GetBlockedRatioColor() !important">@blockRatio%</span>
-				</div>
-			</MudTh>
-		}
-		<MudTh />
-	</GroupHeaderTemplate>
-	<RowTemplate>
-		@if (!_resultVisibility[context.Result])
-		{
-			// Hide the element
-		}
-		else if (_loading)
-		{
-			<MudTd colspan="8">
-				<MudSkeleton Animation="Animation.Wave" />
-			</MudTd>
-		}
-		else if (context.Error != null)
-		{
-			<MudTd colspan="8"><MudAlert Severity="Severity.Warning">@context.Error</MudAlert></MudTd>
-		}
-		else
-		{
-			var group = _filteredReports.GroupBy(x => x.Group).First(x => x.Any(i => i.FileName == context.FileName)).OrderBy(x => x.MatchStart).ToList();
-			var index = group.FindIndex(x => x.FileName == context.FileName) + 1;
-
-			Team? ownTeam = context.OwnTeam;
-			var result = ownTeam?.ResultDisplay ?? "Onbekend";
-
-			var id = $"Timestamp_{context.MatchStart.Ticks + context.MatchDuration.GetValueOrDefault()}_anchor";
-
-			<MudTd Class="relative" @onclick="() => ToggleShowDetailsAsync(context)" Style="text-align:center;cursor: pointer">
-				@if (context.ShowDetails)
-				{
-					<MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.KeyboardArrowDown" Variant="Variant.Text" @onclick="() => ToggleShowDetailsAsync(context)" />
-				}
-				else
-				{
-					<MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.KeyboardArrowRight" Variant="Variant.Text" @onclick="() => ToggleShowDetailsAsync(context)" />
-				}
-				<a id="@id" style="position: absolute; top:-80px;" />
-			</MudTd>
-			<MudTd Style="text-align:center;">@index</MudTd>
-			<MudTd Style="text-align:center;" DataLabel="Datum" Class="text-nowrap">@context.MatchTimeDisplay</MudTd>
-			<MudTd DataLabel="Duratie" Class="text-nowrap">@context.MatchDurationDisplay</MudTd>
-			<MudTd DataLabel="Map" Class="text-nowrap">@context.MapName @ownTeam?.Base</MudTd>
-			<MudTd DataLabel="VS" Class="versus-column">
-				<div class="d-flex justify-space-between text-nowrap gap-2 mud-width-full">
-					<div class="versus-info">
-						<span class="team-name text-right @context.Team1.Result.ToString() @(ownTeam?.Number == 1 ? "highlight" : "")">@context.Team1.Abbreviation</span>
-						<span class="death-count text-right">@context.Team2.Players.Count(x => x.DeathReason.HasValue && x.DeathReason != -1)</span>
-						<span class="versus-text">
-							vs
-						</span>
-						<span class="death-count text-left">@context.Team1.Players.Count(x => x.DeathReason.HasValue && x.DeathReason != -1)</span>
-						<span class="team-name text-left @context.Team2.Result.ToString() @(ownTeam?.Number == 2 ? "highlight" : "")">@context.Team2.Abbreviation</span>
-					</div>
-					<div class="align-center d-flex gap-2">
-						<span class="@ownTeam?.Result.ToString()">@result</span>
-						<MudIconButton Variant="Variant.Outlined"
-									   Color="Color.Default"
-									   Size="Size.Small"
-									   Icon="@Icons.Material.Filled.ContentCopy"
-									   OnClick="(e) => CopyResultAsync(context, ownTeam)"
-									   Disabled="(ownTeam == null)" />
-					</div>
-				</div>
-			</MudTd>
-
+	<MudTable T="BattleReport"
+			  Items="visible"
+			  GroupBy="_groupDefinition"
+			  Virtualize="true"
+			  ItemSize="48"
+			  FixedHeader="true"
+			  FixedFooter="true"
+			  Height="100%"
+			  Hover="true"
+			  Elevation="0"
+			  Class="wot-battle-table"
+			  GroupHeaderClass="gl-day"
+			  RowClassFunc="@RowClass"
+			  OnRowClick="@(e => ToggleShowDetailsAsync(e.Item))">
+		@* 5 lead columns, 4 stat columns, 2 tail columns; the colspans in BattleRow, BattleGroupHeader and the footer follow this *@
+		<ColGroup>
+			<col class="c-chev" />
+			<col class="c-num" />
+			<col class="c-time" />
+			<col class="c-map" />
+			<col />
 			@if (_showBattleStats)
 			{
-				var players = ownTeam?.Players ?? [];
-
-				if (!string.IsNullOrEmpty(_detailedInfoForPlayer))
-				{
-					players = players.Where(x => x.Name?.Equals(_detailedInfoForPlayer, StringComparison.OrdinalIgnoreCase) ?? false).ToList();
-				}
-
-				var totalLifeTime = players.Sum(x => x.LifeTime);
-				var totalShots = players.Sum(x => x.Shots);
-				var totalHits = players.Sum(x => x.DirectHits);
-				var totalPens = players.Sum(x => x.Piercings);
-				var totalShotsReceived = players.Sum(x => x.ShotsReceived);
-				var totalBlocked = players.Sum(x => x.ShotsBlocked);
-
-				var shotRatio = totalShots == 0 ? 0 : totalShots.GetValueOrDefault() / (totalLifeTime.GetValueOrDefault() / 60m);
-				var hitRatio = totalShots == 0 ? 0 : (int)(100m / totalShots.GetValueOrDefault() * totalHits.GetValueOrDefault());
-				var penRatio = totalHits == 0 ? 0 : (int)(100m / totalHits.GetValueOrDefault() * totalPens.GetValueOrDefault());
-				var blockRatio = totalShotsReceived == 0 ? 0 : (int)(100m / totalShotsReceived.GetValueOrDefault() * totalBlocked.GetValueOrDefault());
-
-				<MudTd DataLabel="Shots" Class="text-right">
-					<div class="d-flex justify-space-between gap-1 text-nowrap">
-						@if (totalShots.HasValue)
-						{
-							var roundedRatio = Math.Round(shotRatio);
-
-							<span>@totalShots</span>
-							<span style="color: cornflowerblue">@(shotRatio < roundedRatio ? " < " : " > ") @roundedRatio p/m</span>
-						}
-					</div>
-				</MudTd>
-				<MudTd DataLabel="Hits">
-					<div class="d-flex justify-space-between gap-1 text-nowrap">
-						<span>@totalHits</span>
-						<span style="color: @hitRatio.GetHitRatioColor() !important">@hitRatio%</span>
-					</div>
-				</MudTd>
-				<MudTd DataLabel="Pens">
-					<div class="d-flex justify-space-between gap-1 text-nowrap">
-						<span>@totalPens</span>
-						<span style="color: @penRatio.GetPenRatioColor() !important">@penRatio%</span>
-					</div>
-				</MudTd>
-				<MudTd DataLabel="Blocks">
-					<div class="gap-1 text-nowrap" style="display: grid; grid-template-columns: 1fr auto 1fr 40px">
-						<span class="text-right">@totalBlocked</span>
-						<span class="mx-2 grey-text text-darken-1">/</span>
-						<span>@totalShotsReceived</span>
-						<span class="text-right" style="color: @blockRatio.GetBlockedRatioColor() !important">@blockRatio%</span>
-					</div>
-				</MudTd>
+				<col class="c-stat" /><col class="c-stat" /><col class="c-stat" /><col class="c-stat" />
 			}
-			<MudTd DataLabel="#" Style="text-align:center;">@index</MudTd>
-		}
-	</RowTemplate>
-	<ChildRowContent>
-		@if (context.ShowDetails)
-		{
-			string classes = "pa-4 mud-table-cell relative details ";
-			classes += SettingService.Settings.OnlyHighlistOwnMatches ? "highlight-own-result" : string.Empty;
-
-			<MudTr>
-				<MudTd colspan="@(_showBattleStats ? 11 : 7)" class="@classes" data-report="@context.FileName">
-					<Details Report="@context" ShowBattleStats="_showBattleStats" />
-				</MudTd>
-			</MudTr>
-		}
-	</ChildRowContent>
-	<FooterContent>
-		<MudTh colspan="6" Class="mud-background-gray">
-			@{
-				var wins = _filteredReports.Count(x => x.Result is Result.Win);
-				var loses = _filteredReports.Count(x => x.Result is Result.Lose);
-				var draws = _filteredReports.Count(x => x.Result is Result.Draw);
-				var unknowns = _filteredReports.Count(x => x.Result is Result.Unknown);
-
-				var totalBattles = wins + loses + draws;
-				var winPercentage = totalBattles > 0 ? (100m * wins / totalBattles) : 0m;
-			}
-			<div class="d-flex justify-space-between align-center">
-				<MudText Typo="Typo.subtitle1" Class="d-inline text-bold">Totaal <b>@_filteredReports.Count()</b> gevechten  <span class="ml-2 @winPercentage.GetWinRatioColor()">@winPercentage.ToString("0.00")%</span></MudText>
-				@if (_loadingTime != TimeSpan.Zero)
-				{
-					<MudText Typo="Typo.subtitle2"> @_loadingTime.ToString(@"hh\:mm\:ss\.fff")</MudText>
-				}
-
-				<div class="d-inline mr-12">
-					<MudButton Size="Size.Small"
-							   Class="d-inline"
-							   Variant="(_resultVisibility[Result.Win] ? Variant.Filled : Variant.Text)"
-							   DropShadow="false"
-							   Style="text-transform:none"
-							   OnClick="() => ToggleResultVisibilty(Result.Win)">
-						<b class="@Result.Win.ToString()">@wins</b> Gewonnen
-					</MudButton>
-					<span class="mx-2 grey-text text-darken-1">|</span>
-					<MudButton Size="Size.Small"
-							   Class="d-inline"
-							   Variant="(_resultVisibility[Result.Draw] ? Variant.Filled : Variant.Text)"
-							   DropShadow="false"
-							   Style="text-transform:none"
-							   OnClick="() => ToggleResultVisibilty(Result.Draw)">
-						<b class="@Result.Draw.ToString()">@draws</b> Gelijkspel
-					</MudButton>
-					<span class="mx-2 grey-text text-darken-1">|</span>
-					<MudButton Size="Size.Small"
-							   Class="d-inline"
-							   Variant="(_resultVisibility[Result.Lose] ? Variant.Filled : Variant.Text)"
-							   DropShadow="false"
-							   Style="text-transform:none"
-							   OnClick="() => ToggleResultVisibilty(Result.Lose)">
-						<b class="@Result.Lose.ToString()">@loses</b> Verloren
-					</MudButton>
-					<span class="mx-2 grey-text text-darken-1">|</span>
-					<MudButton Size="Size.Small"
-							   Class="d-inline"
-							   Variant="(_resultVisibility[Result.Unknown] ? Variant.Filled : Variant.Text)"
-							   DropShadow="false"
-							   Style="text-transform:none"
-							   OnClick="() => ToggleResultVisibilty(Result.Unknown)">
-						<b>@unknowns</b> Onbekend
-					</MudButton>
-				</div>
-			</div>
-		</MudTh>
-
-		@if (_showBattleStats)
-		{
-			var players = _filteredReports.SelectMany(x => x.OwnTeam?.Players ?? []);
-
-			if (!string.IsNullOrEmpty(_detailedInfoForPlayer))
+			<col class="c-res" />
+			<col class="c-copy" />
+		</ColGroup>
+		<HeaderContent>
+			<MudTh>
+				<button type="button" class="gl-ibtn" aria-label="Alles inklappen" title="Alles inklappen" @onclick="CollapseAllBattleReports">
+					<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Outlined.UnfoldLess)</svg>
+				</button>
+			</MudTh>
+			<MudTh Class="c">#</MudTh>
+			<MudTh><span class="gl-sorted">Tijd · duur<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Filled.ArrowDownward)</svg></span></MudTh>
+			<MudTh Class="mapcol"><div class="mapc"><span>Map</span><span></span></div></MudTh>
+			<MudTh>Team 1 · Team 2</MudTh>
+			@if (_showBattleStats)
 			{
-				players = players.Where(x => x.Name?.Equals(_detailedInfoForPlayer, StringComparison.OrdinalIgnoreCase) ?? false).ToList();
+				<MudTh Class="r">Geschoten</MudTh>
+				<MudTh Class="r">Geraakt</MudTh>
+				<MudTh Class="r">Gepenetreerd</MudTh>
+				<MudTh Class="r">Geblokt</MudTh>
 			}
-
-			var totalLifeTime = players.Sum(x => x.LifeTime);
-			var totalShots = players.Sum(x => x.Shots);
-			var totalHits = players.Sum(x => x.DirectHits);
-			var totalPens = players.Sum(x => x.Piercings);
-			var totalShotsReceived = players.Sum(x => x.ShotsReceived);
-			var totalBlocked = players.Sum(x => x.ShotsBlocked);
-
-			var shotRatio = totalShots == 0 ? 0 : totalShots.GetValueOrDefault() / (totalLifeTime.GetValueOrDefault() / 60m);
-			var hitRatio = totalShots == 0 ? 0 : (int)(100m / totalShots.GetValueOrDefault() * totalHits.GetValueOrDefault());
-			var penRatio = totalHits == 0 ? 0 : (int)(100m / totalHits.GetValueOrDefault() * totalPens.GetValueOrDefault());
-			var blockRatio = totalShotsReceived == 0 ? 0 : (int)(100m / totalShotsReceived.GetValueOrDefault() * totalBlocked.GetValueOrDefault());
-
-			<MudTh Class="text-right mud-background-gray">
-				<div class="d-flex justify-space-between gap-1 text-nowrap">
-					@if (totalShots.HasValue)
-					{
-						var roundedRatio = Math.Round(shotRatio);
-
-						<span>@totalShots</span>
-						<span style="color: cornflowerblue">@(shotRatio < roundedRatio ? " < " : " > ") @roundedRatio p/m</span>
-					}
+			<MudTh Class="res">Resultaat</MudTh>
+			<MudTh aria-label="Kopiëren"></MudTh>
+		</HeaderContent>
+		<GroupHeaderTemplate>
+			@{
+				var day = dayByLabel[(string)context.Key];
+			}
+			<BattleGroupHeader Label="@day.Label"
+							   Date="day.Date"
+							   Reports="day.Items"
+							   ShowBattleStats="_showBattleStats"
+							   Stats="StatCells"
+							   OnCopy="@(reports => CopyResultAsync(reports))" />
+		</GroupHeaderTemplate>
+		<RowTemplate>
+			<BattleRow Report="context"
+					   Number="dayByLabel[context.Group].Number(context)"
+					   ShowBattleStats="_showBattleStats"
+					   Stats="StatCells"
+					   OnCopy="@(report => CopyResultAsync(report, report.OwnTeam))" />
+		</RowTemplate>
+		<ChildRowContent>
+			@if (context.ShowDetails)
+			{
+				<BattleRow Report="context" ShowBattleStats="_showBattleStats" DetailsRow="true" />
+			}
+		</ChildRowContent>
+		<FooterContent>
+			<MudTh colspan="5" scope="row">
+				<div class="gl">
+					<MudText Typo="Typo.h6" HtmlTag="h2">Totaal</MudText>
+					<MudText Typo="Typo.caption" Class="mud-text-secondary wot-num">sinds @SettingService.Settings.LoadBattlesSince?.ToString("dd-MM-yyyy")</MudText>
+					<BattleTotals Reports="filtered" ShowRecord="!_showBattleStats" Suffix="@(_loadingTime == TimeSpan.Zero ? null : $" · geladen in {_loadingTime.TotalSeconds.ToString("0.0", BattleReport.DutchCulture)} s")" />
 				</div>
 			</MudTh>
-
-			<MudTh Class="mud-background-gray">
-				<div class="d-flex justify-space-between gap-1 text-nowrap">
-					@if (totalHits.HasValue)
-					{
-						<span>@totalHits</span>
-						<span style="color: @hitRatio.GetHitRatioColor() !important">@hitRatio%</span>
-					}
-				</div>
-			</MudTh>
-			<MudTh Class="mud-background-gray">
-				<div class="d-flex justify-space-between gap-1 text-nowrap">
-					@if (totalPens.HasValue)
-					{
-						<span>@totalPens</span>
-						<span style="color: @penRatio.GetPenRatioColor() !important">@penRatio%</span>
-					}
-				</div>
-			</MudTh>
-			<MudTh Class="mud-background-gray">
-				<div class="gap-1 text-nowrap" style="display: grid; grid-template-columns: 1fr auto 1fr 40px">
-					@if (totalBlocked.HasValue)
-					{
-						<span class="text-right">@totalBlocked</span>
-						<span class="mx-2 grey-text text-darken-1">/</span>
-						<span>@totalShotsReceived</span>
-						<span class="text-right" style="color: @blockRatio.GetBlockedRatioColor() !important">@blockRatio%</span>
-					}
-				</div>
-			</MudTh>
-		}
-		<MudTh colspan="1" Class="mud-background-gray" />
-	</FooterContent>
-</MudTable>
+			@if (_showBattleStats)
+			{
+				@StatCells(filtered)
+			}
+			<MudTd></MudTd>
+			<MudTd></MudTd>
+		</FooterContent>
+	</MudTable>
+</div>
 
 @code {
 	public enum MatchType
@@ -517,6 +135,8 @@
 	public required Task<AuthenticationState> AuthenticationState { get; set; }
 
 	private bool _loading = true;
+	private bool _loadedOnce;
+	private string? _addedFile;
 	private SearchValue? _search;
 	private MatchType _matchType = MatchType.Clan;
 	private TimeSpan _loadingTime = TimeSpan.Zero;
@@ -536,7 +156,6 @@
 	private IDialogReference? _clanMatchDialog;
 
 	private List<BattleReport> _reports = new List<BattleReport>();
-	private IEnumerable<BattleReport> _filteredReports => _reports.Where(x => TableFilter(x));
 	private TableGroupDefinition<BattleReport> _groupDefinition = new()
 	{
 		Indentation = false,
@@ -544,8 +163,101 @@
 		Selector = (e) => e.Group
 	};
 
+	private string RowClass(BattleReport report, int index) => "gl-row"
+		+ (index % 2 == 1 ? " alt" : string.Empty)
+		+ (report.ShowDetails ? " wot-row-active" : string.Empty)
+		+ (report.FileName == _addedFile ? " gl-new" : string.Empty);
+
+	/// <summary>One day of battles, newest first. The number of a battle in its day is its place counted from the oldest (oldest = 1).</summary>
+	private sealed record Day(string Label, DateTime Date, List<BattleReport> Items)
+	{
+		/// <summary>The place of a battle in its day, counted from the oldest (oldest = 1). The result chips do not change it.</summary>
+		public int Number(BattleReport report) => Items.Count - Items.IndexOf(report);
+	}
+
+	private static List<Day> BuildDays(IEnumerable<BattleReport> reports) => reports
+		.GroupBy(x => x.Group)
+		.Select(x => new Day(x.Key, x.First().GroupDate, x.OrderByDescending(r => r.MatchStart).ToList()))
+		.OrderByDescending(x => x.Items[0].MatchStart)
+		.ToList();
+
+	[Conditional("DEBUG")]
+	private static void SelfCheck()
+	{
+		DateTime today = DateTime.Now.Date;
+		List<BattleReport> reports = new[] { (19, 12), (19, 40), (20, 5), (20, 31), (21, 2) }
+			.Select(x => new BattleReport { MatchStart = today.AddHours(x.Item1).AddMinutes(x.Item2) })
+			.ToList();
+		List<Day> days = BuildDays(reports);
+
+		Debug.Assert(days.Count == 1 && days[0].Label == "Vandaag", "five battles today are one day");
+		Debug.Assert(days[0].Number(reports[0]) == 1, "the 19:12 battle is #1");
+		Debug.Assert(days[0].Number(reports[4]) == 5, "the newest battle is #5");
+		Debug.Assert(days[0].Date == today, "the day header shows today's date");
+		Debug.Assert(new BattleReport { MatchStart = today.AddHours(1) }.GroupDate == today.AddDays(-1), "a battle at 01:00 counts for the previous day");
+
+		BattleTotals.SelfCheck();
+	}
+
+	/// <summary>The stat columns of stats mode for a set of battles: the total of the own team's players (or of the chosen player).</summary>
+	private RenderFragment<IEnumerable<BattleReport>> StatCells => reports => @<text>
+		@{
+			var players = reports.SelectMany(x => x.OwnTeam?.Players ?? []).ToList();
+
+			if (!string.IsNullOrEmpty(_detailedInfoForPlayer))
+			{
+				players = players.Where(x => x.Name?.Equals(_detailedInfoForPlayer, StringComparison.OrdinalIgnoreCase) ?? false).ToList();
+			}
+
+			var totalLifeTime = players.Sum(x => x.LifeTime);
+			var totalShots = players.Sum(x => x.Shots);
+			var totalHits = players.Sum(x => x.DirectHits);
+			var totalPens = players.Sum(x => x.Piercings);
+			var totalShotsReceived = players.Sum(x => x.ShotsReceived);
+			var totalBlocked = players.Sum(x => x.ShotsBlocked);
+
+			var shotRatio = totalShots == 0 ? 0 : totalShots.GetValueOrDefault() / (totalLifeTime.GetValueOrDefault() / 60m);
+			var hitRatio = totalShots == 0 ? 0 : (int)(100m / totalShots.GetValueOrDefault() * totalHits.GetValueOrDefault());
+			var penRatio = totalHits == 0 ? 0 : (int)(100m / totalHits.GetValueOrDefault() * totalPens.GetValueOrDefault());
+			var blockRatio = totalShotsReceived == 0 ? 0 : (int)(100m / totalShotsReceived.GetValueOrDefault() * totalBlocked.GetValueOrDefault());
+		}
+		<MudTd Class="s">
+			<div class="d-flex justify-space-between gap-1 text-nowrap">
+				@if (totalShots.HasValue)
+				{
+					var roundedRatio = Math.Round(shotRatio);
+
+					<span>@totalShots</span>
+					<span style="color: var(--mud-palette-text-secondary)">@(shotRatio < roundedRatio ? " < " : " > ") @roundedRatio p/m</span>
+				}
+			</div>
+		</MudTd>
+		<MudTd Class="s">
+			<div class="d-flex justify-space-between gap-1 text-nowrap">
+				<span>@totalHits</span>
+				<span style="color: @hitRatio.GetHitRatioColor()">@hitRatio%</span>
+			</div>
+		</MudTd>
+		<MudTd Class="s">
+			<div class="d-flex justify-space-between gap-1 text-nowrap">
+				<span>@totalPens</span>
+				<span style="color: @penRatio.GetPenRatioColor()">@penRatio%</span>
+			</div>
+		</MudTd>
+		<MudTd Class="s">
+			<div class="gap-1 text-nowrap" style="display: grid; grid-template-columns: 1fr auto 1fr 40px">
+				<span class="text-right">@totalBlocked</span>
+				<span class="mx-2">/</span>
+				<span>@totalShotsReceived</span>
+				<span class="text-right" style="color: @blockRatio.GetBlockedRatioColor()">@blockRatio%</span>
+			</div>
+		</MudTd>
+	</text>;
+
 	protected override async Task OnInitializedAsync()
 	{
+		SelfCheck();
+
 		long timestamp = 0;
 
 		AuthenticationState authResult = await AuthenticationState;
@@ -555,9 +267,16 @@
 		{
 			await InvokeAsync(async () =>
 			{
+				timestamp = Stopwatch.GetTimestamp();
+
+				// A battle added by the file watcher: keep the table as it is, so the new row can show up in place.
+				if (_loadedOnce)
+				{
+					return;
+				}
+
 				_reports = new List<BattleReport>();
 				_loading = true;
-				timestamp = Stopwatch.GetTimestamp();
 				StateHasChanged();
 
 				while (_loading && SettingService.Settings.UpdateScreeenWhileLoading)
@@ -578,6 +297,10 @@
 				{
 					_loadingTime = Stopwatch.GetElapsedTime(timestamp);
 				}
+				else if (_loadedOnce)
+				{
+					_addedFile = e.Report.FileName;
+				}
 			});
 		};
 
@@ -592,12 +315,29 @@
 
 		BattleResultService.LoadingBattleReportsFinished += async (s, e) =>
 		{
-			await InvokeAsync(() =>
+			await InvokeAsync(async () =>
 			{
 				_reports = BattleResultService.BattleReports.Select(x => x.Value).OrderByDescending(x => x.MatchStart).ToList();
 				_loading = false;
-				_loadingTime = Stopwatch.GetElapsedTime(timestamp);
+				if (!_loadedOnce)
+				{
+					_loadingTime = Stopwatch.GetElapsedTime(timestamp);
+				}
+
+				_loadedOnce = true;
 				StateHasChanged();
+
+				// The row the watcher added stays quietly highlighted for 2 seconds, unless a newer one took over.
+				string? added = _addedFile;
+				if (added != null)
+				{
+					await Task.Delay(2000);
+					if (_addedFile == added)
+					{
+						_addedFile = null;
+						StateHasChanged();
+					}
+				}
 			});
 		};
 
@@ -617,11 +357,6 @@
 		await Task.Run(() => BattleResultService.LoadBattleReports());
 
 		_loading = false;
-	}
-
-	private string SelectedRowClass(BattleReport report, int rowNumber)
-	{
-		return report?.ShowDetails ?? false ? "selected" : string.Empty;
 	}
 
 	private bool TableFilter(BattleReport report)
@@ -649,39 +384,6 @@
 			show = true;
 
 		return show;
-	}
-
-	private Task<IEnumerable<SearchValue>> SearchAllAsync(string value, CancellationToken token)
-	{
-		var playerNames = _reports
-		.SelectMany(x => x.Team1.Players.Concat(x.Team2.Players))
-		.Select(x => new SearchValue(x.Name, "Speler"))
-		.Distinct();
-
-		var teamNames = _reports
-		.SelectMany(x => new[] { x.Team1.Abbreviation, x.Team2.Abbreviation })
-		.Select(x => new SearchValue(x, "Clan"))
-		.Distinct();
-
-		var names = teamNames.Concat(playerNames);
-
-		if (string.IsNullOrEmpty(value))
-		{
-			return Task.FromResult(names);
-		}
-
-		return Task.FromResult(names.Where(x => x?.Value?.Contains(value, StringComparison.InvariantCultureIgnoreCase) ?? false));
-	}
-
-	private Task<IEnumerable<string>> SearchPlayerAsync(string value, CancellationToken token)
-	{
-		var playerNames = _reports.SelectMany(x => x.Team1.Players.Concat(x.Team2.Players)).Select(x => x.Name ?? string.Empty).Distinct();
-		if (string.IsNullOrEmpty(value))
-		{
-			return Task.FromResult(playerNames);
-		}
-
-		return Task.FromResult(playerNames.Where(x => x?.Contains(value, StringComparison.InvariantCultureIgnoreCase) ?? false));
 	}
 
 	private void CollapseAllBattleReports()
@@ -733,26 +435,6 @@
 		string output = string.Join(Environment.NewLine, outputLines);
 
 		await Clipboard.SetTextAsync(output);
-	}
-
-	private async Task OpenUndefinedNamesDialog()
-	{
-		await DialogService.ShowAsync<UndefinedNamesDialog>("Onbekende namen", new DialogOptions
-		{
-			CloseOnEscapeKey = true
-		});
-	}
-
-	private async Task OpenClanMembersDialog()
-	{
-		await DialogService.ShowAsync<ClanMembersDialog>("Clan leden",
-			new DialogParameters<ClanMembersDialog>() { { x => x.Reports, _filteredReports } },
-			new DialogOptions
-			{
-				CloseOnEscapeKey = true,
-				FullWidth = true,
-				MaxWidth = MaxWidth.Small
-			});
 	}
 
 	private async Task OpenClanMatchDialog((string, string) match)

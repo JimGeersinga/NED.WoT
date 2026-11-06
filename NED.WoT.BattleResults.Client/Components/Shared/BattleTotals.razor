@@ -1,0 +1,56 @@
+@using System.Diagnostics
+
+@* The count, win % and record of a set of battles: the day header and the totals footer both use it. *@
+@{
+    var wins = Reports.Count(x => x.Result is Result.Win);
+    var draws = Reports.Count(x => x.Result is Result.Draw);
+    var loses = Reports.Count(x => x.Result is Result.Lose);
+    var unknowns = Reports.Count(x => x.Result is Result.Unknown);
+    var decided = wins + draws + loses;
+    var percentage = WinPercentage(wins, draws, loses);
+}
+
+<span class="gl-chip wot-num">@Reports.Count @(Reports.Count == 1 ? "gevecht" : "gevechten")</span>
+@if (decided > 0)
+{
+    var band = percentage.GetWinRatioColor();
+    <MudChip T="string" Variant="Variant.Text" Size="Size.Small"
+             Color="@(band == nameof(Result.Win) ? Color.Success : band == nameof(Result.Lose) ? Color.Error : Color.Warning)"
+             Icon="@(band == nameof(Result.Win) ? Icons.Material.Filled.ArrowDropUp : band == nameof(Result.Lose) ? Icons.Material.Filled.ArrowDropDown : Icons.Material.Filled.Remove)">
+        @percentage.ToString("0.#", BattleReport.DutchCulture)% gewonnen
+    </MudChip>
+}
+@if (ShowRecord)
+{
+    <MudText Typo="Typo.caption" Class="mud-text-secondary">
+        @wins gewonnen · @draws gelijkspel · @loses verloren@(unknowns > 0 ? $" · {unknowns} onbekend" : string.Empty)@Suffix
+    </MudText>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public required IReadOnlyCollection<BattleReport> Reports { get; set; }
+
+    /// <summary>The record as a caption. Off in stats mode, where the stat columns take the room.</summary>
+    [Parameter]
+    public bool ShowRecord { get; set; } = true;
+
+    /// <summary>Appended to the record caption, for example the load time of the footer.</summary>
+    [Parameter]
+    public string? Suffix { get; set; }
+
+    /// <summary>Wins over the decided battles (won, drawn, lost); an unknown result counts for neither side.</summary>
+    public static decimal WinPercentage(int wins, int draws, int loses)
+    {
+        int decided = wins + draws + loses;
+        return decided > 0 ? 100m * wins / decided : 0m;
+    }
+
+    [Conditional("DEBUG")]
+    public static void SelfCheck()
+    {
+        Debug.Assert(WinPercentage(3, 1, 1) == 60m, "3 won, 1 draw, 1 lost is 60%");
+        Debug.Assert(WinPercentage(0, 0, 0) == 0m, "no decided battles is 0%");
+        Debug.Assert(WinPercentage(1, 0, 2).ToString("0.#", BattleReport.DutchCulture) == "33,3", "33,3 with a decimal comma");
+    }
+}

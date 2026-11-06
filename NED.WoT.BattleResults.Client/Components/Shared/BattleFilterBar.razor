@@ -1,0 +1,186 @@
+@using IndexPage = NED.WoT.BattleResults.Client.Components.Pages.Index
+
+@inject IDialogService DialogService
+
+@* The filter bar over the battle table. It owns the search and the tool buttons; Index owns the state and gets it back through the callbacks. Milestone 03 replaces its contents. *@
+@{
+	var clanMembers = Filtered.SelectMany(x => x.Team1.Players.Concat(x.Team2.Players)).Where(x => x.IsClanMember).Select(x => x.Name).Distinct().Count();
+	var undefinedNames = TankNameResolver.UndefinedTankNames.Count + MapNameResolver.UndefinedMapNames.Count;
+}
+
+<section class="gl-bar" aria-label="Filters">
+	<div class="gl-search">
+		<MudAutocomplete T="IndexPage.SearchValue"
+						 Value="Search"
+						 ValueChanged="SearchChanged"
+						 SearchFunc="SearchAllAsync"
+						 ToStringFunc="@(e=> e == null ? null : $"{e.Value} ({e.Type})")"
+						 DebounceInterval="500"
+						 Placeholder="Zoek op spelernaam of clan tag"
+						 Adornment="Adornment.Start"
+						 AdornmentIcon="@Icons.Material.Filled.Search"
+						 IconSize="Size.Medium"
+						 Variant="Variant.Outlined"
+						 Margin="Margin.Dense"
+						 Clearable="true"
+						 Class="mt-0">
+			<ItemTemplate Context="e">
+				<div class="d-flex justify-space-between align-center">
+					<MudText Typo="Typo.inherit">@e.Value</MudText>
+					<MudText Typo="Typo.caption">@e.Type</MudText>
+				</div>
+			</ItemTemplate>
+		</MudAutocomplete>
+	</div>
+
+	<MudToggleGroup T="IndexPage.MatchType" Value="MatchType" ValueChanged="MatchTypeChanged" Class="wot-view-toggle" aria-label="Soort gevechten">
+		@foreach (var matchType in Enum.GetValues<IndexPage.MatchType>())
+		{
+			<MudToggleItem Value="matchType" Text="@matchType.ToString()" />
+		}
+	</MudToggleGroup>
+
+	<div class="gl-chips" role="group" aria-label="Resultaat">
+		@foreach (var result in ResultVisibility.Keys)
+		{
+			var shown = ResultVisibility[result];
+			<MudChip T="string" Class="wot-filter-chip" Selected="@shown" OnClick="() => OnToggleResult.InvokeAsync(result)" aria-pressed="@(shown ? "true" : "false")">
+				@ResultChip.Word(result)<span class="wot-num ml-1">@Filtered.Count(x => x.Result == result)</span>
+			</MudChip>
+		}
+	</div>
+
+	<div class="gl-tools">
+		@if (CanToggleBattleStats)
+		{
+			if (ShowBattleStats)
+			{
+				<div class="gl-player">
+					<MudAutocomplete Value="DetailedInfoForPlayer"
+									 ValueChanged="DetailedInfoForPlayerChanged"
+									 SearchFunc="SearchPlayerAsync"
+									 DebounceInterval="500"
+									 Placeholder="Filter speler stats"
+									 Adornment="Adornment.Start"
+									 AdornmentIcon="@Icons.Material.Filled.AutoGraph"
+									 IconSize="Size.Medium"
+									 Margin="Margin.Dense"
+									 Variant="Variant.Outlined"
+									 Clearable="true"
+									 Class="mt-0"></MudAutocomplete>
+				</div>
+			}
+
+			<button type="button" class="gl-imgbtn gl-icon-only gl-book" aria-pressed="@(ShowBattleStats ? "true" : "false")" aria-label="Statistieken" title="Uitgebreide statistieken" @onclick="() => ShowBattleStatsChanged.InvokeAsync(!ShowBattleStats)">
+				<img src="@(ShowBattleStats ? "images/book-open.png" : "images/book-closed.png")" alt="" />
+			</button>
+		}
+
+		<button type="button" class="gl-imgbtn gl-icon-only" aria-label="Clanleden, @clanMembers" title="Clanleden" @onclick="OpenClanMembersDialog">
+			<img src="images/crew.png" alt="" /><span class="gl-badge">@clanMembers</span>
+		</button>
+
+		@if (undefinedNames > 0)
+		{
+			<button type="button" class="gl-imgbtn gl-icon-only gl-warn" aria-label="@undefinedNames onbekende mapnamen en tanknamen" title="Onbekende mapnamen en tanknamen" @onclick="OpenUndefinedNamesDialog">
+				<img src="images/CrewSkill_Commander_sixthSense.png" alt="" /><span class="gl-badge">@undefinedNames</span>
+			</button>
+		}
+	</div>
+</section>
+
+@code {
+	/// <summary>All the battles: the search suggestions come from these.</summary>
+	[Parameter, EditorRequired]
+	public required IReadOnlyCollection<BattleReport> Reports { get; set; }
+
+	/// <summary>The battles that pass the search and the match type: the result counts and the clan member count follow these.</summary>
+	[Parameter, EditorRequired]
+	public required IReadOnlyCollection<BattleReport> Filtered { get; set; }
+
+	[Parameter]
+	public IndexPage.SearchValue? Search { get; set; }
+
+	[Parameter]
+	public EventCallback<IndexPage.SearchValue?> SearchChanged { get; set; }
+
+	[Parameter]
+	public IndexPage.MatchType MatchType { get; set; }
+
+	[Parameter]
+	public EventCallback<IndexPage.MatchType> MatchTypeChanged { get; set; }
+
+	[Parameter, EditorRequired]
+	public required IReadOnlyDictionary<Result, bool> ResultVisibility { get; set; }
+
+	[Parameter]
+	public EventCallback<Result> OnToggleResult { get; set; }
+
+	[Parameter]
+	public bool CanToggleBattleStats { get; set; }
+
+	[Parameter]
+	public bool ShowBattleStats { get; set; }
+
+	[Parameter]
+	public EventCallback<bool> ShowBattleStatsChanged { get; set; }
+
+	[Parameter]
+	public string DetailedInfoForPlayer { get; set; } = string.Empty;
+
+	[Parameter]
+	public EventCallback<string> DetailedInfoForPlayerChanged { get; set; }
+
+	private Task<IEnumerable<IndexPage.SearchValue>> SearchAllAsync(string value, CancellationToken token)
+	{
+		var playerNames = Reports
+		.SelectMany(x => x.Team1.Players.Concat(x.Team2.Players))
+		.Select(x => new IndexPage.SearchValue(x.Name, "Speler"))
+		.Distinct();
+
+		var teamNames = Reports
+		.SelectMany(x => new[] { x.Team1.Abbreviation, x.Team2.Abbreviation })
+		.Select(x => new IndexPage.SearchValue(x, "Clan"))
+		.Distinct();
+
+		var names = teamNames.Concat(playerNames);
+
+		if (string.IsNullOrEmpty(value))
+		{
+			return Task.FromResult(names);
+		}
+
+		return Task.FromResult(names.Where(x => x?.Value?.Contains(value, StringComparison.InvariantCultureIgnoreCase) ?? false));
+	}
+
+	private Task<IEnumerable<string>> SearchPlayerAsync(string value, CancellationToken token)
+	{
+		var playerNames = Reports.SelectMany(x => x.Team1.Players.Concat(x.Team2.Players)).Select(x => x.Name ?? string.Empty).Distinct();
+		if (string.IsNullOrEmpty(value))
+		{
+			return Task.FromResult(playerNames);
+		}
+
+		return Task.FromResult(playerNames.Where(x => x?.Contains(value, StringComparison.InvariantCultureIgnoreCase) ?? false));
+	}
+
+	private async Task OpenUndefinedNamesDialog()
+	{
+		await DialogService.ShowAsync<UndefinedNamesDialog>("Onbekende namen", new DialogOptions
+		{
+			CloseOnEscapeKey = true
+		});
+	}
+
+	private async Task OpenClanMembersDialog()
+	{
+		await DialogService.ShowAsync<ClanMembersDialog>("Clan leden",
+			new DialogParameters<ClanMembersDialog>() { { x => x.Reports, Filtered } },
+			new DialogOptions
+			{
+				CloseOnEscapeKey = true,
+				FullWidth = true,
+				MaxWidth = MaxWidth.Small
+			});
+	}
+}
