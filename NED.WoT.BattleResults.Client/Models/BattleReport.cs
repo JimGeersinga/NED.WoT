@@ -10,6 +10,9 @@ public enum Result
 }
 public class BattleReport
 {
+    /// <summary>The one nl-NL culture of the UI: weekday names, decimal comma.</summary>
+    public static readonly System.Globalization.CultureInfo DutchCulture = System.Globalization.CultureInfo.GetCultureInfo("nl-NL");
+
     public string? FileName { get; set; }
     public string? MapName { get; set; }
     public string? ReplayVersion { get; set; }
@@ -29,7 +32,7 @@ public class BattleReport
     {
         get
         {
-            string day = MatchStart.ToString("dddd dd-MM-yyyy", System.Globalization.CultureInfo.GetCultureInfo("nl-NL"));
+            string day = MatchStart.ToString("dddd dd-MM-yyyy", DutchCulture);
             return $"{char.ToUpper(day[0])}{day[1..]}{Environment.NewLine}Start {MatchStart:HH:mm:ss} · einde {MatchEnd?.ToString("HH:mm:ss") ?? "?"}";
         }
     }
@@ -39,26 +42,13 @@ public class BattleReport
     {
         get
         {
-            string duration = string.Empty;
-            if (MatchDuration.HasValue)
+            if (!MatchDuration.HasValue)
             {
-                TimeSpan time = new(MatchDuration.Value * TimeSpan.TicksPerSecond);
-                string minutes = time.Minutes.ToString();
-                if (minutes.Length == 1)
-                {
-                    minutes = "&nbsp;&nbsp;" + minutes;
-                }
-
-                string seconds = time.Seconds.ToString();
-                if (seconds.Length == 1)
-                {
-                    seconds = "&nbsp;&nbsp;" + seconds;
-                }
-
-                return (MarkupString)$"{minutes}m {seconds}s";
+                return (MarkupString)string.Empty;
             }
 
-            return (MarkupString)duration;
+            TimeSpan time = TimeSpan.FromSeconds(MatchDuration.Value);
+            return (MarkupString)$"{time.Minutes}m {time.Seconds}s";
         }
     }
     public Team Team1 { get; set; } = new Team();

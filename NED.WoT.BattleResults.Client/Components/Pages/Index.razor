@@ -4,7 +4,6 @@
 @using System.Collections.ObjectModel;
 @using System.Collections.Specialized;
 @using System.Diagnostics;
-@using System.Globalization
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 
@@ -17,6 +16,8 @@
 	// One pass per render: the battles that pass the search and the match type (the totals follow these), then their days.
 	var filtered = _reports.Where(TableFilter).ToList();
 	var days = BuildDays(filtered);
+	// A day without a row under the result chips is not shown at all; its counts and totals still cover the whole day.
+	var visibleDays = days.Where(d => d.Items.Any(x => _resultVisibility[x.Result])).ToList();
 	var template = _showBattleStats ? "g-s" : "g-n";
 	var clanMembers = filtered.SelectMany(x => x.Team1.Players.Concat(x.Team2.Players)).Where(x => x.IsClanMember).Select(x => x.Name).Distinct().Count();
 	var undefinedNames = TankNameResolver.UndefinedTankNames.Count + MapNameResolver.UndefinedMapNames.Count;
@@ -112,7 +113,7 @@
 			<div class="gc c">#</div>
 			<div class="gc gl-sorted">Tijd · duur<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Filled.ArrowDownward)</svg></div>
 			<div class="gc mapcol"><div class="mapc"><span>Map</span><span></span></div></div>
-			<div class="gc">Jouw team · tegenstander</div>
+			<div class="gc">Team 1 · Team 2</div>
 			@if (_showBattleStats)
 			{
 				<div class="gc s r">Geschoten</div>
@@ -125,9 +126,10 @@
 		</div>
 
 		<div class="gl-scroll">
-			@foreach (var day in days)
-			{
-				var shown = 0;
+			<Virtualize Items="visibleDays" Context="day" ItemSize="600" OverscanCount="2">
+				@{
+					var shown = 0;
+				}
 
 				<div class="gd" @key="day.Label">
 					<div class="gr @template gg">
@@ -169,8 +171,8 @@
 						}
 
 						var ownTeam = report.OwnTeam;
-						var left = ownTeam ?? report.Team1;
-						var right = left == report.Team1 ? report.Team2 : report.Team1;
+						var left = report.Team1;
+						var right = report.Team2;
 						var leftKills = right.Players.Count(x => x.DeathReason.HasValue && x.DeathReason != -1);
 						var rightKills = left.Players.Count(x => x.DeathReason.HasValue && x.DeathReason != -1);
 						var onlyOwn = SettingService.Settings.OnlyHighlistOwnMatches;
@@ -188,9 +190,9 @@
 							<div class="gc mapcol"><div class="mapc"><b title="@report.MapName">@report.MapName</b><span class="gl-chip">@ownTeam?.Base</span></div></div>
 							<div class="gc">
 								<span class="vs">
-									<span class="@TagClass(left, ownTeam != null, onlyOwn)">@left.Abbreviation</span>
-									<span class="score"><span class="@(left.Result is Result.Win ? "gl-win" : null)">@leftKills</span>–<span class="@(right.Result is Result.Win ? "gl-win" : null)">@rightKills</span></span>
-									<span class="@TagClass(right, false, onlyOwn && ownTeam != null)">@right.Abbreviation</span>
+									<span class="@TagClass(left, left == ownTeam, onlyOwn)">@left.Abbreviation</span>
+									<span class="score">@(left.Result is Result.Win ? (MarkupString)$"<b>{leftKills}</b>" : (MarkupString)$"<span>{leftKills}</span>")–@(right.Result is Result.Win ? (MarkupString)$"<b>{rightKills}</b>" : (MarkupString)$"<span>{rightKills}</span>")</span>
+									<span class="@TagClass(right, right == ownTeam, onlyOwn)">@right.Abbreviation</span>
 								</span>
 							</div>
 							@if (_showBattleStats)
@@ -213,14 +215,14 @@
 						}
 					}
 				</div>
-			}
+			</Virtualize>
 		</div>
 
 		<div class="gr @template gg gl-foot gl-edge" aria-label="Totaal">
 			<div class="gl">
 				<MudText Typo="Typo.h6" HtmlTag="h2">Totaal</MudText>
 				<MudText Typo="Typo.caption" Class="mud-text-secondary wot-num">sinds @SettingService.Settings.LoadBattlesSince?.ToString("dd-MM-yyyy")</MudText>
-				<BattleTotals Reports="filtered" ShowRecord="!_showBattleStats" Suffix="@(_loadingTime == TimeSpan.Zero ? null : $" · geladen in {_loadingTime.TotalSeconds.ToString("0.0", _culture)} s")" />
+				<BattleTotals Reports="filtered" ShowRecord="!_showBattleStats" Suffix="@(_loadingTime == TimeSpan.Zero ? null : $" · geladen in {_loadingTime.TotalSeconds.ToString("0.0", BattleReport.DutchCulture)} s")" />
 			</div>
 			@if (_showBattleStats)
 			{
@@ -240,8 +242,6 @@
 		Clan,
 		Onbekend
 	}
-
-	private static readonly CultureInfo _culture = CultureInfo.GetCultureInfo("nl-NL");
 
 	[CascadingParameter]
 	public required Task<AuthenticationState> AuthenticationState { get; set; }
@@ -326,7 +326,7 @@
 					var roundedRatio = Math.Round(shotRatio);
 
 					<span>@totalShots</span>
-					<span style="color: cornflowerblue">@(shotRatio < roundedRatio ? " < " : " > ") @roundedRatio p/m</span>
+					<span style="color: var(--mud-palette-text-secondary)">@(shotRatio < roundedRatio ? " < " : " > ") @roundedRatio p/m</span>
 				}
 			</div>
 		</div>
@@ -352,7 +352,7 @@
 		</div>
 	</text>;
 
-	/// <summary>A team tag in the VS cell: coloured by the team's result, and with the clan-chip edge when it is the own team. With "Alleen eigen gevechten uitlichten" only the own tag is coloured.</summary>
+	/// <summary>A team tag in the VS cell (Team 1 left, Team 2 right): coloured by the team's result, and with the clan-chip edge when it is the own team. With "Alleen eigen gevechten uitlichten" only the own tag is coloured.</summary>
 	private static string TagClass(Team team, bool own, bool onlyOwn)
 	{
 		string colour = onlyOwn && !own ? "u" : team.Result switch
@@ -439,12 +439,16 @@
 				_loadedOnce = true;
 				StateHasChanged();
 
-				// The row the watcher added stays quietly highlighted for 2 seconds.
-				if (_addedFile != null)
+				// The row the watcher added stays quietly highlighted for 2 seconds, unless a newer one took over.
+				string? added = _addedFile;
+				if (added != null)
 				{
 					await Task.Delay(2000);
-					_addedFile = null;
-					StateHasChanged();
+					if (_addedFile == added)
+					{
+						_addedFile = null;
+						StateHasChanged();
+					}
 				}
 			});
 		};

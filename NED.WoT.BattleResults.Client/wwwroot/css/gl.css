@@ -65,7 +65,6 @@
 .gl-sorted { display: flex; align-items: center; gap: 2px; color: var(--mud-palette-text-primary); }
 .gl-sorted svg { width: 16px; height: 16px; fill: currentColor; }
 .gl-dim { color: var(--mud-palette-text-secondary); }
-.gl-win { color: var(--mud-palette-text-primary); font-weight: 700; }
 .gl-details { padding: 16px; background: var(--mud-palette-background); border-bottom: 1px solid var(--mud-palette-lines-default); }
 .gl-err .gc { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; color: var(--mud-palette-warning); }
 .gl-err svg { width: 20px; height: 20px; fill: currentColor; }
