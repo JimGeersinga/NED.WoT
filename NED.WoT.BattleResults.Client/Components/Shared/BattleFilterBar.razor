@@ -57,17 +57,17 @@
 	@* Map: a MudMenu whose popover holds a search box, a checkbox per map and the Wissen and Alles buttons; the field is its activator. *@
 	<MudMenu @bind-Open="_mapOpen" Class="wot-pick" PopoverClass="wot-filter-pop wot-map-pop" RelativeWidth="DropdownWidth.Adaptive" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft">
 		<ActivatorContent>
-			<div class="wot-pick-field" @onclick="() => ToggleMap(context)">
-				<MudTextField T="string" ReadOnly="true" Text="@BattleFilters.MapSummary(Maps)" Placeholder="Alle maps" aria-label="Map" aria-haspopup="listbox"
-							  Variant="Variant.Filled" Margin="Margin.Dense" Class="@("wot-filter" + (Maps.Count > 0 ? " filled" : string.Empty))"
-							  Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.Map"
-							  />
-			@if (Maps.Count > 0)
-			{
-				<button type="button" class="wot-pick-clear" aria-label="Maps wissen" title="Maps wissen" @onclick="ClearMaps" @onclick:stopPropagation="true">
-					<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Filled.Close)</svg>
-				</button>
-			}
+			@* The clear button is MudBlazor's own (a small MudIconButton with its mud-input-clear-button class), placed over the box like the one MudBlazor draws in the other three; it sits outside the clickable field so its click does not also toggle the menu. *@
+			<div class="wot-pick-field">
+				<div @onclick="() => ToggleMap(context)">
+					<MudTextField T="string" ReadOnly="true" Text="@BattleFilters.MapSummary(Maps)" Placeholder="Alle maps" aria-label="Map" aria-haspopup="listbox"
+								  Variant="Variant.Filled" Margin="Margin.Dense" Class="@("wot-filter" + (Maps.Count > 0 ? " filled" : string.Empty))"
+								  Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.Map" />
+				</div>
+				@if (Maps.Count > 0)
+				{
+					<MudIconButton Icon="@Icons.Material.Filled.Clear" Size="Size.Small" Class="mud-input-clear-button wot-pick-clear" aria-label="Maps wissen" title="Maps wissen" OnClick="ClearMaps" />
+				}
 			</div>
 		</ActivatorContent>
 		<ChildContent>

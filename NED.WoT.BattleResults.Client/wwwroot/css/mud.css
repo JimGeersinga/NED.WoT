@@ -201,10 +201,8 @@
 .wot-pick-field { position: relative; flex: 1 1 auto; min-width: 0; }
 .wot-pick-field .mud-input-control, .wot-pick-field .mud-input { width: 100%; }
 .wot-pick-field .mud-input-control.wot-filter .mud-input-filled > input { padding-right: 36px; }
-/* The wisknop of the Map box (a MudTextField that is read-only has no Clearable of its own). */
-.wot-pick-clear { position: absolute; top: 8px; right: 8px; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--mud-palette-text-secondary); cursor: pointer; }
-.wot-pick-clear:hover { background: var(--mud-palette-action-default-hover); }
-.wot-pick-clear svg { width: 18px; height: 18px; fill: currentColor; }
+/* The wisknop of the Map box: a read-only MudTextField has no Clearable of its own, so this MudIconButton (with MudBlazor's clear-button class, so size, icon and hover are the same) sits over the box. */
+.mud-icon-button.wot-pick-clear { position: absolute; top: 50%; right: 8px; transform: translateY(-50%); } /* the centre of the field, 8px from its right edge, as MudBlazor places its own clear button */
 .mud-input-control.wot-filter .mud-select-input input { cursor: pointer; }
 .mud-popover.wot-map-pop { width: 280px; }
 .wot-map-pop .mud-list { padding: 0; }
