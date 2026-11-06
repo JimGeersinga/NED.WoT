@@ -20,90 +20,18 @@
 	var dayByLabel = days.ToDictionary(d => d.Label);
 	var numbers = days.SelectMany(d => d.Items.Select((r, i) => (r, d.Items.Count - i))).ToDictionary(t => t.r, t => t.Item2);
 	var visible = filtered.Where(x => _resultVisibility[x.Result]).OrderByDescending(x => x.MatchStart).ToList();
-	var template = _showBattleStats ? "g-s" : "g-n";
-	var clanMembers = filtered.SelectMany(x => x.Team1.Players.Concat(x.Team2.Players)).Where(x => x.IsClanMember).Select(x => x.Name).Distinct().Count();
-	var undefinedNames = TankNameResolver.UndefinedTankNames.Count + MapNameResolver.UndefinedMapNames.Count;
 }
 
 <div class="gl-page">
-	<section class="gl-bar" aria-label="Filters">
-		<div class="gl-search">
-			<MudAutocomplete T="SearchValue"
-							 @bind-Value="_search"
-							 SearchFunc="SearchAllAsync"
-							 ToStringFunc="@(e=> e == null ? null : $"{e.Value} ({e.Type})")"
-							 DebounceInterval="500"
-							 Placeholder="Zoek op spelernaam of clan tag"
-							 Adornment="Adornment.Start"
-							 AdornmentIcon="@Icons.Material.Filled.Search"
-							 IconSize="Size.Medium"
-							 Variant="Variant.Outlined"
-							 Margin="Margin.Dense"
-							 Clearable="true"
-							 Class="mt-0">
-				<ItemTemplate Context="e">
-					<div class="d-flex justify-space-between align-center">
-						<MudText Typo="Typo.inherit">@e.Value</MudText>
-						<MudText Typo="Typo.caption">@e.Type</MudText>
-					</div>
-				</ItemTemplate>
-			</MudAutocomplete>
-		</div>
-
-		<MudToggleGroup T="MatchType" @bind-Value="_matchType" Class="wot-view-toggle" aria-label="Soort gevechten">
-			@foreach (var matchType in Enum.GetValues<MatchType>())
-			{
-				<MudToggleItem Value="matchType" Text="@matchType.ToString()" />
-			}
-		</MudToggleGroup>
-
-		<div class="gl-chips" role="group" aria-label="Resultaat">
-			@foreach (var result in _resultVisibility.Keys)
-			{
-				var shown = _resultVisibility[result];
-				<MudChip T="string" Class="wot-filter-chip" Selected="@shown" OnClick="() => ToggleResultVisibilty(result)" aria-pressed="@(shown ? "true" : "false")">
-					@ResultChip.Word(result)<span class="wot-num ml-1">@filtered.Count(x => x.Result == result)</span>
-				</MudChip>
-			}
-		</div>
-
-		<div class="gl-tools">
-			@if (_canToggleBattleStats)
-			{
-				if (_showBattleStats)
-				{
-					<div class="gl-player">
-						<MudAutocomplete @bind-Value="_detailedInfoForPlayer"
-										 SearchFunc="SearchPlayerAsync"
-										 DebounceInterval="500"
-										 Placeholder="Filter speler stats"
-										 Adornment="Adornment.Start"
-										 AdornmentIcon="@Icons.Material.Filled.AutoGraph"
-										 IconSize="Size.Medium"
-										 Margin="Margin.Dense"
-										 Variant="Variant.Outlined"
-										 Clearable="true"
-										 Class="mt-0"></MudAutocomplete>
-					</div>
-				}
-
-				<button type="button" class="gl-imgbtn gl-icon-only gl-book" aria-pressed="@(_showBattleStats ? "true" : "false")" aria-label="Statistieken" title="Uitgebreide statistieken" @onclick="() => _showBattleStats = !_showBattleStats">
-					<img src="@(_showBattleStats ? "images/book-open.png" : "images/book-closed.png")" alt="" />
-				</button>
-			}
-
-			<button type="button" class="gl-imgbtn gl-icon-only" aria-label="Clanleden, @clanMembers" title="Clanleden" @onclick="OpenClanMembersDialog">
-				<img src="images/crew.png" alt="" /><span class="gl-badge">@clanMembers</span>
-			</button>
-
-			@if (undefinedNames > 0)
-			{
-				<button type="button" class="gl-imgbtn gl-icon-only gl-warn" aria-label="@undefinedNames onbekende mapnamen en tanknamen" title="Onbekende mapnamen en tanknamen" @onclick="OpenUndefinedNamesDialog">
-					<img src="images/CrewSkill_Commander_sixthSense.png" alt="" /><span class="gl-badge">@undefinedNames</span>
-				</button>
-			}
-		</div>
-	</section>
+	<BattleFilterBar Reports="_reports"
+					 Filtered="filtered"
+					 @bind-Search="_search"
+					 @bind-MatchType="_matchType"
+					 ResultVisibility="_resultVisibility"
+					 OnToggleResult="@(r => ToggleResultVisibilty(r))"
+					 CanToggleBattleStats="_canToggleBattleStats"
+					 @bind-ShowBattleStats="_showBattleStats"
+					 @bind-DetailedInfoForPlayer="_detailedInfoForPlayer" />
 
 	<MudTable T="BattleReport"
 			  Items="visible"
@@ -139,9 +67,7 @@
 				</button>
 			</MudTh>
 			<MudTh Class="c">#</MudTh>
-			<MudTh>
-				<MudTableSortLabel T="BattleReport" SortBy="@(x => x.MatchStart)" InitialDirection="SortDirection.Descending">Tijd · duur</MudTableSortLabel>
-			</MudTh>
+			<MudTh><span class="gl-sorted">Tijd · duur<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Filled.ArrowDownward)</svg></span></MudTh>
 			<MudTh Class="mapcol"><div class="mapc"><span>Map</span><span></span></div></MudTh>
 			<MudTh>Team 1 · Team 2</MudTh>
 			@if (_showBattleStats)
@@ -152,86 +78,34 @@
 				<MudTh Class="r">Geblokt</MudTh>
 			}
 			<MudTh Class="res">Resultaat</MudTh>
-			<MudTh></MudTh>
+			<MudTh aria-label="Kopiëren"></MudTh>
 		</HeaderContent>
 		<GroupHeaderTemplate>
 			@{
 				var day = dayByLabel[(string)context.Key];
 			}
-			<MudTh colspan="5">
-				<div class="gl">
-					<MudText Typo="Typo.h6" HtmlTag="h2">@day.Label</MudText>
-					<MudText Typo="Typo.caption" Class="mud-text-secondary wot-num">@day.Date.ToString("dd-MM-yyyy")</MudText>
-					<BattleTotals Reports="day.Items" ShowRecord="!_showBattleStats" />
-				</div>
-			</MudTh>
-			@if (_showBattleStats)
-			{
-				@StatCells(day.Items)
-			}
-			<MudTh></MudTh>
-			<MudTh Class="p4">
-				<button type="button" class="gl-ibtn out" aria-label="Kopieer opstellingen van deze dag" title="Kopieer opstellingen van deze dag" @onclick="() => CopyResultAsync(day.Items)">
-					<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Filled.ContentCopy)</svg>
-				</button>
-			</MudTh>
+			<BattleGroupHeader Label="@day.Label"
+							   Date="day.Date"
+							   Reports="day.Items"
+							   ShowBattleStats="_showBattleStats"
+							   Stats="StatCells"
+							   OnCopy="@(reports => CopyResultAsync(reports))" />
 		</GroupHeaderTemplate>
 		<RowTemplate>
-			@if (context.Error != null)
-			{
-				<MudTd colspan="@(_showBattleStats ? 11 : 7)" Class="gl-err"><svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Filled.Warning)</svg>@context.Error</MudTd>
-			}
-			else
-			{
-				var ownTeam = context.OwnTeam;
-				var left = context.Team1;
-				var right = context.Team2;
-				var leftKills = right.Players.Count(x => x.DeathReason.HasValue && x.DeathReason != -1);
-				var rightKills = left.Players.Count(x => x.DeathReason.HasValue && x.DeathReason != -1);
-				var onlyOwn = SettingService.Settings.OnlyHighlistOwnMatches;
-
-				<MudTd Class="p4">
-					<a id="@($"Timestamp_{context.MatchStart.Ticks + context.MatchDuration.GetValueOrDefault()}_anchor")" class="gl-anchor"></a>
-					<button type="button" class="gl-ibtn" aria-label="@(context.ShowDetails ? "Details inklappen" : "Details uitklappen")" aria-expanded="@(context.ShowDetails ? "true" : "false")">
-						<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)(context.ShowDetails ? Icons.Material.Filled.KeyboardArrowDown : Icons.Material.Filled.KeyboardArrowRight))</svg>
-					</button>
-				</MudTd>
-				<MudTd Class="c gl-dim">@numbers[context]</MudTd>
-				<MudTd title="@context.MatchTimeTooltip">
-					<div class="two"><b>@context.MatchStart.ToString("HH:mm")@(context.MatchEnd.HasValue ? $" – {context.MatchEnd.Value:HH:mm}" : string.Empty)</b><small>@context.MatchDurationDisplay</small></div>
-				</MudTd>
-				<MudTd Class="mapcol"><div class="mapc"><b title="@context.MapName">@context.MapName</b><span class="gl-chip">@ownTeam?.Base</span></div></MudTd>
-				<MudTd>
-					<span class="vs">
-						<span class="@TagClass(left, left == ownTeam, onlyOwn)">@left.Abbreviation</span>
-						<span class="score">@(left.Result is Result.Win ? (MarkupString)$"<b>{leftKills}</b>" : (MarkupString)$"<span>{leftKills}</span>")–@(right.Result is Result.Win ? (MarkupString)$"<b>{rightKills}</b>" : (MarkupString)$"<span>{rightKills}</span>")</span>
-						<span class="@TagClass(right, right == ownTeam, onlyOwn)">@right.Abbreviation</span>
-					</span>
-				</MudTd>
-				@if (_showBattleStats)
-				{
-					@StatCells(new[] { context })
-				}
-				<MudTd Class="res"><ResultChip Result="context.Result" /></MudTd>
-				<MudTd Class="p4">
-					<button type="button" class="gl-ibtn out" aria-label="Kopieer opstelling" title="Kopieer opstelling" disabled="@(ownTeam == null)" @onclick="() => CopyResultAsync(context, ownTeam)" @onclick:stopPropagation="true">
-						<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Filled.ContentCopy)</svg>
-					</button>
-				</MudTd>
-			}
+			<BattleRow Report="context"
+					   Number="numbers[context]"
+					   ShowBattleStats="_showBattleStats"
+					   Stats="StatCells"
+					   OnCopy="@(report => CopyResultAsync(report, report.OwnTeam))" />
 		</RowTemplate>
 		<ChildRowContent>
 			@if (context.ShowDetails)
 			{
-				<MudTr>
-					<MudTd colspan="@(_showBattleStats ? 11 : 7)" Class="@("gl-details" + (SettingService.Settings.OnlyHighlistOwnMatches ? " highlight-own-result" : null))" data-report="@context.FileName">
-						<Details Report="@context" ShowBattleStats="_showBattleStats" />
-					</MudTd>
-				</MudTr>
+				<BattleRow Report="context" ShowBattleStats="_showBattleStats" DetailsRow="true" />
 			}
 		</ChildRowContent>
 		<FooterContent>
-			<MudTh colspan="5">
+			<MudTh colspan="5" scope="row">
 				<div class="gl">
 					<MudText Typo="Typo.h6" HtmlTag="h2">Totaal</MudText>
 					<MudText Typo="Typo.caption" Class="mud-text-secondary wot-num">sinds @SettingService.Settings.LoadBattlesSince?.ToString("dd-MM-yyyy")</MudText>
@@ -242,8 +116,8 @@
 			{
 				@StatCells(filtered)
 			}
-			<MudTh></MudTh>
-			<MudTh></MudTh>
+			<MudTd></MudTd>
+			<MudTd></MudTd>
 		</FooterContent>
 	</MudTable>
 </div>
@@ -282,7 +156,6 @@
 	private IDialogReference? _clanMatchDialog;
 
 	private List<BattleReport> _reports = new List<BattleReport>();
-	private IEnumerable<BattleReport> _filteredReports => _reports.Where(x => TableFilter(x));
 	private TableGroupDefinition<BattleReport> _groupDefinition = new()
 	{
 		Indentation = false,
@@ -344,7 +217,7 @@
 			var penRatio = totalHits == 0 ? 0 : (int)(100m / totalHits.GetValueOrDefault() * totalPens.GetValueOrDefault());
 			var blockRatio = totalShotsReceived == 0 ? 0 : (int)(100m / totalShotsReceived.GetValueOrDefault() * totalBlocked.GetValueOrDefault());
 		}
-		<td class="gc s">
+		<MudTd Class="s">
 			<div class="d-flex justify-space-between gap-1 text-nowrap">
 				@if (totalShots.HasValue)
 				{
@@ -354,42 +227,28 @@
 					<span style="color: var(--mud-palette-text-secondary)">@(shotRatio < roundedRatio ? " < " : " > ") @roundedRatio p/m</span>
 				}
 			</div>
-		</td>
-		<td class="gc s">
+		</MudTd>
+		<MudTd Class="s">
 			<div class="d-flex justify-space-between gap-1 text-nowrap">
 				<span>@totalHits</span>
 				<span style="color: @hitRatio.GetHitRatioColor()">@hitRatio%</span>
 			</div>
-		</td>
-		<td class="gc s">
+		</MudTd>
+		<MudTd Class="s">
 			<div class="d-flex justify-space-between gap-1 text-nowrap">
 				<span>@totalPens</span>
 				<span style="color: @penRatio.GetPenRatioColor()">@penRatio%</span>
 			</div>
-		</td>
-		<td class="gc s">
+		</MudTd>
+		<MudTd Class="s">
 			<div class="gap-1 text-nowrap" style="display: grid; grid-template-columns: 1fr auto 1fr 40px">
 				<span class="text-right">@totalBlocked</span>
 				<span class="mx-2">/</span>
 				<span>@totalShotsReceived</span>
 				<span class="text-right" style="color: @blockRatio.GetBlockedRatioColor()">@blockRatio%</span>
 			</div>
-		</td>
+		</MudTd>
 	</text>;
-
-	/// <summary>A team tag in the VS cell (Team 1 left, Team 2 right): coloured by the team's result, and with the clan-chip edge when it is the own team. With "Alleen eigen gevechten uitlichten" only the own tag is coloured.</summary>
-	private static string TagClass(Team team, bool own, bool onlyOwn)
-	{
-		string colour = onlyOwn && !own ? "u" : team.Result switch
-		{
-			Result.Win => "w",
-			Result.Lose => "l",
-			Result.Draw => "d",
-			_ => "u",
-		};
-
-		return own ? $"tag own {colour}" : $"tag {colour}";
-	}
 
 	protected override async Task OnInitializedAsync()
 	{
@@ -523,39 +382,6 @@
 		return show;
 	}
 
-	private Task<IEnumerable<SearchValue>> SearchAllAsync(string value, CancellationToken token)
-	{
-		var playerNames = _reports
-		.SelectMany(x => x.Team1.Players.Concat(x.Team2.Players))
-		.Select(x => new SearchValue(x.Name, "Speler"))
-		.Distinct();
-
-		var teamNames = _reports
-		.SelectMany(x => new[] { x.Team1.Abbreviation, x.Team2.Abbreviation })
-		.Select(x => new SearchValue(x, "Clan"))
-		.Distinct();
-
-		var names = teamNames.Concat(playerNames);
-
-		if (string.IsNullOrEmpty(value))
-		{
-			return Task.FromResult(names);
-		}
-
-		return Task.FromResult(names.Where(x => x?.Value?.Contains(value, StringComparison.InvariantCultureIgnoreCase) ?? false));
-	}
-
-	private Task<IEnumerable<string>> SearchPlayerAsync(string value, CancellationToken token)
-	{
-		var playerNames = _reports.SelectMany(x => x.Team1.Players.Concat(x.Team2.Players)).Select(x => x.Name ?? string.Empty).Distinct();
-		if (string.IsNullOrEmpty(value))
-		{
-			return Task.FromResult(playerNames);
-		}
-
-		return Task.FromResult(playerNames.Where(x => x?.Contains(value, StringComparison.InvariantCultureIgnoreCase) ?? false));
-	}
-
 	private void CollapseAllBattleReports()
 	{
 		foreach (var report in _reports)
@@ -605,26 +431,6 @@
 		string output = string.Join(Environment.NewLine, outputLines);
 
 		await Clipboard.SetTextAsync(output);
-	}
-
-	private async Task OpenUndefinedNamesDialog()
-	{
-		await DialogService.ShowAsync<UndefinedNamesDialog>("Onbekende namen", new DialogOptions
-		{
-			CloseOnEscapeKey = true
-		});
-	}
-
-	private async Task OpenClanMembersDialog()
-	{
-		await DialogService.ShowAsync<ClanMembersDialog>("Clan leden",
-			new DialogParameters<ClanMembersDialog>() { { x => x.Reports, _filteredReports } },
-			new DialogOptions
-			{
-				CloseOnEscapeKey = true,
-				FullWidth = true,
-				MaxWidth = MaxWidth.Small
-			});
 	}
 
 	private async Task OpenClanMatchDialog((string, string) match)

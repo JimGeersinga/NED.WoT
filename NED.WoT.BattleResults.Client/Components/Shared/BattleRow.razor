@@ -1,0 +1,90 @@
+@inject SettingService SettingService
+
+@* One battle of the battle table. It renders cells, so it sits inside the MudTable's RowTemplate; with DetailsRow it renders the row under it with the details instead (ChildRowContent). *@
+@if (DetailsRow)
+{
+	<MudTr>
+		<MudTd colspan="@(ShowBattleStats ? 11 : 7)" Class="@("gl-details" + (SettingService.Settings.OnlyHighlistOwnMatches ? " highlight-own-result" : null))" data-report="@Report.FileName">
+			<Details Report="@Report" ShowBattleStats="ShowBattleStats" />
+		</MudTd>
+	</MudTr>
+}
+else if (Report.Error != null)
+{
+	<MudTd colspan="@(ShowBattleStats ? 11 : 7)" Class="gl-err"><svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Filled.Warning)</svg>@Report.Error</MudTd>
+}
+else
+{
+	var ownTeam = Report.OwnTeam;
+	var left = Report.Team1;
+	var right = Report.Team2;
+	var leftKills = right.Players.Count(x => x.DeathReason.HasValue && x.DeathReason != -1);
+	var rightKills = left.Players.Count(x => x.DeathReason.HasValue && x.DeathReason != -1);
+	var onlyOwn = SettingService.Settings.OnlyHighlistOwnMatches;
+
+	<MudTd Class="p4">
+		<a id="@($"Timestamp_{Report.MatchStart.Ticks + Report.MatchDuration.GetValueOrDefault()}_anchor")" class="gl-anchor"></a>
+		<button type="button" class="gl-ibtn" aria-label="@(Report.ShowDetails ? "Details inklappen" : "Details uitklappen")" aria-expanded="@(Report.ShowDetails ? "true" : "false")">
+			<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)(Report.ShowDetails ? Icons.Material.Filled.KeyboardArrowDown : Icons.Material.Filled.KeyboardArrowRight))</svg>
+		</button>
+	</MudTd>
+	<MudTd Class="c gl-dim">@Number</MudTd>
+	<MudTd title="@Report.MatchTimeTooltip">
+		<div class="two"><b>@Report.MatchStart.ToString("HH:mm")@(Report.MatchEnd.HasValue ? $" – {Report.MatchEnd.Value:HH:mm}" : string.Empty)</b><small>@Report.MatchDurationDisplay</small></div>
+	</MudTd>
+	<MudTd Class="mapcol"><div class="mapc"><b title="@Report.MapName">@Report.MapName</b><span class="gl-chip">@ownTeam?.Base</span></div></MudTd>
+	<MudTd>
+		<span class="vs">
+			<span class="@TagClass(left, left == ownTeam, onlyOwn)">@left.Abbreviation</span>
+			<span class="score">@(left.Result is Result.Win ? (MarkupString)$"<b>{leftKills}</b>" : (MarkupString)$"<span>{leftKills}</span>")–@(right.Result is Result.Win ? (MarkupString)$"<b>{rightKills}</b>" : (MarkupString)$"<span>{rightKills}</span>")</span>
+			<span class="@TagClass(right, right == ownTeam, onlyOwn)">@right.Abbreviation</span>
+		</span>
+	</MudTd>
+	@if (ShowBattleStats && Stats != null)
+	{
+		@Stats(new[] { Report })
+	}
+	<MudTd Class="res"><ResultChip Result="Report.Result" /></MudTd>
+	<MudTd Class="p4">
+		<button type="button" class="gl-ibtn out" aria-label="Kopieer opstelling" title="Kopieer opstelling" disabled="@(ownTeam == null)" @onclick="() => OnCopy.InvokeAsync(Report)" @onclick:stopPropagation="true">
+			<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Filled.ContentCopy)</svg>
+		</button>
+	</MudTd>
+}
+
+@code {
+	[Parameter, EditorRequired]
+	public required BattleReport Report { get; set; }
+
+	/// <summary>The place of the battle in its day, counted from the oldest (oldest = 1).</summary>
+	[Parameter]
+	public int Number { get; set; }
+
+	[Parameter]
+	public bool ShowBattleStats { get; set; }
+
+	/// <summary>Renders the details row (ChildRowContent) instead of the battle's cells.</summary>
+	[Parameter]
+	public bool DetailsRow { get; set; }
+
+	/// <summary>The stat columns of stats mode for a set of battles (Index owns them: the day header and the footer use them too).</summary>
+	[Parameter]
+	public RenderFragment<IEnumerable<BattleReport>>? Stats { get; set; }
+
+	[Parameter]
+	public EventCallback<BattleReport> OnCopy { get; set; }
+
+	/// <summary>A team tag in the VS cell (Team 1 left, Team 2 right): coloured by the team's result, and with the clan-chip edge when it is the own team. With "Alleen eigen gevechten uitlichten" only the own tag is coloured.</summary>
+	private static string TagClass(Team team, bool own, bool onlyOwn)
+	{
+		string colour = onlyOwn && !own ? "u" : team.Result switch
+		{
+			Result.Win => "w",
+			Result.Lose => "l",
+			Result.Draw => "d",
+			_ => "u",
+		};
+
+		return own ? $"tag own {colour}" : $"tag {colour}";
+	}
+}

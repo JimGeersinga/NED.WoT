@@ -385,7 +385,7 @@
     background: var(--wot-appbar-top);
     border-top: 1px solid var(--mud-palette-lines-default);
     border-bottom: 0;
-    box-shadow: 0 -6px 16px color-mix(in srgb, var(--mud-palette-overlay-dark) 40%, transparent);
+    box-shadow: 0 -10px 12px -8px color-mix(in srgb, var(--mud-palette-overlay-dark) 40%, transparent); /* the negative spread keeps the shadow from spilling sideways onto the neighbouring footer cell */
 }
 
 .wot-battle-table > .mud-table-container > .mud-table-root > tbody > tr.gl-row { cursor: pointer; }
@@ -400,6 +400,7 @@
 
 .wot-battle-table > .mud-table-container > .mud-table-root > :is(thead, tbody, tfoot) > tr > .mud-table-cell.p4 { padding: 0 4px; text-align: center; }
 .wot-battle-table > .mud-table-container > .mud-table-root > :is(thead, tbody, tfoot) > tr > .mud-table-cell.c { text-align: center; }
+.wot-battle-table > .mud-table-container > .mud-table-root > :is(thead, tbody, tfoot) > tr > .mud-table-cell.s { padding: 0 8px; }
 .wot-battle-table > .mud-table-container > .mud-table-root > :is(thead, tbody, tfoot) > tr > .mud-table-cell.r { text-align: right; }
 .wot-battle-table > .mud-table-container > .mud-table-root > :is(thead, tbody, tfoot) > tr > .mud-table-cell.res { text-align: right; }
 .wot-battle-table > .mud-table-container > .mud-table-root > :is(thead, tbody, tfoot) > tr > .mud-table-cell.mapcol { padding-right: 28px; }
