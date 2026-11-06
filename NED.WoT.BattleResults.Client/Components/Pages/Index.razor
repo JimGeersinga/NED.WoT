@@ -18,7 +18,6 @@
 	var days = BuildDays(filtered);
 	// The table shows the rows under the result chips (a day without one drops out by itself); the day header and the footer count the whole day.
 	var dayByLabel = days.ToDictionary(d => d.Label);
-	var numbers = days.SelectMany(d => d.Items.Select((r, i) => (r, d.Items.Count - i))).ToDictionary(t => t.r, t => t.Item2);
 	var visible = filtered.Where(x => _resultVisibility[x.Result]).OrderByDescending(x => x.MatchStart).ToList();
 }
 
@@ -47,6 +46,7 @@
 			  GroupHeaderClass="gl-day"
 			  RowClassFunc="@RowClass"
 			  OnRowClick="@(e => ToggleShowDetailsAsync(e.Item))">
+		@* 5 lead columns, 4 stat columns, 2 tail columns; the colspans in BattleRow, BattleGroupHeader and the footer follow this *@
 		<ColGroup>
 			<col class="c-chev" />
 			<col class="c-num" />
@@ -93,7 +93,7 @@
 		</GroupHeaderTemplate>
 		<RowTemplate>
 			<BattleRow Report="context"
-					   Number="numbers[context]"
+					   Number="dayByLabel[context.Group].Number(context)"
 					   ShowBattleStats="_showBattleStats"
 					   Stats="StatCells"
 					   OnCopy="@(report => CopyResultAsync(report, report.OwnTeam))" />
@@ -169,7 +169,11 @@
 		+ (report.FileName == _addedFile ? " gl-new" : string.Empty);
 
 	/// <summary>One day of battles, newest first. The number of a battle in its day is its place counted from the oldest (oldest = 1).</summary>
-	private sealed record Day(string Label, DateTime Date, List<BattleReport> Items);
+	private sealed record Day(string Label, DateTime Date, List<BattleReport> Items)
+	{
+		/// <summary>The place of a battle in its day, counted from the oldest (oldest = 1). The result chips do not change it.</summary>
+		public int Number(BattleReport report) => Items.Count - Items.IndexOf(report);
+	}
 
 	private static List<Day> BuildDays(IEnumerable<BattleReport> reports) => reports
 		.GroupBy(x => x.Group)
@@ -187,8 +191,8 @@
 		List<Day> days = BuildDays(reports);
 
 		Debug.Assert(days.Count == 1 && days[0].Label == "Vandaag", "five battles today are one day");
-		Debug.Assert(days[0].Items.Count - days[0].Items.FindIndex(x => x.MatchStart.Hour == 19 && x.MatchStart.Minute == 12) == 1, "the 19:12 battle is #1");
-		Debug.Assert(days[0].Items.Count - 0 == 5, "the newest battle is #5");
+		Debug.Assert(days[0].Number(reports[0]) == 1, "the 19:12 battle is #1");
+		Debug.Assert(days[0].Number(reports[4]) == 5, "the newest battle is #5");
 		Debug.Assert(days[0].Date == today, "the day header shows today's date");
 		Debug.Assert(new BattleReport { MatchStart = today.AddHours(1) }.GroupDate == today.AddDays(-1), "a battle at 01:00 counts for the previous day");
 

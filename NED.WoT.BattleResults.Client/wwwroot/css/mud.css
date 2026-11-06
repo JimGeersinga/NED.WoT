@@ -406,4 +406,3 @@
 .wot-battle-table > .mud-table-container > .mud-table-root > :is(thead, tbody, tfoot) > tr > .mud-table-cell.mapcol { padding-right: 28px; }
 .wot-battle-table > .mud-table-container > .mud-table-root > tbody > tr > .mud-table-cell.gl-err { color: var(--mud-palette-warning); }
 .wot-battle-table > .mud-table-container > .mud-table-root > tbody > tr > .mud-table-cell.gl-details { height: auto; padding: 16px; background: var(--mud-palette-background); white-space: normal; }
-.wot-battle-table > .mud-table-container > .mud-table-root > .mud-table-head .mud-table-sort-label { color: var(--mud-palette-text-primary); }
