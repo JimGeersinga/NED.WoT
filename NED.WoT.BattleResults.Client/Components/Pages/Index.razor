@@ -21,8 +21,9 @@
 	var battles = filtered.Where(x => _resultVisibility[x.Result]).ToList();
 	// A replay that can't be read is a warning row of its own, never in a count, and only next to battle rows: a clan or player filter hides it, and without a battle row the empty state speaks.
 	var unreadable = UnreadableShown(battles.Count, _clan is null && _player is null, _reports);
-	// The clan and player lookup of the filter bar: built on its first search, dropped when the battles (or your own clan tag) change.
-	_filters = _filters is { } known && known.OwnTag == (SettingService.Settings.ClanAbbreviation ?? string.Empty) ? known : BattleFilters.Build(readable, SettingService.Settings.ClanAbbreviation);
+	// The clan and player lookup of the filter bar: one instance, told the battles of this render; it rebuilds its tables on the next search only when _battlesVersion (or your own clan tag) changed.
+	_filters ??= BattleFilters.Build(readable, SettingService.Settings.ClanAbbreviation);
+	_filters.Refresh(readable, _battlesVersion, SettingService.Settings.ClanAbbreviation);
 	var days = BuildDays(filtered, unreadable);
 	var dayByLabel = days.ToDictionary(d => d.Label);
 	var visible = battles.Concat(unreadable).OrderByDescending(x => x.MatchStart).ToList();
@@ -234,6 +235,7 @@
 	private bool _loadedOnce;
 	private string? _addedFile;
 	private BattleFilters? _filters;
+	private int _battlesVersion;
 	private string? _clan;
 	private string? _player;
 	private MatchType _matchType = MatchType.Clan;
@@ -461,7 +463,7 @@
 				}
 
 				_reports = new List<BattleReport>();
-				_filters = null;
+				_battlesVersion++;
 				_loading = true;
 				StateHasChanged();
 
@@ -479,7 +481,7 @@
 			await InvokeAsync(() =>
 			{
 				_reports.Add(e.Report);
-				_filters = null;
+				_battlesVersion++;
 				_clanMatchDialog?.Close();
 				if (_loading)
 				{
@@ -497,7 +499,7 @@
 			await InvokeAsync(() =>
 			{
 				_reports.Remove(e.Report);
-				_filters = null;
+				_battlesVersion++;
 				StateHasChanged();
 			});
 		};
@@ -507,7 +509,7 @@
 			await InvokeAsync(async () =>
 			{
 				_reports = BattleResultService.BattleReports.Select(x => x.Value).OrderByDescending(x => x.MatchStart).ToList();
-				_filters = null;
+				_battlesVersion++;
 				_loading = false;
 				if (!_loadedOnce)
 				{

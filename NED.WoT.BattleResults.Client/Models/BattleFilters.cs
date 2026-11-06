@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Components;
 
 namespace NED.WoT.BattleResults.Client.Models;
 
-/// <summary>The lookup behind the Clan and Speler dropdowns of the filter bar: every clan and every player in the readable battles, built once (lazily, on the first search) and thrown away when the battles change. The markup stays thin; this is the logic (as <see cref="BattleStats"/> is for the stats).</summary>
+/// <summary>The lookup behind the Clan and Speler dropdowns of the filter bar: every clan and every player in the readable battles. One instance lives as long as the page; <see cref="Refresh"/> marks its tables stale when the battles changed and they are rebuilt lazily on the next search. The markup stays thin; this is the logic (as <see cref="BattleStats"/> is for the stats).</summary>
 public sealed class BattleFilters
 {
     /// <summary>One line of a dropdown. A clan: Name is its tag, Clan the same tag, Battles the battles it is in. A player: Name, Clan the tag of their latest battle (null when they had none) and, with a clan chosen, Battles the battles with that clan. A section header: only Header is set.</summary>
@@ -13,23 +13,36 @@ public sealed class BattleFilters
     public const string Shield = "<path fill-rule=\"evenodd\" d=\"M12 2.5l7.5 2.8v6.2c0 4.6-3.1 8.6-7.5 10.5-4.4-1.9-7.5-5.9-7.5-10.5V5.3zM12 7.4L8 9.9v1.3l4-2.2 4 2.2V9.9zM12 12.2l-4 2.5V16l4-2.2 4 2.2v-1.3z\"/>";
     public const string Helmet = "<path fill-rule=\"evenodd\" d=\"M12 3C7.6 3 4.5 6.4 4.5 10.8V15l1.5 1.5V19h12v-2.5l1.5-1.5v-4.2C19.5 6.4 16.4 3 12 3zM6.8 10.4h10.4v3.2H6.8z\"/>";
 
-    private readonly IReadOnlyCollection<BattleReport> _reports;
-    private readonly Lazy<Tables> _tables;
+    private Lazy<Tables> _tables;
+    private int _version;
+    private string _ownTag;
 
     private BattleFilters(IReadOnlyCollection<BattleReport> reports, string ownTag)
     {
-        _reports = reports;
-        OwnTag = ownTag;
-        _tables = new Lazy<Tables>(() => Tables.From(_reports, OwnTag));
+        _ownTag = ownTag;
+        _tables = LazyTables(reports, ownTag);
     }
 
-    /// <summary>Your own clan tag, as it was when the lookup was made: a changed setting needs a new lookup.</summary>
-    public string OwnTag { get; }
+    private static Lazy<Tables> LazyTables(IReadOnlyCollection<BattleReport> reports, string ownTag) => new(() => Tables.From(reports, ownTag));
 
     /// <summary>The lookup of a set of battles. Nothing is read until the first search.</summary>
     public static BattleFilters Build(IReadOnlyCollection<BattleReport> reports, string? ownTag) => new(reports, ownTag ?? string.Empty);
 
-    private sealed record Tables(Option[] Clans, Option[] Players, int OwnPlayers, Dictionary<string, Option[]> ByClan)
+    /// <summary>Tells the lookup which battles there are now. <paramref name="version"/> is a counter the owner raises on every change of the battles (a replaced replay keeps the count, so a count is no key). The tables are only marked stale when the version or your own clan tag differs, and rebuilt on the next search; the same version again costs nothing, so Index can call this on every render.</summary>
+    public void Refresh(IReadOnlyCollection<BattleReport> reports, int version, string? ownTag)
+    {
+        string tag = ownTag ?? string.Empty;
+        if (version == _version && tag == _ownTag)
+        {
+            return;
+        }
+
+        _version = version;
+        _ownTag = tag;
+        _tables = LazyTables(reports, tag);
+    }
+
+    private sealed record Tables(string OwnTag, Option[] Clans, Option[] Players, int OwnPlayers, Dictionary<string, Option[]> ByClan)
     {
         public static Tables From(IEnumerable<BattleReport> reports, string ownTag)
         {
@@ -91,7 +104,7 @@ public sealed class BattleFilters
                 x => x.Value.Select(p => new Option(p.Key, latest[p.Key].Clan, p.Value)).OrderBy(p => p.Name, StringComparer.InvariantCultureIgnoreCase).ToArray(),
                 StringComparer.OrdinalIgnoreCase);
 
-            return new Tables(clans, [.. own, .. rest], own.Length, byClan);
+            return new Tables(ownTag, clans, [.. own, .. rest], own.Length, byClan);
         }
     }
 
@@ -109,8 +122,9 @@ public sealed class BattleFilters
     {
         term ??= string.Empty;
         Tables tables = _tables.Value;
-        Option? mine = OwnTag.Length == 0 ? null : tables.Clans.FirstOrDefault(x => SameTag(x.Name, OwnTag)) ?? new Option(OwnTag, OwnTag, 0);
-        List<Option> others = tables.Clans.Where(x => !SameTag(x.Name, OwnTag) && Has(x.Name, term)).ToList();
+        string ownTag = tables.OwnTag;
+        Option? mine = ownTag.Length == 0 ? null : tables.Clans.FirstOrDefault(x => SameTag(x.Name, ownTag)) ?? new Option(ownTag, ownTag, 0);
+        List<Option> others = tables.Clans.Where(x => !SameTag(x.Name, ownTag) && Has(x.Name, term)).ToList();
         List<Option> rows = [];
 
         if (mine != null && Has(mine.Name, term))
@@ -147,7 +161,7 @@ public sealed class BattleFilters
         }
 
         Option[] everyone = tables.Players;
-        AddSection(rows, $"{OwnTag} · A tot Z", OwnTag.Length == 0 ? [] : everyone.Take(tables.OwnPlayers).Where(x => Has(x.Name, term)));
+        AddSection(rows, $"{tables.OwnTag} · A tot Z", tables.OwnTag.Length == 0 ? [] : everyone.Take(tables.OwnPlayers).Where(x => Has(x.Name, term)));
         AddSection(rows, "Overige spelers · A tot Z", everyone.Skip(tables.OwnPlayers).Where(x => Has(x.Name, term)));
         return rows;
     }
@@ -233,6 +247,18 @@ public sealed class BattleFilters
 
         // Choosing a clan keeps a player who was ever on it and drops one who never was.
         Debug.Assert(filters.PlayerAfterClan("KlompKees", "DUTCH") == "KlompKees" && filters.PlayerAfterClan("klompkees", "RHINE") == null && filters.PlayerAfterClan("Kapitein_Kees", "RHINE") == "Kapitein_Kees", "a chosen player stays only when they were on the chosen clan");
+
+        // Refresh: the same version keeps the tables (the renders in between cost nothing), a new version rebuilds them lazily even when the count is the same (a replaced replay).
+        List<BattleReport> before = [Battle(1, "NED-1", "DUTCH", ["Tankgeneraal"], ["Oud"])];
+        BattleFilters live = Build(before, "NED-1");
+        Debug.Assert(live.PlayerOptions(null, "oud").Count(x => x.Header == null) == 1, "the lookup knows the first battles");
+        List<BattleReport> replaced = [Battle(1, "NED-1", "DUTCH", ["Tankgeneraal"], ["Nieuw"])];
+        live.Refresh(replaced, 0, "NED-1");
+        Debug.Assert(live.PlayerOptions(null, "oud").Count(x => x.Header == null) == 1 && live.PlayerOptions(null, "nieuw").Count(x => x.Header == null) == 0, "the same version: the tables stay");
+        live.Refresh(replaced, 1, "NED-1");
+        Debug.Assert(live.PlayerOptions(null, "oud").Count(x => x.Header == null) == 0 && live.PlayerOptions(null, "nieuw").Count(x => x.Header == null) == 1, "a new version with the same count: rebuilt, no stale list");
+        live.Refresh(replaced, 1, "DUTCH");
+        Debug.Assert(live.ClanOptions(string.Empty).First().Header == "Jouw clan" && live.ClanOptions(string.Empty).ElementAt(1).Name == "DUTCH", "a changed own clan tag rebuilds the tables");
 
         // A player of two clans is one row without a clan and a row under each clan.
         List<BattleReport> moved = [Battle(1, "NED-1", "DUTCH", ["Tankgeneraal"], ["Wisselaar"]), Battle(2, "NED-1", "RHINE", ["Tankgeneraal"], ["Wisselaar"])];
