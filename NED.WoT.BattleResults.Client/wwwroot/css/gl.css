@@ -122,34 +122,33 @@
 .gl-filters { flex: none; }
 .gl-filters[inert] { opacity: .6; }
 
-/* Filter boxes (FilterBox.razor, design .fld.dd): a dense filled field with the game-art icon, the value, a clear button and the dropdown arrow. Filled = an orange underline. */
-.fld { position: relative; display: flex; flex-direction: column; min-width: 0; }
-.fld.dd { min-width: 180px; flex: none; }
-.fld-box { display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 4px 0 12px; background: var(--wot-surface-input); border-radius: 4px 4px 0 0; border-bottom: 1px solid var(--mud-palette-lines-inputs); }
-.fld-box:focus-within { border-bottom: 2px solid var(--mud-palette-primary); margin-bottom: -1px; }
-.fld.filled .fld-box { box-shadow: inset 0 -2px 0 var(--mud-palette-primary); }
-.fld .wi { width: 20px; height: 20px; flex: none; fill: var(--mud-palette-tertiary); }
-.fld.filled .wi { fill: var(--mud-palette-primary); }
-.fld-in { flex: 1 1 auto; min-width: 60px; width: auto; field-sizing: content; background: none; border: 0; outline: 0; padding: 0; font: 400 14px/1.4 var(--wot-font-text); color: var(--mud-palette-text-primary); }
-.fld-in::placeholder { color: var(--mud-palette-text-secondary); }
-.fld-pfx { font: 600 15px/1 var(--wot-font-display); letter-spacing: .03em; color: var(--mud-palette-tertiary); flex: none; }
-.fld-btn { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 4px; background: none; color: var(--mud-palette-text-secondary); cursor: pointer; flex: none; }
-.fld-btn svg { width: 24px; height: 24px; fill: currentColor; }
-.fld-btn:hover { background: var(--mud-palette-table-hover); color: var(--mud-palette-text-primary); }
-.fld-backdrop { position: fixed; inset: 0; z-index: 1299; }
-.pop { position: absolute; top: calc(100% + 2px); left: 0; z-index: 1300; min-width: 280px; width: max-content; max-width: 360px; max-height: min(420px, 60vh); overflow-y: auto; padding: 4px 0; background: var(--wot-surface-dialog); border: 1px solid var(--mud-palette-lines-default); border-radius: 6px; box-shadow: var(--wot-shadow-menu); }
-.opt { display: flex; align-items: center; justify-content: flex-start; gap: 10px; width: 100%; min-height: 38px; padding: 0 14px; border: 0; background: none; color: var(--mud-palette-text-primary); font: 400 14px/1.4 var(--wot-font-text); text-align: left; cursor: pointer; }
-.opt.sel { background: var(--wot-primary-soft); }
-.opt:hover, .opt:focus-visible { background: var(--wot-steel-highlight); }
-.opt .t { font: 600 15px/1 var(--wot-font-display); letter-spacing: .03em; color: var(--mud-palette-text-secondary); min-width: 50px; }
-.opt.sel .t { color: var(--mud-palette-primary); }
-.opt .n { font-size: 12px; color: var(--mud-palette-text-secondary); }
-.opt b { font-weight: 700; color: var(--mud-palette-text-primary); }
-.opt-check { width: 18px; height: 18px; flex: none; fill: var(--mud-palette-primary); }
-.opt-h { display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; height: 38px; padding: 12px 14px 0; font: 600 12px/1.6 var(--wot-font-display); letter-spacing: .12em; text-transform: uppercase; color: var(--mud-palette-tertiary); }
-.opt-h span + span { color: var(--mud-palette-text-secondary); letter-spacing: .04em; }
-.opt-h.sep { border-top: 1px solid var(--mud-palette-divider); }
-.fld-none { margin: 0; padding: 10px 14px; font-size: 14px; color: var(--mud-palette-text-secondary); }
+/* Filter boxes (FilterBox.razor, design .gl-fld.dd): a dense filled field with the game-art icon, the value, a clear button and the dropdown arrow. Filled = an orange underline. */
+.gl-fld { position: relative; display: flex; flex-direction: column; min-width: 180px; flex: none; }
+.gl-fld-box { display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 4px 0 12px; background: var(--wot-surface-input); border-radius: 4px 4px 0 0; border-bottom: 1px solid var(--mud-palette-lines-inputs); }
+.gl-fld-box:focus-within { border-bottom: 2px solid var(--mud-palette-primary); margin-bottom: -1px; }
+.gl-fld.filled .gl-fld-box { box-shadow: inset 0 -2px 0 var(--mud-palette-primary); }
+.gl-fld .gl-wi { width: 20px; height: 20px; flex: none; fill: var(--mud-palette-tertiary); }
+.gl-fld.filled .gl-wi { fill: var(--mud-palette-primary); }
+.gl-fld-in { flex: 1 1 auto; min-width: 60px; width: auto; field-sizing: content; background: none; border: 0; outline: 0; padding: 0; font: 400 14px/1.4 var(--wot-font-text); color: var(--mud-palette-text-primary); }
+.gl-fld-in::placeholder { color: var(--mud-palette-text-secondary); }
+.gl-fld-pfx { font: 600 15px/1 var(--wot-font-display); letter-spacing: .03em; color: var(--mud-palette-tertiary); flex: none; }
+.gl-fld-btn { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 4px; background: none; color: var(--mud-palette-text-secondary); cursor: pointer; flex: none; }
+.gl-fld-btn svg { width: 24px; height: 24px; fill: currentColor; }
+.gl-fld-btn:hover { background: var(--mud-palette-table-hover); color: var(--mud-palette-text-primary); }
+.gl-fld-backdrop { position: fixed; inset: 0; z-index: 1299; }
+.gl-pop { position: absolute; top: calc(100% + 2px); left: 0; z-index: 1300; min-width: 280px; width: max-content; max-width: 360px; max-height: min(420px, 60vh); overflow-y: auto; padding: 4px 0; background: var(--wot-surface-dialog); border: 1px solid var(--mud-palette-lines-default); border-radius: 6px; box-shadow: var(--wot-shadow-menu); }
+.gl-opt { display: flex; align-items: center; justify-content: flex-start; gap: 10px; width: 100%; min-height: 38px; padding: 0 14px; border: 0; background: none; color: var(--mud-palette-text-primary); font: 400 14px/1.4 var(--wot-font-text); text-align: left; cursor: pointer; }
+.gl-opt.sel { background: var(--wot-primary-soft); }
+.gl-opt:hover, .gl-opt:focus-visible { background: var(--wot-steel-highlight); }
+.gl-opt .t { font: 600 15px/1 var(--wot-font-display); letter-spacing: .03em; color: var(--mud-palette-text-secondary); min-width: 50px; }
+.gl-opt.sel .t { color: var(--mud-palette-primary); }
+.gl-opt .n { font-size: 12px; color: var(--mud-palette-text-secondary); }
+.gl-opt b { font-weight: 700; color: var(--mud-palette-text-primary); }
+.gl-opt-check { width: 18px; height: 18px; flex: none; fill: var(--mud-palette-primary); }
+.gl-opt-h { display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; height: 38px; padding: 12px 14px 0; font: 600 12px/1.6 var(--wot-font-display); letter-spacing: .12em; text-transform: uppercase; color: var(--mud-palette-tertiary); }
+.gl-opt-h span + span { color: var(--mud-palette-text-secondary); letter-spacing: .04em; }
+.gl-opt-h.sep { border-top: 1px solid var(--mud-palette-divider); }
+.gl-fld-none { margin: 0; padding: 10px 14px; font-size: 14px; color: var(--mud-palette-text-secondary); }
 
 /* Empty state (EmptyState.razor): an Outlined 48px icon in text-secondary, an H5, one sentence and one action. The well centres it in the room under the filter bar. */
 .gl-empty-well { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }

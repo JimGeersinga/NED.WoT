@@ -12,14 +12,14 @@
 
 <section class="gl-bar" aria-label="Filters">
 	<FilterBox AriaLabel="Clan" Placeholder="Clan kiezen" Icon="@FilterBox.Glyph(FilterBox.Shield)" Value="@Clan" OnClear="@(() => ClanChanged.InvokeAsync(null))">
-		<Content Context="term">
-			@OptionList(ClanRows(term), term, "Geen clan gevonden")
+		<Content Context="list">
+			@OptionList(ClanRows(list.Term), list, "Geen clan gevonden")
 		</Content>
 	</FilterBox>
 
 	<FilterBox AriaLabel="Speler" Placeholder="Speler zoeken" Icon="@FilterBox.Glyph(FilterBox.Helmet)" Prefix="@(Clan ?? (Player != null ? _playerClan : null))" Value="@Player" OnClear="@(() => PlayerChanged.InvokeAsync(null))">
-		<Content Context="term">
-			@OptionList(PlayerRows(term), term, "Geen speler gevonden")
+		<Content Context="list">
+			@OptionList(PlayerRows(list.Term), list, "Geen speler gevonden")
 		</Content>
 	</FilterBox>
 
@@ -187,28 +187,28 @@
 	}
 
 	/// <summary>The rows of a dropdown, virtualized: a real log holds a thousand opponent clans and many thousand players, and that many buttons at once would freeze the window.</summary>
-	private RenderFragment OptionList(List<ListRow> rows, string term, string none) => @<text>
+	private RenderFragment OptionList(List<ListRow> rows, FilterBox.ListContext list, string none) => @<text>
 		@if (rows.Count == 0)
 		{
-			<p class="fld-none">@none</p>
+			<p class="gl-fld-none">@none</p>
 		}
 		else
 		{
 			<Virtualize Items="rows" ItemSize="38" Context="row">
 				@if (row.Header != null)
 				{
-					<div class="opt-h@(row.Sep ? " sep" : string.Empty)"><span>@row.Header</span>@if (row.Count != null)
+					<div class="gl-opt-h@(row.Sep ? " sep" : string.Empty)"><span>@row.Header</span>@if (row.Count != null)
 					{
 						<span class="wot-num">@row.Count</span>
 					}</div>
 				}
 				else if (row.Clan != null)
 				{
-					@ClanRow(row.Clan, term)
+					@ClanRow(row.Clan, list)
 				}
 				else
 				{
-					@PlayerRow(row.Player!, term)
+					@PlayerRow(row.Player!, list)
 				}
 			</Virtualize>
 		}
@@ -233,22 +233,27 @@
 		.ThenBy(x => x.Tag, StringComparer.InvariantCultureIgnoreCase)
 		.ToList();
 
-	/// <summary>The players that contain the typed term, A to Z. With a clan: only the players of that team, each with the number of battles. Without: everybody, the players of your own clan first, each with the clan tag of their latest battle.</summary>
+	/// <summary>The teams of a battle that a chosen clan counts: the ones with its tag (both teams without a clan). The Speler list and the clear rule of PlayerAfterClan both use it.</summary>
+	private static IEnumerable<Team> TeamsOf(BattleReport report, string? clan) => new[] { report.Team1, report.Team2 }.Where(x => clan == null || SameTag(x.Abbreviation, clan));
+
+	/// <summary>The player to keep after a clan is chosen: the same player when they are in that clan's players (the Speler list with that clan), otherwise null.</summary>
+	internal static string? PlayerAfterClan(IEnumerable<BattleReport> reports, string player, string clan) =>
+		reports.Any(r => TeamsOf(r, clan).SelectMany(t => t.Players).Any(p => string.Equals(p.Name, player, StringComparison.OrdinalIgnoreCase))) ? player : null;
+
+	/// <summary>The players that contain the typed term, A to Z. With a clan: only the players of that clan's team, each with the number of battles. Without: everybody, the players of your own clan first. Either way a player carries the clan tag of their own latest battle.</summary>
 	internal static List<PlayerOption> Players(IEnumerable<BattleReport> reports, string? clan, string? ownTag, string term)
 	{
 		Dictionary<string, PlayerOption> players = new(StringComparer.OrdinalIgnoreCase);
 
 		foreach (BattleReport report in reports)
 		{
-			IEnumerable<Team> teams = new[] { report.Team1, report.Team2 }.Where(x => clan == null || SameTag(x.Abbreviation, clan));
-
-			foreach (Player player in teams.SelectMany(x => x.Players).Where(x => !string.IsNullOrEmpty(x.Name)).DistinctBy(x => x.Name, StringComparer.OrdinalIgnoreCase))
+			foreach (Player player in TeamsOf(report, clan).SelectMany(x => x.Players).Where(x => !string.IsNullOrEmpty(x.Name)).DistinctBy(x => x.Name, StringComparer.OrdinalIgnoreCase))
 			{
 				PlayerOption known = players.GetValueOrDefault(player.Name!) ?? new PlayerOption(player.Name!, null, 0, DateTime.MinValue);
 				bool newest = report.MatchStart >= known.Latest;
 				players[player.Name!] = known with
 				{
-					Clan = newest ? (clan ?? (string.IsNullOrEmpty(player.Clan) ? null : player.Clan)) : known.Clan,
+					Clan = newest ? (string.IsNullOrEmpty(player.Clan) ? null : player.Clan) : known.Clan,
 					Battles = known.Battles + 1,
 					Latest = newest ? report.MatchStart : known.Latest
 				};
@@ -262,31 +267,44 @@
 			.ToList();
 	}
 
-	private RenderFragment ClanRow(ClanOption clan, string term) => @<button type="button" class="opt@(SameTag(clan.Tag, Clan) ? " sel" : string.Empty)" role="option" aria-selected="@(SameTag(clan.Tag, Clan) ? "true" : "false")" @onclick="() => ClanChanged.InvokeAsync(clan.Tag)">
-		<span class="t">[@FilterBox.Highlighted(clan.Tag, term)]</span>
+	private RenderFragment ClanRow(ClanOption clan, FilterBox.ListContext list) => @<button type="button" class="gl-opt@(SameTag(clan.Tag, Clan) ? " sel" : string.Empty)" role="option" aria-selected="@(SameTag(clan.Tag, Clan) ? "true" : "false")" @onclick="() => PickClan(clan.Tag, list)">
+		<span class="t">[@FilterBox.Highlighted(clan.Tag, list.Term)]</span>
 		@if (SameTag(clan.Tag, Clan))
 		{
-			<svg class="opt-check" viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Filled.Check)</svg>
+			<svg class="gl-opt-check" viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Filled.Check)</svg>
 		}
 		<span class="n wot-num">@BattleCount(clan.Battles)</span>
 	</button>;
 
-	private RenderFragment PlayerRow(PlayerOption player, string term) => @<button type="button" class="opt@(string.Equals(player.Name, Player, StringComparison.OrdinalIgnoreCase) ? " sel" : string.Empty)" role="option" aria-selected="@(string.Equals(player.Name, Player, StringComparison.OrdinalIgnoreCase) ? "true" : "false")" @onclick="() => PickPlayer(player)">
+	private RenderFragment PlayerRow(PlayerOption player, FilterBox.ListContext list) => @<button type="button" class="gl-opt@(string.Equals(player.Name, Player, StringComparison.OrdinalIgnoreCase) ? " sel" : string.Empty)" role="option" aria-selected="@(string.Equals(player.Name, Player, StringComparison.OrdinalIgnoreCase) ? "true" : "false")" @onclick="() => PickPlayer(player, list)">
 		@if (Clan == null)
 		{
 			<span class="t">[@(player.Clan ?? "?")]</span>
 		}
-		<span>@FilterBox.Highlighted(player.Name, term)</span>
+		<span>@FilterBox.Highlighted(player.Name, list.Term)</span>
 		@if (Clan != null)
 		{
 			<span class="n wot-num">@BattleCount(player.Battles)</span>
 		}
 	</button>;
 
-	private Task PickPlayer(PlayerOption player)
+	/// <summary>Choosing a clan drops a chosen player who is not in it, so the two filters never leave an empty table by themselves.</summary>
+	private async Task PickClan(string tag, FilterBox.ListContext list)
 	{
+		list.Close();
+		await ClanChanged.InvokeAsync(tag);
+
+		if (Player != null && PlayerAfterClan(Reports, Player, tag) == null)
+		{
+			await PlayerChanged.InvokeAsync(null);
+		}
+	}
+
+	private async Task PickPlayer(PlayerOption player, FilterBox.ListContext list)
+	{
+		list.Close();
 		_playerClan = player.Clan;
-		return PlayerChanged.InvokeAsync(player.Name);
+		await PlayerChanged.InvokeAsync(player.Name);
 	}
 
 	private async Task OpenUndefinedNamesDialog()
@@ -341,6 +359,9 @@
 
 		// Every player of every battle is in the list without a clan: 8 distinct names, whatever the rows.
 		Debug.Assert(Players(reports, null, "NED-1", string.Empty).Count == 8, "players without a clan: every player seen in the battles");
+
+		// Choosing a clan keeps a player who is in it and drops one who is not.
+		Debug.Assert(PlayerAfterClan(reports, "KlompKees", "DUTCH") == "KlompKees" && PlayerAfterClan(reports, "klompkees", "RHINE") == null && PlayerAfterClan(reports, "Kapitein_Kees", "RHINE") == "Kapitein_Kees", "a chosen player stays only when they are in the chosen clan");
 
 		// A clan: only its players, with their battle count.
 		List<PlayerOption> dutch = Players(reports, "DUTCH", "NED-1", "");
