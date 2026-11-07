@@ -23,6 +23,10 @@ public class BattleReportService : IDisposable
     private readonly SemaphoreSlim _tempFileGate = new(1);
     private readonly CancellationTokenSource _disposed = new();
 
+    /// <summary>New replays (name → path) waiting for the batch: it runs once no new file has arrived for 1 s.</summary>
+    private readonly ConcurrentDictionary<string, string> _pending = new();
+    private readonly Timer _batchTimer;
+
     private int _filesToLoad;
     private int _filesLoaded;
     private long _bytesRead;
@@ -45,6 +49,7 @@ public class BattleReportService : IDisposable
     {
         _snackbar = snackbar;
         _settingService = settingService;
+        _batchTimer = new Timer(async _ => await AddPendingFilesAsync(), null, Timeout.Infinite, Timeout.Infinite);
         ListenForFileChanges();
     }
 
@@ -146,6 +151,9 @@ public class BattleReportService : IDisposable
             _watcher.Dispose();
         }
 
+        _batchTimer.Dispose();
+        _pending.Clear();
+
         GC.SuppressFinalize(this);
     }
 
@@ -218,52 +226,114 @@ public class BattleReportService : IDisposable
 
     private void OnRenamed(object sender, RenamedEventArgs e) => OnCreated(sender, e);
 
-    private async void OnCreated(object sender, FileSystemEventArgs e)
+    private void OnCreated(object sender, FileSystemEventArgs e)
     {
         if (e.Name is null || IsTempFile(e.Name))
         {
             return;
         }
 
-        await AddNewFileAsync(e.Name, e.FullPath);
+        QueueNewFile(e.Name, e.FullPath);
     }
 
-    /// <summary>Adds a replay that appeared in the folder: waits until the copier has finished with it, reads it and tells the user. Never throws (it runs from async void handlers).</summary>
-    private async Task AddNewFileAsync(string name, string fullPath, bool skipIfListed = false)
+    /// <summary>Puts a new replay in the pending set (unless it is listed or pending already) and restarts the 1 s quiet timer of the batch.</summary>
+    private void QueueNewFile(string name, string fullPath)
+    {
+        if (_disposed.IsCancellationRequested || BattleReports.ContainsKey(name) || !_pending.TryAdd(name, fullPath))
+        {
+            return;
+        }
+
+        try
+        {
+            _batchTimer.Change(1000, Timeout.Infinite);
+        }
+        catch (ObjectDisposedException)
+        {
+            // Disposed between the check and here: the new service lists the folder itself.
+        }
+    }
+
+    /// <summary>The batch timer fired: takes everything that is pending and not listed yet and adds it as one batch.</summary>
+    private async Task AddPendingFilesAsync()
+    {
+        List<KeyValuePair<string, string>> batch = [];
+        foreach (string name in _pending.Keys)
+        {
+            if (_pending.TryRemove(name, out string? path) && !BattleReports.ContainsKey(name))
+            {
+                batch.Add(new KeyValuePair<string, string>(name, path));
+            }
+        }
+
+        if (batch.Count > 0 && !_disposed.IsCancellationRequested)
+        {
+            await AddNewFilesAsync(batch);
+        }
+    }
+
+    /// <summary>Adds the replays that appeared in the folder: waits until the copier has finished with them, reads them like a load does and tells the user once. Never throws (it runs from a timer callback).</summary>
+    private async Task AddNewFilesAsync(List<KeyValuePair<string, string>> batch)
     {
         try
         {
-            await WaitUntilWrittenAsync(fullPath);
+            Stopwatch stopwatch = Stopwatch.StartNew();
 
-            // The rescan after a watcher error may meet a file that a Created event added in the meantime: no second message.
-            if (skipIfListed && BattleReports.ContainsKey(name))
+            // A file that stays locked is read anyway after 10 s; it then shows as an unreadable row.
+            await Task.WhenAll(batch.Select(async file =>
             {
-                return;
-            }
+                try
+                {
+                    await WaitUntilWrittenAsync(file.Value);
+                }
+                catch (IOException ex)
+                {
+                    Debug.WriteLine($"New replay {file.Key} still locked: {ex.Message}");
+                }
+            }));
 
             LoadingBattleReportsStarted?.Invoke(this, new EventArgs());
-
-            BattleReport report = GetBattleReport(new FileInfo(fullPath));
             _clanMatch = null;
 
-            // An unreadable replay is added too (it shows as a warning row); a duplicate has already had its own message.
-            if (AddBattleReport(name, report))
+            ConcurrentBag<string> added = [];
+            int unreadable = 0;
+            Parallel.ForEach(Partitioner.Create(batch), new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount, CancellationToken = _disposed.Token }, file =>
             {
-                _snackbar.Add(
-                    report.Error == null ? Notice("Toegevoegd", name) : Notice("Niet te lezen", name),
-                    report.Error == null ? Severity.Success : Severity.Warning);
+                BattleReport report = GetBattleReport(new FileInfo(file.Value));
+
+                // An unreadable replay is added too (it shows as a warning row).
+                if (AddBattleReport(file.Key, report))
+                {
+                    added.Add(file.Key);
+                    if (report.Error != null)
+                    {
+                        Interlocked.Increment(ref unreadable);
+                    }
+                }
+            });
+
+            if (added.Count == 1)
+            {
+                string name = added.First();
+                _snackbar.Add(unreadable == 0 ? Notice("Toegevoegd", name) : Notice("Niet te lezen", name), unreadable == 0 ? Severity.Success : Severity.Warning);
+            }
+            else if (added.Count > 1)
+            {
+                string sentence = unreadable == 0 ? $"{added.Count} replays" : $"{added.Count} replays, {unreadable} niet te lezen";
+                _snackbar.Add(NoticeList("Toegevoegd", sentence, [.. added.Order(StringComparer.Ordinal)]), unreadable == 0 ? Severity.Success : Severity.Warning);
             }
 
             LoadingBattleReportsFinished?.Invoke(this, new EventArgs());
+            Debug.WriteLine($"New replays loaded: {batch.Count} files, {stopwatch.ElapsedMilliseconds} ms");
         }
         catch (OperationCanceledException)
         {
-            // Disposed while waiting: the new service lists the folder itself.
+            // Disposed during the batch: the new service lists the folder itself.
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"New replay {name} not added: {ex.Message}");
-            _snackbar.Add(Notice("Niet te lezen", name), Severity.Warning);
+            Debug.WriteLine($"New replays not added: {ex.Message}");
+            _snackbar.Add(Notice("Niet te lezen", batch.Count == 1 ? batch.First().Key : $"{batch.Count} replays"), Severity.Warning);
         }
     }
 
@@ -295,16 +365,16 @@ public class BattleReportService : IDisposable
     }
 
     /// <summary>The watcher lost events (buffer overflow): list the folder again and add every replay that isn't in the list yet.</summary>
-    private async void OnError(object sender, ErrorEventArgs e)
+    private void OnError(object sender, ErrorEventArgs e)
     {
         Debug.WriteLine($"File watcher: {e.GetException()}");
         _snackbar.Add(Notice("Bestandsbewaking", "er ging iets mis"), Severity.Error);
 
         try
         {
-            foreach (FileInfo file in ReplayFiles().Where(x => !BattleReports.ContainsKey(x.Name)))
+            foreach (FileInfo file in ReplayFiles())
             {
-                await AddNewFileAsync(file.Name, file.FullName, skipIfListed: true);
+                QueueNewFile(file.Name, file.FullName);
             }
         }
         catch (Exception ex)
@@ -379,6 +449,17 @@ public class BattleReportService : IDisposable
 
     /// <summary>A snackbar message as lead word · sentence (docs/DESIGN.md, "snackbar"): the lead word is bold in the severity colour. Both parts are HTML-encoded, so a file name is safe in it.</summary>
     public static MarkupString Notice(string lead, string sentence) => new($"<b>{WebUtility.HtmlEncode(lead)} · </b>{WebUtility.HtmlEncode(sentence)}");
+
+    /// <summary>A batch snackbar: the <see cref="Notice"/> line, then the file names one per line (at most 10, then "en m meer"). All parts are HTML-encoded.</summary>
+    public static MarkupString NoticeList(string lead, string sentence, IReadOnlyList<string> names)
+    {
+        const int MAX_NAMES = 10;
+
+        string lines = string.Concat(names.Take(MAX_NAMES).Select(x => $"<br />{WebUtility.HtmlEncode(x)}"));
+        string more = names.Count > MAX_NAMES ? $"<br />en {names.Count - MAX_NAMES} meer" : string.Empty;
+
+        return new($"<b>{WebUtility.HtmlEncode(lead)} · </b>{WebUtility.HtmlEncode(sentence)}{lines}{more}");
+    }
 
     /// <returns>False when a report with this file name is already there (the user has been told).</returns>
     private bool AddBattleReport(string name, BattleReport report, bool notify = true)
