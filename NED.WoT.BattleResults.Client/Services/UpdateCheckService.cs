@@ -51,6 +51,12 @@ public partial class UpdateCheckService(ILogger<UpdateCheckService> logger) : ID
         {
             // Package.Current.CheckUpdateAvailabilityAsync fails with "Access denied"; ask the system for the same package instead.
             Package package = new PackageManager().FindPackageForUser(string.Empty, Package.Current.Id.FullName);
+            if (package is null)
+            {
+                LogCheckFailed("PackageNotFound", Package.Current.Id.FullName);
+                return;
+            }
+
             PackageUpdateAvailabilityResult result = await package.CheckUpdateAvailabilityAsync();
             if (result.Availability == PackageUpdateAvailability.Available)
             {
