@@ -26,6 +26,8 @@
             <MudChip T="string" Class="wot-clan-chip"><span class="wot-clan-tag">[@SettingService.Settings.ClanAbbreviation]</span></MudChip>
         }
         <MudSpacer />
+        <FolderCarousel OnManage="() => OpenSettings(true)" />
+        <MudSpacer />
         @if (UpdateCheckService.UpdateAvailable)
         {
             <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Update" OnClick="ShowUpdateDialog">Update</MudButton>
@@ -66,7 +68,7 @@
 
     private async Task OpenSettings(bool canCancel = true)
     {
-        await DialogService.ShowAsync<SettingsDialog>("Instellingen", new DialogParameters()
+        IDialogReference dialog = await DialogService.ShowAsync<SettingsDialog>("Instellingen", new DialogParameters()
             {
                 ["canCancel"] = canCancel
             }, new DialogOptions()
@@ -77,6 +79,15 @@
                 CloseOnEscapeKey = canCancel,
                 CloseButton = false
             });
+
+        _ = RenderWhenClosedAsync(dialog);
+    }
+
+    /// <summary>The carousel shows the titles that were just saved. Not awaited by the callers: the first-run dialog must not hold up the start.</summary>
+    private async Task RenderWhenClosedAsync(IDialogReference dialog)
+    {
+        await dialog.Result;
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task ShowUpdateDialog()

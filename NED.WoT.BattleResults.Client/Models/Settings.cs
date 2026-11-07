@@ -4,7 +4,7 @@ namespace NED.WoT.BattleResults.Client.Models;
 
 public class Settings
 {
-    /// <summary>The replay folders in the order of the app bar; the first one is read until #16 adds the selection.</summary>
+    /// <summary>The replay folders in the order of the carousel in the app bar; the app starts on the first one.</summary>
     public List<ReplayFolder> ReplayFolders { get; set; } = [];
 
     [Required(ErrorMessage = "Datum is verplicht")]

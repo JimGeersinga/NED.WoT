@@ -1,0 +1,156 @@
+﻿@using System.Diagnostics
+@implements IDisposable
+@inject BattleReportService Reports
+@inject SettingService SettingService
+
+@* The replay folders in the app bar (design: "Component: app bar", "Replaymappen: navigatie"): arrows and the dimmed neighbours step through the folders and wrap around, the current title opens the folder menu. With one folder only that title is left. *@
+@{
+	List<ReplayFolder> folders = SettingService.Settings.ReplayFolders;
+	int count = folders.Count;
+	int current = Math.Clamp(Reports.CurrentFolder, 0, Math.Max(count - 1, 0));
+}
+
+@if (count > 0)
+{
+	ReplayFolder folder = folders[current];
+	int previous = Wrap(current - 1, count);
+	int next = Wrap(current + 1, count);
+	<nav class="@("car" + (count == 1 ? " car-1" : string.Empty))" aria-label="Replaymappen">
+		@if (count > 1)
+		{
+			<button type="button" class="nv" aria-label="@($"Vorige map: {folders[previous].Title}")" title="Vorige map" @onclick="() => SelectAsync(previous)">
+				<MudIcon Icon="@Icons.Material.Filled.ChevronLeft" />
+			</button>
+			<button type="button" class="side" tabindex="-1" aria-hidden="true" title="@folders[previous].Title" @onclick="() => SelectAsync(previous)">@folders[previous].Title</button>
+		}
+		<MudMenu @bind-Open="_open" Class="wot-car-menu" PopoverClass="wot-folder-pop" AnchorOrigin="Origin.BottomCenter" TransformOrigin="Origin.TopCenter">
+			<ActivatorContent>
+				<button type="button" class="mid" aria-haspopup="menu" aria-expanded="@(_open ? "true" : "false")" aria-live="polite" title="@folder.Path" @ref="_mid" @onclick="() => context.ToggleAsync()">
+					<span class="ttl"><MudIcon Icon="@Icons.Material.Filled.FolderOpen" /><span class="t">@folder.Title</span></span>
+					@if (count > 1)
+					{
+						<span class="dots" role="img" aria-label="@($"Map {current + 1} van {count}")">
+							@for (int i = 0; i < count; i++)
+							{
+								<i class="@(i == current ? "on" : null)"></i>
+							}
+						</span>
+					}
+				</button>
+			</ActivatorContent>
+			<ChildContent>
+				@if (_open)
+				{
+					<div role="menu" aria-label="Replaymappen">
+						@for (int i = 0; i < count; i++)
+						{
+							int index = i;
+							ReplayFolder item = folders[i];
+							int? battles = Reports.GetBattleCount(item);
+							<button type="button" role="menuitemradio" class="fm-row" aria-checked="@(index == current ? "true" : "false")" @ref="_rows[index]"
+									@onclick="() => PickAsync(index)" @onkeydown="e => Key(e, index)">
+								<MudIcon Icon="@Icons.Material.Filled.Check" Class="fm-check" />
+								<span class="fm-text">
+									<span class="fm-title">@item.Title</span>
+									<span class="fm-path" title="@item.Path">@item.Path</span>
+								</span>
+								@if (battles is not null)
+								{
+									<span class="gl-chip wot-num" aria-label="@($"{battles} gevechten")">@battles</span>
+								}
+							</button>
+						}
+						<div class="fm-div" role="separator"></div>
+						<button type="button" role="menuitem" class="fm-row fm-manage" @ref="_rows[count]" @onclick="ManageAsync" @onkeydown="e => Key(e, count)">
+							<MudIcon Icon="@Icons.Material.Filled.Tune" />
+							<span class="fm-title">Mappen beheren</span>
+						</button>
+					</div>
+				}
+			</ChildContent>
+		</MudMenu>
+		@if (count > 1)
+		{
+			<button type="button" class="side" tabindex="-1" aria-hidden="true" title="@folders[next].Title" @onclick="() => SelectAsync(next)">@folders[next].Title</button>
+			<button type="button" class="nv" aria-label="@($"Volgende map: {folders[next].Title}")" title="Volgende map" @onclick="() => SelectAsync(next)">
+				<MudIcon Icon="@Icons.Material.Filled.ChevronRight" />
+			</button>
+		}
+	</nav>
+}
+
+@code {
+	/// <summary>The settings dialog opened from the menu ("Mappen beheren").</summary>
+	[Parameter]
+	public EventCallback OnManage { get; set; }
+
+	private bool _open;
+	private ElementReference _mid;
+	private bool _focused;
+	private readonly Dictionary<int, ElementReference> _rows = [];
+
+	protected override void OnInitialized()
+	{
+		Debug.Assert(Wrap(3, 3) == 0 && Wrap(-1, 3) == 2 && Wrap(1, 3) == 1 && Wrap(0, 1) == 0, "the carousel wraps: after the last comes the first, before the first comes the last");
+
+		Reports.FolderChanged += OnFolderChanged;
+		Reports.LoadingBattleReportsFinished += OnFolderChanged;
+	}
+
+	public void Dispose()
+	{
+		Reports.FolderChanged -= OnFolderChanged;
+		Reports.LoadingBattleReportsFinished -= OnFolderChanged;
+	}
+
+	/// <summary>A folder was selected, or a load finished (the menu then has a count to show).</summary>
+	private void OnFolderChanged(object? sender, EventArgs e) => _ = InvokeAsync(StateHasChanged);
+
+	/// <summary>The position after stepping from <paramref name="index"/>: past the last folder is the first, before the first is the last.</summary>
+	private static int Wrap(int index, int count) => ((index % count) + count) % count;
+
+	private Task SelectAsync(int index) => Reports.SelectFolderAsync(index);
+
+	/// <summary>A row of the menu: the menu closes and the focus returns to the title that opened it (the row is gone with the menu).</summary>
+	private async Task PickAsync(int index)
+	{
+		_open = false;
+		await _mid.FocusAsync();
+		await Reports.SelectFolderAsync(index);
+	}
+
+	private async Task ManageAsync()
+	{
+		_open = false;
+		await OnManage.InvokeAsync();
+	}
+
+	/// <summary>Arrow keys move through the rows of the menu, Escape closes it (the popover is outside the page, so MudMenu does not hear the keys of these rows).</summary>
+	private async Task Key(KeyboardEventArgs e, int index)
+	{
+		int rows = SettingService.Settings.ReplayFolders.Count + 1;
+		if (e.Key == "Escape")
+		{
+			_open = false;
+			await _mid.FocusAsync();
+		}
+		else if (e.Key is "ArrowDown" or "ArrowUp")
+		{
+			await _rows[Wrap(index + (e.Key == "ArrowDown" ? 1 : -1), rows)].FocusAsync();
+		}
+	}
+
+	/// <summary>When the menu opens, the focus goes to the current folder's row.</summary>
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (!_open)
+		{
+			_focused = false;
+		}
+		else if (!_focused && _rows.TryGetValue(Reports.CurrentFolder, out ElementReference row) && row.Context is not null)
+		{
+			_focused = true;
+			await row.FocusAsync();
+		}
+	}
+}

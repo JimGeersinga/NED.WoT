@@ -29,7 +29,7 @@
 	var dayByLabel = days.ToDictionary(d => d.Label);
 	var visible = battles.Concat(unreadable).OrderByDescending(x => x.MatchStart).ToList();
 	var lastVisible = visible.LastOrDefault();
-	var emptyCause = _loading || battles.Count > 0 ? EmptyCause.None : EmptyCauseOf(Directory.Exists(SettingService.Settings.ReplayFolders.FirstOrDefault()?.Path), _reports.Count);
+	var emptyCause = _loading || battles.Count > 0 ? EmptyCause.None : EmptyCauseOf(Directory.Exists(SettingService.Settings.ReplayFolders.ElementAtOrDefault(BattleResultService.CurrentFolder)?.Path), _reports.Count);
 	var filesToLoad = BattleResultService.FilesToLoad;
 	var filesLoaded = BattleResultService.FilesLoaded;
 }
@@ -500,6 +500,26 @@
 					await Task.Delay(500);
 					StateHasChanged();
 				}
+			});
+		};
+
+		// Another folder was selected: the rows of the old one go and the new one loads (the empty state of a missing folder shows instead of the loading state).
+		BattleResultService.FolderChanged += async (s, e) =>
+		{
+			await InvokeAsync(() =>
+			{
+				_reports = [];
+				_addedFiles = [];
+				// The filters of the old folder do not follow (the defaults of the fields).
+				_clan = null;
+				_player = null;
+				_clanOnly = true;
+				_maps = [];
+				_results = [];
+				_battlesVersion++;
+				_loadedOnce = false;
+				_loading = Directory.Exists(SettingService.Settings.ReplayFolders.ElementAtOrDefault(BattleResultService.CurrentFolder)?.Path);
+				StateHasChanged();
 			});
 		};
 
