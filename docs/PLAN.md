@@ -14,7 +14,7 @@ A path marked "created by #N" does not exist yet.
 | Sign-in | Wargaming OpenID in the system browser with a loopback redirect, under the app's own WG application (Mobile/Standalone). The token is kept in `SecureStorage` and prolonged at start when it expires within 72 h. |
 | Rights | From NED.WoT.Clan (`POST /api/gevechtslog/session`): the same clan whitelist as WoT HQ; battle stats for the commander by default; per-player Allow/Deny set by the platform admin. The Excel / Google Apps Script check is removed. |
 | Identity | Clan tag and player name come from the login, not from Settings. |
-| Replay folders | Several folders (title + path) and a carousel in the app bar. Only the selected folder is read and watched; folders already read stay in memory for the session. |
+| Replay folders | Several folders (title + path) and a carousel in the app bar. Only the selected folder is read, watched and held in memory; switching folders drops the old one's battles and reads the new one from disk. |
 | Live battle | One temp-replay path setting, separate from the folders. |
 | Ratings | PR, WTR and clan rating in the Clan battle dialog, for everyone with access, from Wargaming's public API under the app's own application id. |
 | Tests | No test project. Acceptance is checked by hand and with screenshots (CLAUDE.md, "Screenshots instead of UI tests"). |

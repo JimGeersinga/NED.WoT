@@ -28,12 +28,6 @@ public class BattleReportService : IDisposable
     private readonly SemaphoreSlim _loadGate = new(1);
     private readonly SemaphoreSlim _selectGate = new(1);
 
-    /// <summary>The battles of every folder read this session, by path. Guarded by its own lock, with <see cref="_read"/>.</summary>
-    private readonly Dictionary<string, ConcurrentDictionary<string, BattleReport>> _caches = new(StringComparer.OrdinalIgnoreCase);
-
-    /// <summary>The paths whose cache holds a complete read (a cancelled load drops its cache instead).</summary>
-    private readonly HashSet<string> _read = new(StringComparer.OrdinalIgnoreCase);
-
     /// <summary>The position of the folder that is read and watched, in <see cref="Settings.ReplayFolders"/>. The app starts on the first one.</summary>
     public int CurrentFolder { get; private set; }
 
@@ -48,34 +42,17 @@ public class BattleReportService : IDisposable
     private int _filesLoaded;
     private long _bytesRead;
 
-    /// <summary>The battles of the current folder.</summary>
-    public ConcurrentDictionary<string, BattleReport> BattleReports => CacheOf(ReplayDirectory);
+    /// <summary>The battles of the current folder: the only folder held in memory. A switch replaces it with an empty one.</summary>
+    public ConcurrentDictionary<string, BattleReport> BattleReports { get; private set; } = new();
 
-    private ConcurrentDictionary<string, BattleReport> CacheOf(string? path)
-    {
-        lock (_caches)
-        {
-            if (!_caches.TryGetValue(path ?? string.Empty, out ConcurrentDictionary<string, BattleReport>? cache))
-            {
-                _caches[path ?? string.Empty] = cache = new ConcurrentDictionary<string, BattleReport>();
-            }
+    private volatile bool _loaded;
 
-            return cache;
-        }
-    }
+    /// <returns>The readable battles of the current folder once its read has finished; null for every other folder, and while it is being read.</returns>
+    public int? GetBattleCount(ReplayFolder folder) => _loaded && ReferenceEquals(folder, _settingService.Settings.ReplayFolders.ElementAtOrDefault(CurrentFolder))
+        ? BattleReports.Values.Count(x => x.Error == null)
+        : null;
 
-    /// <returns>The readable battles of the folder, or null while it has not been read (this session).</returns>
-    public int? GetBattleCount(ReplayFolder folder)
-    {
-        lock (_caches)
-        {
-            return _read.Contains(folder.Path) && _caches.TryGetValue(folder.Path, out ConcurrentDictionary<string, BattleReport>? cache)
-                ? cache.Values.Count(x => x.Error == null)
-                : null;
-        }
-    }
-
-    /// <summary>The current folder has been selected (cleared or filled from its cache; a folder that was not read yet loads next).</summary>
+    /// <summary>The current folder has been selected: its battles are gone and its read starts next.</summary>
     public event EventHandler? FolderChanged;
 
     /// <summary>The replay files the current load has to read (0 until the folder is listed): the "n van m bestanden" of the progress bar.</summary>
@@ -92,7 +69,6 @@ public class BattleReportService : IDisposable
 
     public BattleReportService(ISnackbar snackbar, SettingService settingService)
     {
-        SelfCheck();
         _snackbar = snackbar;
         _settingService = settingService;
         _folderCts = CancellationTokenSource.CreateLinkedTokenSource(_disposed.Token);
@@ -101,18 +77,9 @@ public class BattleReportService : IDisposable
     }
 
     /// <summary>
-    /// Makes the folder at <paramref name="index"/> the current one: stops what the old one was doing, shows the cache of a folder read before (catching up with the folder on disk)
-    /// or reads a new one, and watches it. A second call while this one loads cancels that load.
+    /// Makes the folder at <paramref name="index"/> the current one: stops what the old one was doing, drops its battles, watches the new folder and reads it from disk.
+    /// Every switch reads again, also back to a folder seen before. A second call while this one loads cancels that load.
     /// </summary>
-    /// <returns>The cached file names that are not in the folder any more.</returns>
-    private static List<string> MissingFrom(IEnumerable<string> cached, HashSet<string> onDisk) => cached.Where(x => !onDisk.Contains(x)).ToList();
-
-    private static void SelfCheck()
-    {
-        Debug.Assert(MissingFrom(["a.wotreplay", "b.wotreplay", "c.wotreplay"], new HashSet<string> { "b.wotreplay", "d.wotreplay" }).SequenceEqual(["a.wotreplay", "c.wotreplay"]), "catching up drops the cached files that left the folder and keeps the others");
-        Debug.Assert(MissingFrom([], new HashSet<string> { "x.wotreplay" }).Count == 0, "a new file is no reason to drop anything");
-    }
-
     public async Task SelectFolderAsync(int index)
     {
         if (index < 0 || index >= _settingService.Settings.ReplayFolders.Count || index == CurrentFolder || _disposed.IsCancellationRequested)
@@ -145,6 +112,8 @@ public class BattleReportService : IDisposable
                 _folderCts.Dispose();
                 _folderCts = CancellationTokenSource.CreateLinkedTokenSource(_disposed.Token);
                 CurrentFolder = index;
+                BattleReports = new ConcurrentDictionary<string, BattleReport>();
+                _loaded = false;
             }
             finally
             {
@@ -153,29 +122,9 @@ public class BattleReportService : IDisposable
 
             // Watching first, as at startup: a replay saved while the folder is being read is queued, not lost.
             ListenForFileChanges();
-            string? directory = ReplayDirectory;
-            bool exists = Directory.Exists(directory);
-            bool read;
-            lock (_caches)
-            {
-                if (!exists)
-                {
-                    // A folder that is gone shows no battles and no count, whatever an earlier visit read.
-                    _caches.Remove(directory ?? string.Empty);
-                    _read.Remove(directory ?? string.Empty);
-                }
-
-                read = exists && _read.Contains(directory!);
-            }
-
-            if (read)
-            {
-                CatchUp();
-            }
-
             FolderChanged?.Invoke(this, EventArgs.Empty);
 
-            if (exists && !read)
+            if (Directory.Exists(ReplayDirectory))
             {
                 await Task.Run(LoadBattleReports);
             }
@@ -190,24 +139,6 @@ public class BattleReportService : IDisposable
         }
     }
 
-    /// <summary>The folder was read before: drops what is gone from disk and queues what is new, so the new replays arrive like the ones the watcher finds.</summary>
-    private void CatchUp()
-    {
-        ConcurrentDictionary<string, BattleReport> cache = BattleReports;
-        List<FileInfo> files = ReplayFiles();
-        HashSet<string> names = files.Select(x => x.Name).ToHashSet(StringComparer.Ordinal);
-
-        foreach (string name in MissingFrom(cache.Keys, names))
-        {
-            cache.TryRemove(name, out _);
-        }
-
-        foreach (FileInfo file in files)
-        {
-            QueueNewFile(file.Name, file.FullName);
-        }
-    }
-
     public void LoadBattleReports()
     {
         if (!Directory.Exists(ReplayDirectory))
@@ -215,7 +146,7 @@ public class BattleReportService : IDisposable
             return;
         }
 
-        // A switch cancels this load and waits for the gate before it changes the folder, so the folder and the cache of this load stay the same all through it.
+        // A switch cancels this load and waits for the gate before it changes the folder, so the folder and the battles of this load stay the same all through it.
         _loadGate.Wait();
         try
         {
@@ -229,17 +160,7 @@ public class BattleReportService : IDisposable
 
     private void LoadCurrentFolder()
     {
-        string path = ReplayDirectory!;
-        lock (_caches)
-        {
-            if (_read.Contains(path))
-            {
-                // Read before: SelectFolderAsync catches such a folder up instead of reading it again.
-                return;
-            }
-        }
-
-        ConcurrentDictionary<string, BattleReport> cache = CacheOf(path);
+        ConcurrentDictionary<string, BattleReport> cache = BattleReports;
         CancellationToken cancellation = _folderCts.Token;
 
         Interlocked.Exchange(ref _filesToLoad, 0);
@@ -276,20 +197,13 @@ public class BattleReportService : IDisposable
         }
         catch (OperationCanceledException)
         {
-            // Disposed, or another folder selected, during the load: this load is over. What it read is not a whole folder, so it is dropped and the folder is read again when it is selected.
+            // Disposed, or another folder selected, during the load: this load is over (a switch replaces what it read).
             Debug.WriteLine($"Battle list load cancelled after {_filesLoaded} of {files.Count} files");
-            lock (_caches)
-            {
-                _caches.Remove(path);
-            }
 
             return;
         }
 
-        lock (_caches)
-        {
-            _read.Add(path);
-        }
+        _loaded = true;
 
         long elapsedMs = stopwatch.ElapsedMilliseconds;
         long allocated = GC.GetTotalAllocatedBytes(true) - allocatedBefore;
@@ -346,11 +260,7 @@ public class BattleReportService : IDisposable
     {
         _disposed.Cancel();
         StopWatching();
-        lock (_caches)
-        {
-            _caches.Clear();
-            _read.Clear();
-        }
+        BattleReports.Clear();
 
         _batchTimer.Dispose();
         _pending.Clear();
@@ -462,7 +372,7 @@ public class BattleReportService : IDisposable
         try
         {
             // A snapshot: a name leaves _pending only once it is listed (see AddNewFilesAsync), so a file in flight still blocks QueueNewFile.
-            // The cache and the token of the folder this batch is for: a switch waits for the gate before it changes them.
+            // The battles and the token of the folder this batch is for: a switch waits for the gate before it changes them.
             ConcurrentDictionary<string, BattleReport> cache = BattleReports;
             CancellationToken token = _folderCts.Token;
             List<KeyValuePair<string, string>> batch = [];

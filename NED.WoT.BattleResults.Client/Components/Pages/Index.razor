@@ -503,25 +503,22 @@
 			});
 		};
 
-		// Another folder was selected: the rows of the old one go; a folder read before shows its cache at once, a new one shows the loading state until its load starts.
+		// Another folder was selected: the rows of the old one go and the new one loads (the empty state of a missing folder shows instead of the loading state).
 		BattleResultService.FolderChanged += async (s, e) =>
 		{
 			await InvokeAsync(() =>
 			{
-				ReplayFolder? folder = SettingService.Settings.ReplayFolders.ElementAtOrDefault(BattleResultService.CurrentFolder);
-				bool cached = folder is not null && BattleResultService.GetBattleCount(folder) is not null;
-				_reports = cached ? BattleResultService.BattleReports.Select(x => x.Value).OrderByDescending(x => x.MatchStart).ToList() : [];
+				_reports = [];
 				_addedFiles = [];
-				// A folder shown from its cache has no load time of its own, and the filters of the old folder do not follow (the defaults of the fields).
-				_loadingTime = cached ? TimeSpan.Zero : _loadingTime;
+				// The filters of the old folder do not follow (the defaults of the fields).
 				_clan = null;
 				_player = null;
 				_clanOnly = true;
 				_maps = [];
 				_results = [];
 				_battlesVersion++;
-				_loadedOnce = cached;
-				_loading = !cached && Directory.Exists(folder?.Path);
+				_loadedOnce = false;
+				_loading = Directory.Exists(SettingService.Settings.ReplayFolders.ElementAtOrDefault(BattleResultService.CurrentFolder)?.Path);
 				StateHasChanged();
 			});
 		};
