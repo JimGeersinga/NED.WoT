@@ -71,9 +71,6 @@ public class BattleReportService : IDisposable
         {
             Parallel.ForEach(partitioner, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount, CancellationToken = cancellation }, file =>
             {
-                // A disposed service (the user reloaded) adds nothing more.
-                cancellation.ThrowIfCancellationRequested();
-
                 try
                 {
                     BattleReport report = GetBattleReport(file);
@@ -232,11 +229,17 @@ public class BattleReportService : IDisposable
     }
 
     /// <summary>Adds a replay that appeared in the folder: waits until the copier has finished with it, reads it and tells the user. Never throws (it runs from async void handlers).</summary>
-    private async Task AddNewFileAsync(string name, string fullPath)
+    private async Task AddNewFileAsync(string name, string fullPath, bool skipIfListed = false)
     {
         try
         {
             await WaitUntilWrittenAsync(fullPath);
+
+            // The rescan after a watcher error may meet a file that a Created event added in the meantime: no second message.
+            if (skipIfListed && BattleReports.ContainsKey(name))
+            {
+                return;
+            }
 
             LoadingBattleReportsStarted?.Invoke(this, new EventArgs());
 
@@ -301,7 +304,7 @@ public class BattleReportService : IDisposable
         {
             foreach (FileInfo file in ReplayFiles().Where(x => !BattleReports.ContainsKey(x.Name)))
             {
-                await AddNewFileAsync(file.Name, file.FullName);
+                await AddNewFileAsync(file.Name, file.FullName, skipIfListed: true);
             }
         }
         catch (Exception ex)
@@ -380,8 +383,17 @@ public class BattleReportService : IDisposable
     /// <returns>False when a report with this file name is already there (the user has been told).</returns>
     private bool AddBattleReport(string name, BattleReport report, bool notify = true)
     {
+        if (_disposed.IsCancellationRequested)
+        {
+            return false;
+        }
+
         bool added = BattleReports.TryAdd(name, report);
-        if (!added)
+        if (added)
+        {
+            Debug.WriteLine($"Battle report added: {name}");
+        }
+        else
         {
             _snackbar.Add(Notice("Niet toegevoegd", $"{name} staat al in de lijst"), Severity.Warning);
         }
