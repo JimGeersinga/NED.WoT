@@ -89,7 +89,7 @@ public class BattleReportMapper
         return game;
     }
 
-    private static string GetMostMentionedClanAbbreviation(Team team)
+    internal static string GetMostMentionedClanAbbreviation(Team team)
     {
         if (team.Players == null || team.Players.Count == 0)
         {
@@ -123,10 +123,10 @@ public class BattleReportMapper
 
     private static void EnrichAndSortPlayers(Team team, int playerCount)
     {
-        int playersToAdd = playerCount - team.Players.Count;
-        if (playersToAdd > 0)
+        // One new object per empty slot: a shared object would be renumbered by every slot and end up with the last number.
+        for (int i = team.Players.Count; i < playerCount; i++)
         {
-            team.Players.AddRange(Enumerable.Repeat(new Player(team), playersToAdd));
+            team.Players.Add(new Player(team));
         }
 
         Span<Player> playersSpan = CollectionsMarshal.AsSpan(team.Players);

@@ -439,6 +439,15 @@
 		BattleReport mapped = BattleReportMapper.Map(header, results, new Settings());
 		Debug.Assert(mapped.Team1.Players.Count == 2 && mapped.Team1.Players.Single(x => x.Name == "Dader").IsTeamKiller == true, "isTeamKiller: true maps to IsTeamKiller == true");
 		Debug.Assert(mapped.Team1.Players.Single(x => x.Name == "Slachtoffer").IsTeamKiller == false && mapped.Team1.Health == 100 && mapped.Team1.IsWinner == true, "isTeamKiller: false stays false, and the other results fields are read");
+
+		// 13 against 15: team 1 gets two filler rows, each its own player, numbered 14 and 15 (they earned nothing, so they sort last).
+		string Slots(int count, int firstId) => string.Join(",", Enumerable.Range(firstId, count).Select(x => $"\"{x}\":[{{\"xp\":{100 + x}}}]"));
+		string Named(int team, int count, int firstId) => string.Join(",", Enumerable.Range(firstId, count).Select(x => $"\"{x}\":{{\"name\":\"P{x}\",\"team\":{team}}}"));
+		byte[] uneven = System.Text.Encoding.UTF8.GetBytes($"[{{\"vehicles\":{{{Slots(13, 1)},{Slots(15, 14)}}}}},{{{Named(1, 13, 1)},{Named(2, 15, 14)}}}]");
+		BattleReport thirteen = BattleReportMapper.Map(header, System.Text.Json.JsonSerializer.Deserialize(uneven, ReplayJsonContext.Default.ReplayResults), new Settings());
+		List<Player> fillers = thirteen.Team1.Players.Where(x => x.Name == null).ToList();
+		Debug.Assert(thirteen.Team1.Players.Count == 15 && thirteen.Team2.Players.Count == 15 && fillers.Count == 2 && fillers[0] != fillers[1], "13 against 15: team 1 gets two separate filler players");
+		Debug.Assert(fillers.Select(x => x.Number).Order().SequenceEqual([14, 15]) && thirteen.Team1.Players.Select(x => x.Number).Order().SequenceEqual(Enumerable.Range(1, 15)), "the filler rows are numbered 14 and 15, every row has its own number");
 	}
 
 	/// <summary>The players whose figures the stat columns total: the own team's players, or the chosen player on either team.</summary>
