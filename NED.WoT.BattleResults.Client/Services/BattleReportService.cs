@@ -22,8 +22,6 @@ public partial class BattleReportService : IDisposable
     private FileSystemWatcher? _watcher;
     private Timer? _timer;
     private (string, string)? _clanMatch;
-    private static ReadOnlySpan<byte> ReplayIdentifier => "\"clientVersionFromXml\""u8;
-    private static ReadOnlySpan<byte> StatsIdentifier => "\"personal\""u8;
 
     private int _filesToLoad;
     private int _filesLoaded;
@@ -63,6 +61,10 @@ public partial class BattleReportService : IDisposable
 
         Interlocked.Exchange(ref _filesToLoad, 0);
         Interlocked.Exchange(ref _filesLoaded, 0);
+#if DEBUG
+        ReplayReader.ResetBytesRead();
+        Stopwatch stopwatch = Stopwatch.StartNew();
+#endif
         LoadingBattleReportsStarted?.Invoke(this, new EventArgs());
 
         DirectoryInfo directoryInfo = new(_settingService.Settings.WotReplayDirectory);
@@ -94,6 +96,9 @@ public partial class BattleReportService : IDisposable
         });
 
         LoadingBattleReportsFinished?.Invoke(this, new EventArgs());
+#if DEBUG
+        Debug.WriteLine($"Battle list loaded: {files.Count} files, {ReplayReader.BytesRead / 1048576.0:F1} MB read, {stopwatch.ElapsedMilliseconds} ms");
+#endif
         Debug.WriteLine($"Battle list loaded: managed heap {GC.GetTotalMemory(true) / 1048576} MB");
     }
 
@@ -235,17 +240,15 @@ public partial class BattleReportService : IDisposable
 
         try
         {
-            ReadOnlySpan<byte> fileData = File.ReadAllBytes(file.FullName);
+            ReplayReader.ReplayBlocks blocks = ReplayReader.Read(file.FullName);
 
-            int replayStartIndex = fileData.IndexOf(ReplayIdentifier);
-            JsonObject? replay = GetJsonFromFile<JsonObject>(fileData, '{', '}', replayStartIndex);
+            JsonObject? replay = JsonNode.Parse(blocks.Header) as JsonObject;
             if (replay?["dateTime"] == null)
             {
                 return Unreadable(file, "no dateTime in the replay header");
             }
 
-            int statsStartIndex = fileData.IndexOf(StatsIdentifier);
-            JsonArray? stats = GetJsonFromFile<JsonArray>(fileData, '[', ']', statsStartIndex);
+            JsonArray? stats = blocks.Results is null ? null : JsonNode.Parse(blocks.Results) as JsonArray;
             report = BattleReportMapper.Map(replay, stats, _settingService.Settings);
         }
         catch (Exception ex)
@@ -287,55 +290,6 @@ public partial class BattleReportService : IDisposable
         }
 
         return added;
-    }
-
-    private static T? GetJsonFromFile<T>(ReadOnlySpan<byte> fileData, char start, char end, int identifyIndex)
-    {
-        if (identifyIndex == -1)
-        {
-            return default;
-        }
-
-        try
-        {
-            int startIndex = 0;
-            for (int i = identifyIndex; i > 0; i--)
-            {
-                if (fileData[i] == start)
-                {
-                    startIndex = i;
-                    break;
-                }
-            }
-
-            int jsonStarts = 0;
-            int jsonEnds = 0;
-            int length = fileData.Length;
-
-            for (int i = startIndex; i < length; i++)
-            {
-                if (fileData[i] == start)
-                {
-                    jsonStarts++;
-                }
-                else if (fileData[i] == end && jsonStarts > jsonEnds)
-                {
-                    jsonEnds++;
-                }
-
-                if (jsonStarts > 0 && jsonStarts == jsonEnds)
-                {
-                    ReadOnlySpan<byte> jsonSpan = fileData.Slice(startIndex, i - startIndex + 1);
-                    return JsonSerializer.Deserialize<T>(jsonSpan, _options);
-                }
-            }
-        }
-        catch
-        {
-            return default;
-        }
-
-        return default;
     }
 
     private static bool IsTempFile(string fileName)
