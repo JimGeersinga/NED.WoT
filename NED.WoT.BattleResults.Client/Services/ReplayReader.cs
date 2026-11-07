@@ -14,16 +14,7 @@ public static class ReplayReader
     /// <summary>The header block and, when the replay has one, the results block (null for a replay that ended without results).</summary>
     public sealed record ReplayBlocks(byte[] Header, byte[]? Results);
 
-#if DEBUG
-    private static long _bytesRead;
-
-    /// <summary>Debug build only: the bytes the readers have consumed since <see cref="ResetBytesRead"/>.</summary>
-    public static long BytesRead => Interlocked.Read(ref _bytesRead);
-
-    public static void ResetBytesRead() => Interlocked.Exchange(ref _bytesRead, 0);
-#endif
-
-    /// <exception cref="InvalidDataException">Wrong magic, no blocks, or a block that runs past the end of the file.</exception>
+    /// <exception cref="InvalidDataException">Wrong magic, no blocks, or a header block that runs past the end of the file.</exception>
     public static ReplayBlocks Read(string path)
     {
         // bufferSize 0: no read-ahead, so the file system is asked for the blocks and not for the 4 KB around them.
@@ -32,55 +23,45 @@ public static class ReplayReader
         return Read(stream);
     }
 
-    /// <exception cref="InvalidDataException">Wrong magic, no blocks, or a block that runs past the end of the stream.</exception>
+    /// <exception cref="InvalidDataException">Wrong magic, no blocks, or a header block that runs past the end of the stream. A damaged results block gives <c>Results = null</c>.</exception>
     public static ReplayBlocks Read(Stream stream)
     {
-        long start = stream.Position;
-
-        try
+        Span<byte> head = stackalloc byte[8];
+        if (stream.ReadAtLeast(head, head.Length, throwOnEndOfStream: false) != head.Length)
         {
-            Span<byte> head = stackalloc byte[8];
-            if (stream.Read(head) != head.Length)
-            {
-                throw new InvalidDataException("The replay is shorter than its header.");
-            }
-
-            if (BinaryPrimitives.ReadUInt32LittleEndian(head) != MAGIC)
-            {
-                throw new InvalidDataException("Not a replay: wrong magic.");
-            }
-
-            uint count = BinaryPrimitives.ReadUInt32LittleEndian(head[4..]);
-            if (count == 0)
-            {
-                throw new InvalidDataException("The replay has no blocks.");
-            }
-
-            byte[] header = ReadBlock(stream);
-            byte[]? results = count > 1 ? ReadBlock(stream) : null;
-
-            return new ReplayBlocks(header, results);
+            throw new InvalidDataException("The replay is shorter than its header.");
         }
-        finally
+
+        if (BinaryPrimitives.ReadUInt32LittleEndian(head) != MAGIC)
         {
-#if DEBUG
-            Interlocked.Add(ref _bytesRead, stream.Position - start);
-#endif
+            throw new InvalidDataException("Not a replay: wrong magic.");
         }
+
+        uint count = BinaryPrimitives.ReadUInt32LittleEndian(head[4..]);
+        if (count == 0)
+        {
+            throw new InvalidDataException("The replay has no blocks.");
+        }
+
+        byte[] header = ReadBlock(stream) ?? throw new InvalidDataException("The header block is missing or runs past the end of the replay.");
+        byte[]? results = count > 1 ? ReadBlock(stream) : null;
+
+        return new ReplayBlocks(header, results);
     }
 
-    private static byte[] ReadBlock(Stream stream)
+    /// <returns>The block, or null when its length field is missing or the block runs past the end of the stream.</returns>
+    private static byte[]? ReadBlock(Stream stream)
     {
         Span<byte> lengthBytes = stackalloc byte[4];
-        if (stream.Read(lengthBytes) != lengthBytes.Length)
+        if (stream.ReadAtLeast(lengthBytes, lengthBytes.Length, throwOnEndOfStream: false) != lengthBytes.Length)
         {
-            throw new InvalidDataException("The replay ends inside a block length.");
+            return null;
         }
 
         uint length = BinaryPrimitives.ReadUInt32LittleEndian(lengthBytes);
         if (length > stream.Length - stream.Position)
         {
-            throw new InvalidDataException("A block is longer than the rest of the replay.");
+            return null;
         }
 
         byte[] block = new byte[length];
@@ -110,9 +91,19 @@ public static class ReplayReader
         Debug.Assert(Throws(new MemoryStream(BitConverter.GetBytes(MAGIC)))); // no count
         Debug.Assert(Throws(Replay(MAGIC)));                                  // count 0
 
-        MemoryStream tooLong = Replay(MAGIC, a);
-        BinaryPrimitives.WriteUInt32LittleEndian(tooLong.GetBuffer().AsSpan(8), 99);
-        Debug.Assert(Throws(tooLong));
+        // A header block past the end is fatal; a results block past the end (or without its length field) is only "no results".
+        MemoryStream headerTooLong = Replay(MAGIC, a);
+        BinaryPrimitives.WriteUInt32LittleEndian(headerTooLong.GetBuffer().AsSpan(8), 99);
+        Debug.Assert(Throws(headerTooLong));
+
+        MemoryStream resultsTooLong = Replay(MAGIC, a, bc);
+        BinaryPrimitives.WriteUInt32LittleEndian(resultsTooLong.GetBuffer().AsSpan(8 + 4 + a.Length), 99);
+        ReplayBlocks damaged = Read(resultsTooLong);
+        Debug.Assert(damaged.Header.SequenceEqual(a) && damaged.Results is null);
+
+        MemoryStream lengthMissing = Replay(MAGIC, a, bc);
+        lengthMissing.SetLength(8 + 4 + a.Length + 2); // the count says 2, block 1 has half a length field
+        Debug.Assert(Read(lengthMissing).Results is null);
 
         static bool Throws(Stream stream)
         {

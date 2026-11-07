@@ -25,6 +25,9 @@ public partial class BattleReportService : IDisposable
 
     private int _filesToLoad;
     private int _filesLoaded;
+#if DEBUG
+    private long _bytesRead;
+#endif
 
     public ConcurrentDictionary<string, BattleReport> BattleReports { get; set; } = new ConcurrentDictionary<string, BattleReport>();
 
@@ -39,11 +42,6 @@ public partial class BattleReportService : IDisposable
     public event EventHandler<BattleReportAddedEventArgs>? BattleReportAdded;
     public event EventHandler<BattleReportRemovedEventArgs>? BattleReportRemoved;
     public event EventHandler<(string, string)>? ClanMatchStarted;
-
-    private static readonly JsonSerializerOptions _options = new()
-    {
-        PropertyNameCaseInsensitive = true
-    };
 
     public BattleReportService(ISnackbar snackbar, SettingService settingService)
     {
@@ -62,7 +60,7 @@ public partial class BattleReportService : IDisposable
         Interlocked.Exchange(ref _filesToLoad, 0);
         Interlocked.Exchange(ref _filesLoaded, 0);
 #if DEBUG
-        ReplayReader.ResetBytesRead();
+        Interlocked.Exchange(ref _bytesRead, 0);
         Stopwatch stopwatch = Stopwatch.StartNew();
 #endif
         LoadingBattleReportsStarted?.Invoke(this, new EventArgs());
@@ -95,9 +93,12 @@ public partial class BattleReportService : IDisposable
             }
         });
 
+#if DEBUG
+        long elapsedMs = stopwatch.ElapsedMilliseconds;
+#endif
         LoadingBattleReportsFinished?.Invoke(this, new EventArgs());
 #if DEBUG
-        Debug.WriteLine($"Battle list loaded: {files.Count} files, {ReplayReader.BytesRead / 1048576.0:F1} MB read, {stopwatch.ElapsedMilliseconds} ms");
+        Debug.WriteLine($"Battle list loaded: {files.Count} files, {Interlocked.Read(ref _bytesRead) / 1048576.0:F1} MB read, {elapsedMs} ms");
 #endif
         Debug.WriteLine($"Battle list loaded: managed heap {GC.GetTotalMemory(true) / 1048576} MB");
     }
@@ -241,6 +242,9 @@ public partial class BattleReportService : IDisposable
         try
         {
             ReplayReader.ReplayBlocks blocks = ReplayReader.Read(file.FullName);
+#if DEBUG
+            Interlocked.Add(ref _bytesRead, blocks.Header.Length + (blocks.Results?.Length ?? 0));
+#endif
 
             JsonObject? replay = JsonNode.Parse(blocks.Header) as JsonObject;
             if (replay?["dateTime"] == null)
@@ -248,7 +252,7 @@ public partial class BattleReportService : IDisposable
                 return Unreadable(file, "no dateTime in the replay header");
             }
 
-            JsonArray? stats = blocks.Results is null ? null : JsonNode.Parse(blocks.Results) as JsonArray;
+            JsonArray? stats = ParseResults(blocks.Results);
             report = BattleReportMapper.Map(replay, stats, _settingService.Settings);
         }
         catch (Exception ex)
@@ -259,6 +263,24 @@ public partial class BattleReportService : IDisposable
         report.FileName = file.Name;
 
         return report;
+    }
+
+    /// <summary>The results block as an array; null when there is none or it isn't valid JSON (the battle then maps without stats, as on master).</summary>
+    private static JsonArray? ParseResults(byte[]? results)
+    {
+        if (results is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            return JsonNode.Parse(results) as JsonArray;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     /// <summary>What the warning row of an unreadable replay says.</summary>
