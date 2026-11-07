@@ -49,6 +49,7 @@
                                           @bind-Value="folder.Title" For="(() => folder.Title)" />
                             <MudTextField Label="Pad" Variant="Variant.Filled" Placeholder="C:\Games\World_of_Tanks_EU\replays"
                                           Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.FolderOpen"
+                                          AdornmentAriaLabel="@($"Kies map voor {name}")" OnAdornmentClick="() => PickFolder(folder)"
                                           @bind-Value="folder.Path" For="(() => folder.Path)" />
                             <MudIconButton Icon="@Icons.Material.Outlined.ArrowUpward" aria-label="@($"{name} omhoog")"
                                            Disabled="@(index == 0)" OnClick="() => Move(folder, -1)" />
@@ -177,6 +178,19 @@
     private void Remove(ReplayFolder folder)
     {
         modal.ReplayFolders.Remove(folder);
+        _container?.Refresh();
+    }
+
+    private async Task PickFolder(ReplayFolder folder)
+    {
+        string? path = await FolderPicker.PickAsync();
+        if (path is null)
+        {
+            return;
+        }
+
+        folder.Path = path;
+        _editContext.NotifyFieldChanged(new FieldIdentifier(folder, nameof(ReplayFolder.Path)));
         _container?.Refresh();
     }
 
