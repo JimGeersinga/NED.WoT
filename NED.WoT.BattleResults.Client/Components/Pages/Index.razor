@@ -29,7 +29,7 @@
 	var dayByLabel = days.ToDictionary(d => d.Label);
 	var visible = battles.Concat(unreadable).OrderByDescending(x => x.MatchStart).ToList();
 	var lastVisible = visible.LastOrDefault();
-	var emptyCause = _loading || battles.Count > 0 ? EmptyCause.None : EmptyCauseOf(Directory.Exists(SettingService.Settings.WotReplayDirectory), _reports.Count);
+	var emptyCause = _loading || battles.Count > 0 ? EmptyCause.None : EmptyCauseOf(Directory.Exists(SettingService.Settings.ReplayFolders.FirstOrDefault()?.Path), _reports.Count);
 	var filesToLoad = BattleResultService.FilesToLoad;
 	var filesLoaded = BattleResultService.FilesLoaded;
 }
