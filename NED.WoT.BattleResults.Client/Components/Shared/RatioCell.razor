@@ -1,5 +1,5 @@
 @* One stat cell of stats mode: the count on the left, the ratio on the right in its level colour plus a 16px Filled level icon (colour is never alone). Without a Ratio, Detail takes the right side in secondary text (Geschoten: p/m). The styling is `.wot-ratio` in wot.css (only the level colour is inline, it is dynamic): the cell is the same in every row, day header and footer. *@
-<div class="wot-ratio wot-num">
+<div class="wot-ratio">
 	<span class="wot-ratio-count">@Count</span>
 	@if (Ratio.HasValue)
 	{

@@ -1,7 +1,5 @@
-/* The Gevechtslog patterns (docs/DESIGN.md, "Gevechtslog patterns"), from the canvas's project/gl.css. Class names are the canvas's, so its markup carries over.
+/* The Gevechtslog patterns (docs/DESIGN.md, "Gevechtslog patterns"), from the canvas's project/gl.css. New and rewritten classes get descriptive names; canvas names stay only on markup that is not touched.
    Colours are var(--wot-*) and var(--mud-palette-*), never raw. MudBlazor-specific rules (chips, switch, snackbar, progress bar, fields) are in mud.css and arrive with the issue that builds them. */
-.num-xl { font: 700 56px/1 var(--wot-font-display); color: var(--mud-palette-primary); font-variant-numeric: tabular-nums; letter-spacing: .01em; }
-
 .two { display: flex; flex-direction: column; gap: 2px; line-height: 1.25; }
 .two small { font: 400 12px/1.3 var(--wot-font-text); color: var(--mud-palette-text-secondary); }
 .two b { font-weight: 500; }
@@ -19,16 +17,6 @@
 .vs > * { flex: none; }
 .score { display: inline-flex; align-items: center; gap: 6px; font: 600 18px/1 var(--wot-font-display); min-width: 64px; justify-content: center; color: var(--mud-palette-text-secondary); }
 .score b { color: var(--mud-palette-text-primary); font-weight: 700; }
-
-/* Ratio cells: colour plus a level icon (16px per the design rules), so colour is never alone. */
-.rt { display: inline-flex; align-items: center; font-weight: 600; gap: 0; }
-.rt svg { width: 16px; height: 16px; margin-left: -3px; }
-.rt.hi { color: var(--mud-palette-success); }
-.rt.mid { color: var(--mud-palette-warning); }
-.rt.lo { color: var(--mud-palette-error); }
-.stat { display: grid; grid-template-columns: minmax(0, 1fr) 58px; column-gap: 6px; align-items: center; justify-items: end; white-space: nowrap; }
-.stat.s3 { grid-template-columns: minmax(0, 1fr) 52px 58px; }
-.stat > * { justify-self: end; }
 
 /* The page: the filter bar over the table. Only the table scrolls; the filter bar, the column header and the footer stay in view. */
 .gl-page { display: flex; flex-direction: column; height: calc(100vh - var(--mud-appbar-height)); min-height: 0; }
@@ -53,7 +41,7 @@
 .gl-ibtn:disabled { color: var(--mud-palette-action-disabled); cursor: default; }
 
 /* The neutral chip: the count of a day, the base of a map. */
-.gl-chip { display: inline-flex; align-items: center; justify-content: center; gap: 5px; height: 24px; padding: 0 8px; border-radius: 2px; background: color-mix(in srgb, var(--mud-palette-text-primary) 6%, transparent); color: var(--mud-palette-text-secondary); font: 500 13px/1 var(--wot-font-text); font-variant-numeric: tabular-nums; white-space: nowrap; flex: none; }
+.gl-chip { display: inline-flex; align-items: center; justify-content: center; gap: 5px; height: 24px; padding: 0 8px; border-radius: 2px; background: color-mix(in srgb, var(--mud-palette-text-primary) 6%, transparent); color: var(--mud-palette-text-secondary); font: 500 13px/1 var(--wot-font-text); white-space: nowrap; flex: none; }
 
 /* Map name right-aligned against a column of base chips. */
 .mapc { display: grid; grid-template-columns: minmax(0, 1fr) 26px; column-gap: 8px; align-items: center; }
@@ -68,7 +56,7 @@
 .gl-imgbtn:hover { background: var(--mud-palette-table-hover); }
 .gl-imgbtn[aria-pressed=true] { background: var(--wot-primary-soft); border-color: var(--mud-palette-primary); }
 .gl-imgbtn.gl-warn { border-color: color-mix(in srgb, var(--mud-palette-warning) 55%, transparent); }
-.gl-badge { position: absolute; top: -7px; right: -7px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: var(--mud-palette-dark); border: 1px solid var(--mud-palette-lines-inputs); color: var(--mud-palette-text-primary); font: 600 11px/16px var(--wot-font-text); text-align: center; font-variant-numeric: tabular-nums; }
+.gl-badge { position: absolute; top: -7px; right: -7px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: var(--mud-palette-dark); border: 1px solid var(--mud-palette-lines-inputs); color: var(--mud-palette-text-primary); font: 600 11px/16px var(--wot-font-text); text-align: center; }
 .gl-warn .gl-badge { background: var(--mud-palette-warning); border-color: var(--mud-palette-warning); color: var(--mud-palette-warning-text); }
 
 /* Steel scrollbar: a dark track, a rounded light thumb, an arrow button at both ends. */

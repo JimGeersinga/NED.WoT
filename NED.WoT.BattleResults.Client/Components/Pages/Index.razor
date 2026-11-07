@@ -197,11 +197,11 @@
 					<MudText Typo="Typo.h6" HtmlTag="h2">Totaal</MudText>
 					@if (_loading)
 					{
-						<MudText Typo="Typo.caption" Class="mud-text-secondary wot-num">@filesLoaded van @filesToLoad bestanden gelezen</MudText>
+						<MudText Typo="Typo.caption" Class="mud-text-secondary">@filesLoaded van @filesToLoad bestanden gelezen</MudText>
 					}
 					else
 					{
-						<MudText Typo="Typo.caption" Class="mud-text-secondary wot-num">sinds @SettingService.Settings.LoadBattlesSince?.ToString("dd-MM-yyyy")</MudText>
+						<MudText Typo="Typo.caption" Class="mud-text-secondary">sinds @SettingService.Settings.LoadBattlesSince?.ToString("dd-MM-yyyy")</MudText>
 					}
 					<BattleTotals Reports="filtered" ShowRecord="!_showBattleStats" Suffix="@(_loading || _loadingTime == TimeSpan.Zero ? null : $" · geladen in {_loadingTime.TotalSeconds.ToString("0.0", BattleReport.DutchCulture)} s")" />
 					@if (_loading && SettingService.Settings.UpdateScreeenWhileLoading)
