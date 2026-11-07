@@ -28,6 +28,8 @@
     --wot-rivet-mid: #b0916a;
     --wot-rivet-shadow: 0 1px 0 rgba(0, 0, 0, .65);
 
+    --wot-car-bg: rgba(0, 0, 0, .22); /* the folder carousel of the app bar: its well, and the dots of the folders that are not current */
+    --wot-car-dot: #4f5761;
     --wot-shadow-menu: 0 16px 40px rgba(0, 0, 0, .55);
     --wot-shadow-dialog: 0 24px 56px rgba(0, 0, 0, .6);
     --wot-error-boundary: #b32121;

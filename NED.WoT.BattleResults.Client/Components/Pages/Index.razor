@@ -29,7 +29,7 @@
 	var dayByLabel = days.ToDictionary(d => d.Label);
 	var visible = battles.Concat(unreadable).OrderByDescending(x => x.MatchStart).ToList();
 	var lastVisible = visible.LastOrDefault();
-	var emptyCause = _loading || battles.Count > 0 ? EmptyCause.None : EmptyCauseOf(Directory.Exists(SettingService.Settings.ReplayFolders.FirstOrDefault()?.Path), _reports.Count);
+	var emptyCause = _loading || battles.Count > 0 ? EmptyCause.None : EmptyCauseOf(Directory.Exists(SettingService.Settings.ReplayFolders.ElementAtOrDefault(BattleResultService.CurrentFolder)?.Path), _reports.Count);
 	var filesToLoad = BattleResultService.FilesToLoad;
 	var filesLoaded = BattleResultService.FilesLoaded;
 }
@@ -500,6 +500,22 @@
 					await Task.Delay(500);
 					StateHasChanged();
 				}
+			});
+		};
+
+		// Another folder was selected: the rows of the old one go; a folder read before shows its cache at once, a new one shows the loading state until its load starts.
+		BattleResultService.FolderChanged += async (s, e) =>
+		{
+			await InvokeAsync(() =>
+			{
+				ReplayFolder? folder = SettingService.Settings.ReplayFolders.ElementAtOrDefault(BattleResultService.CurrentFolder);
+				bool cached = folder is not null && BattleResultService.GetBattleCount(folder) is not null;
+				_reports = cached ? BattleResultService.BattleReports.Select(x => x.Value).OrderByDescending(x => x.MatchStart).ToList() : [];
+				_addedFiles = [];
+				_battlesVersion++;
+				_loadedOnce = cached;
+				_loading = !cached && Directory.Exists(folder?.Path);
+				StateHasChanged();
 			});
 		};
 

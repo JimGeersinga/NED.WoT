@@ -135,3 +135,24 @@
 .fr { display: grid; grid-template-columns: 180px minmax(0, 1fr) 32px 32px 32px; gap: 8px; align-items: start; padding: 8px; border-radius: 4px; background: var(--mud-palette-surface); }
 /* (56px filled field - 32px button) / 2 */
 .fr > .gl-ibtn { margin-top: 12px; }
+
+/* Folder carousel in the app bar (FolderCarousel.razor; design gl.css .car): arrows, the dimmed neighbours, the current title (a button that opens the folder menu) and position dots. */
+.car { display: inline-flex; align-items: stretch; height: 44px; border: 1px solid var(--mud-palette-lines-default); border-radius: 4px; background: var(--wot-car-bg); overflow: hidden; flex: none; }
+.car .nv { width: 40px; display: inline-flex; align-items: center; justify-content: center; border: 0; background: none; color: var(--mud-palette-text-secondary); cursor: pointer; }
+.car .nv:first-child { border-right: 1px solid var(--mud-palette-lines-default); }
+.car .nv:last-child { border-left: 1px solid var(--mud-palette-lines-default); }
+.car .nv .mud-icon-root { width: 24px; height: 24px; }
+.car .side { display: inline-flex; align-items: center; max-width: 120px; padding: 0 14px; border: 0; background: none; color: var(--mud-palette-text-secondary); font: 500 15px/1 var(--wot-font-display); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.car .nv:hover, .car .side:hover { background: var(--mud-palette-action-default-hover); color: var(--mud-palette-text-primary); }
+.car .nv:focus-visible, .car .mid:focus-visible { outline-offset: -2px; }
+.car .mud-menu { align-self: stretch; } /* MudBlazor centres the menu wrapper */
+.car .mud-menu, .car .mud-menu-activator { display: flex; }
+.car .mud-menu-activator { flex: 1; }
+.car .mid { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; min-width: 176px; max-width: 300px; padding: 0 18px; border: 0; border-left: 1px solid var(--mud-palette-lines-default); border-right: 1px solid var(--mud-palette-lines-default); background: color-mix(in srgb, var(--mud-palette-primary) 8%, transparent); color: var(--mud-palette-text-primary); font: inherit; cursor: pointer; }
+.car-1 .mid { border-left: 0; border-right: 0; }
+.car .mid .ttl { display: inline-flex; align-items: center; gap: 8px; max-width: 100%; font: 700 18px/1 var(--wot-font-display); letter-spacing: .02em; white-space: nowrap; }
+.car .mid .ttl .t { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.car .mid .ttl .mud-icon-root { flex: none; width: 18px; height: 18px; color: var(--mud-palette-tertiary); }
+.dots { display: inline-flex; gap: 5px; }
+.dots i { width: 6px; height: 6px; border-radius: 1px; background: var(--wot-car-dot); display: block; }
+.dots i.on { background: var(--mud-palette-primary); }
