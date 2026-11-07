@@ -1,13 +1,11 @@
-﻿using NED.WoT.BattleResults.Client.Attributes;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace NED.WoT.BattleResults.Client.Models;
 
 public class Settings
 {
-    [Required(ErrorMessage = "Replaypad is verplicht")]
-    [DirectoryExists(ErrorMessage = "Replaypad bestaat niet")]
-    public string? WotReplayDirectory { get; set; }
+    /// <summary>The replay folders in the order of the app bar; the first one is read until #16 adds the selection.</summary>
+    public List<ReplayFolder> ReplayFolders { get; set; } = [];
 
     [Required(ErrorMessage = "Datum is verplicht")]
     public DateTime? LoadBattlesSince { get; set; }

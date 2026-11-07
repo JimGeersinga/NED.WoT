@@ -86,7 +86,8 @@ Today every setting is a `Preferences.Default` key named after a property of
 
 | Key (`Preferences`) | Holds | Fate |
 |---|---|---|
-| `WotReplayDirectory` | The single replay folder path | Replaced by the folder list in #15 |
+| `ReplayFolders` | The replay folders in app-bar order, as JSON `[{"Title","Path"}]` (added by #15) | Stays |
+| `WotReplayDirectory` | The single replay folder path before #15 | Read once to make the folder "Replays" when `ReplayFolders` is absent; never written again |
 | `LoadBattlesSince` | The oldest battle date to load, as ticks | Stays |
 | `ClanAbbreviation` | The clan tag used to find the player's team (default `NED-1`) | Removed from Settings by #12; comes from the login |
 | `PlayerName` | The player name used to find the player's team | Removed from Settings by #12; comes from the login |

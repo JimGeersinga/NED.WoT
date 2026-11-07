@@ -7,7 +7,7 @@
 @inject SettingService SettingService
 @inject UpdateCheckService UpdateCheckService
 
-<MudThemeProvider Theme="WotTheme.Theme" IsDarkMode="true" />
+<MudThemeProvider Theme="WotTheme.Theme" IsDarkMode="true" ObserveSystemDarkModeChange="false" />
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
@@ -45,7 +45,8 @@
 @code {
     protected override async Task OnInitializedAsync()
     {
-        if (string.IsNullOrWhiteSpace(SettingService.Settings.WotReplayDirectory) || !Directory.Exists(SettingService.Settings.WotReplayDirectory))
+        var first = SettingService.Settings.ReplayFolders.FirstOrDefault();
+        if (first is null || !Directory.Exists(first.Path))
         {
             Snackbar.Add(BattleReportService.Notice("Replaymap", "de map is niet ingevuld of bestaat niet"), Severity.Warning);
 

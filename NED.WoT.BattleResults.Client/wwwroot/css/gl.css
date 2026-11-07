@@ -130,3 +130,8 @@
 
 /* The "Geen toegang" page: a centred card on the background-gray well. */
 .gl-unauth { box-sizing: border-box; display: flex; align-items: center; justify-content: center; min-height: calc(100vh - var(--mud-appbar-height)); padding: 24px; background: var(--mud-palette-background-gray); }
+
+/* Replay folder list (SettingsDialog): a row holds Titel, Pad and the up, down and delete buttons (square .gl-ibtn, 32px). */
+.fr { display: grid; grid-template-columns: 180px minmax(0, 1fr) 32px 32px 32px; gap: 8px; align-items: start; padding: 8px; border-radius: 4px; background: var(--mud-palette-surface); }
+/* (56px filled field - 32px button) / 2 */
+.fr > .gl-ibtn { margin-top: 12px; }
