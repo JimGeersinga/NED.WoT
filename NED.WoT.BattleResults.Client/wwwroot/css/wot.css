@@ -28,7 +28,7 @@ body {
     font-variant-numeric: tabular-nums;
 }
 
-/* App bar look. The 56px height is the theme's AppbarHeight (Theme/WotTheme.cs). */
+/* App bar look. The 56px height is in mud.css (MudAppBar sets none, and the border would add a pixel). */
 .wot-appbar {
     box-sizing: border-box;
     background: repeating-linear-gradient(90deg, var(--wot-appbar-grain) 0 1px, transparent 1px 3px), linear-gradient(180deg, var(--wot-appbar-top) 0%, var(--wot-appbar-mid) 55%, var(--wot-appbar-bottom) 100%);

@@ -67,7 +67,7 @@
 	private string OpponentsTitle => $"Tegenstanders · {_enemyPlayers.Count}";
 	private string PastTitle => $"Eerdere gevechten · {_battles.Count}";
 
-	private RenderFragment Opponents => @<MudTable Items="@_enemyPlayers" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Elevation="0">
+	private RenderFragment Opponents => @<MudTable Items="@_enemyPlayers" Class="clan-match-table" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Elevation="0">
 		<HeaderContent>
 			<MudTh Style="text-align: right; width: 110px">
 				<MudTableSortLabel InitialDirection="SortDirection.Descending" SortBy="new Func<IGrouping<string?, Player>, object>(x => x.Count())">Gevechten</MudTableSortLabel>
@@ -92,7 +92,7 @@
 		</RowTemplate>
 	</MudTable>;
 
-	private RenderFragment Past => @<MudTable Items="@_battles" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Elevation="0">
+	private RenderFragment Past => @<MudTable Items="@_battles" Class="clan-match-table" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Elevation="0">
 		<HeaderContent>
 			<MudTh>
 				<MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<BattleReport, object>(x => x.MatchStart)">Datum</MudTableSortLabel>

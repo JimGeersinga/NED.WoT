@@ -2,6 +2,9 @@
 /* MudBlazor's CSS is in @layer mud (layers.css) and ours is not, so a plain selector wins: no doubled classes. An !important stays only where MudBlazor writes an inline style. Colours come from var(--wot-*) and var(--mud-palette-*). */
 
 /* ==== MudAppBar (and the MudToolbar it renders) ==== */
+/* MudAppBar sets no height of its own: the toolbar gives 56px, and the 1px border-bottom of .wot-appbar (border-box) would make the bar 57px, so the height is set here. */
+.mud-appbar.wot-appbar { height: 56px; }
+
 /* The toolbar MudAppBar renders inside itself. */
 .mud-appbar.wot-appbar .mud-toolbar {
     height: 56px;
@@ -254,10 +257,12 @@
 .mud-table.player-table col.c-name { width: 230px; }
 .mud-table.player-table col.c-tank { width: 170px; }
 .mud-table.player-table col.c-life { width: 84px; }
+/* Geblokt in stats mode holds three parts (damage, hits of shots, percentage) and keeps its width; the other seven figure columns share what is left equally. */
+.mud-table.player-table.stats col.c-blk { width: 22.145%; }
 
 .mud-table.player-table .mud-table-cell {
     height: 34px;
-    padding: 0 12px;
+    padding: 0 6px;
     border-bottom: 1px solid var(--mud-palette-table-lines);
     font-size: 14px;
     white-space: nowrap;
@@ -356,6 +361,9 @@
 .mud-table.player-table tr.teams > .mud-table-cell:first-child {
     padding: 0 0 0 18px;
 }
+
+/* ==== MudTable (the two tables of the Clan battle dialog: .clan-match-table) ==== */
+.mud-table.clan-match-table .mud-table-cell { padding: 6px; }
 
 /* ==== MudTable (the battle table: .wot-battle-table; the rows, the day headers and the footer of the Gevechtslog) ==== */
 /* The expanded row nests Details' own MudTable inside this one, so every rule below walks down with child combinators: a descendant selector would restyle the nested table too. */
