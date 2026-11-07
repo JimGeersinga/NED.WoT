@@ -227,7 +227,7 @@
 
 	private bool _loading = true;
 	private bool _loadedOnce;
-	private string? _addedFile;
+	private HashSet<string?> _addedFiles = [];
 	private BattleFilters? _filters;
 	private int _battlesVersion;
 	private string? _clan;
@@ -253,7 +253,7 @@
 	private string RowClass(BattleReport report, int index) => report.Error != null ? "gl-unreadable" : "gl-row"
 		+ (index % 2 == 1 ? " alt" : string.Empty)
 		+ (report.ShowDetails ? " wot-row-active" : string.Empty)
-		+ (report.FileName == _addedFile ? " gl-new" : string.Empty);
+		+ (_addedFiles.Contains(report.FileName) ? " gl-new" : string.Empty);
 
 	/// <summary>Why the table area has no rows: the cause picks the empty state.</summary>
 	private enum EmptyCause
@@ -481,9 +481,11 @@
 			{
 				timestamp = Stopwatch.GetTimestamp();
 
-				// A battle added by the file watcher: keep the table as it is, so the new row can show up in place.
+				// Battles added by the file watcher: keep the table as it is, so the new rows can show up in place.
 				if (_loadedOnce)
 				{
+					_addedFiles = [];
+
 					return;
 				}
 
@@ -514,7 +516,7 @@
 				}
 				else if (_loadedOnce)
 				{
-					_addedFile = e.Report.FileName;
+					_addedFiles.Add(e.Report.FileName);
 				}
 			});
 		};
@@ -544,14 +546,14 @@
 				_loadedOnce = true;
 				StateHasChanged();
 
-				// The row the watcher added stays quietly highlighted for 2 seconds, unless a newer one took over.
-				string? added = _addedFile;
-				if (added != null)
+				// The rows the watcher added stay quietly highlighted for 2 seconds, unless a newer batch took over.
+				HashSet<string?> shown = _addedFiles;
+				if (shown.Count > 0)
 				{
 					await Task.Delay(2000);
-					if (_addedFile == added)
+					if (ReferenceEquals(_addedFiles, shown))
 					{
-						_addedFile = null;
+						_addedFiles = [];
 						StateHasChanged();
 					}
 				}

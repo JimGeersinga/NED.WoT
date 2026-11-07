@@ -26,6 +26,7 @@ public class BattleReportService : IDisposable
     /// <summary>New replays (name → path) waiting for the batch: it runs once no new file has arrived for 1 s.</summary>
     private readonly ConcurrentDictionary<string, string> _pending = new();
     private readonly Timer _batchTimer;
+    private readonly SemaphoreSlim _batchGate = new(1);
 
     private int _filesToLoad;
     private int _filesLoaded;
@@ -254,21 +255,34 @@ public class BattleReportService : IDisposable
         }
     }
 
-    /// <summary>The batch timer fired: takes everything that is pending and not listed yet and adds it as one batch.</summary>
+    /// <summary>The batch timer fired: adds everything that is pending and not listed yet as one batch. One batch at a time: a tick during a batch waits for it, then drains what is pending by then.</summary>
     private async Task AddPendingFilesAsync()
     {
-        List<KeyValuePair<string, string>> batch = [];
-        foreach (string name in _pending.Keys)
+        await _batchGate.WaitAsync();
+        try
         {
-            if (_pending.TryRemove(name, out string? path) && !BattleReports.ContainsKey(name))
+            // A snapshot: a name leaves _pending only once it is listed (see AddNewFilesAsync), so a file in flight still blocks QueueNewFile.
+            List<KeyValuePair<string, string>> batch = [];
+            foreach (KeyValuePair<string, string> file in _pending)
             {
-                batch.Add(new KeyValuePair<string, string>(name, path));
+                if (BattleReports.ContainsKey(file.Key))
+                {
+                    _pending.TryRemove(file.Key, out _);
+                }
+                else
+                {
+                    batch.Add(file);
+                }
+            }
+
+            if (batch.Count > 0 && !_disposed.IsCancellationRequested)
+            {
+                await AddNewFilesAsync(batch);
             }
         }
-
-        if (batch.Count > 0 && !_disposed.IsCancellationRequested)
+        finally
         {
-            await AddNewFilesAsync(batch);
+            _batchGate.Release();
         }
     }
 
@@ -302,7 +316,9 @@ public class BattleReportService : IDisposable
                 BattleReport report = GetBattleReport(new FileInfo(file.Value));
 
                 // An unreadable replay is added too (it shows as a warning row).
-                if (AddBattleReport(file.Key, report))
+                bool listed = AddBattleReport(file.Key, report);
+                _pending.TryRemove(file.Key, out _);
+                if (listed)
                 {
                     added.Add(file.Key);
                     if (report.Error != null)
