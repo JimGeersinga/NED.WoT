@@ -139,6 +139,8 @@
 /* MudBlazor puts ItemDraggingClass on the wrapper around the row. */
 .drag { position: relative; z-index: 2; }
 .drag > .fr { background: var(--wot-surface-dialog); box-shadow: 0 12px 28px rgba(0, 0, 0, .6), 0 0 0 1px var(--mud-palette-primary); }
-/* MudBlazor renders div.mud-dropitem-placeholder (a dashed box via utility classes) at the exact drop position; it becomes the orange line.
-   !important only on what MudBlazor's utility classes (pa-4, border-2, border-dashed, mud-chip-*) force. */
-.mud-dialog .mud-dropitem-placeholder { height: 2px; min-height: 0; padding: 0 !important; border: 0 !important; background: var(--mud-palette-primary) !important; border-radius: 1px; margin: -3px 0; }
+/* MudBlazor renders div.mud-dropitem-placeholder (a dashed box via its !important utility classes pa-4, border-2, border-dashed) at the exact drop position; it becomes the orange line.
+   It sits in @layer mud-override (layers.css): a layered !important beats an unlayered one, and the earlier layer wins among !important, so only there can these rules beat MudBlazor's. Every declaration is !important for that reason. */
+@layer mud-override {
+    .mud-dialog .mud-dropitem-placeholder { height: 2px !important; min-height: 0 !important; padding: 0 !important; border: 0 !important; background: var(--mud-palette-primary) !important; border-radius: 1px !important; margin: -3px 0 !important; }
+}

@@ -1,3 +1,4 @@
 /* MudBlazor's CSS goes in @layer mud, so every unlayered rule of ours (mud.css, wot.css, gl.css, the .razor.css bundle) wins over it whatever the selector's specificity. */
-@layer mud;
+/* mud-override is declared before mud on purpose: for !important the EARLIER layer wins, so a rule in it beats MudBlazor's own !important utilities (pa-4, border-2, ...). It exists only for that. */
+@layer mud-override, mud;
 @import url("../_content/MudBlazor/MudBlazor.min.css") layer(mud);
