@@ -1,13 +1,18 @@
-﻿using Windows.ApplicationModel;
+﻿using Microsoft.Extensions.Logging;
+using Windows.ApplicationModel;
+using Windows.Management.Deployment;
 
 namespace NED.WoT.BattleResults.Client.Services;
 
-public class UpdateCheckService : IDisposable
+public partial class UpdateCheckService(ILogger<UpdateCheckService> logger) : IDisposable
 {
     private readonly CancellationTokenSource _cts = new();
     private readonly TimeSpan _checkInterval = TimeSpan.FromMinutes(15);
 
-    public bool UpdateAvailable { get; set; }
+    public bool UpdateAvailable { get; private set; }
+
+    /// <summary>Raised (on a background thread) when <see cref="UpdateAvailable"/> turns true.</summary>
+    public event Action? Changed;
 
     public void Start()
     {
@@ -15,11 +20,18 @@ public class UpdateCheckService : IDisposable
         CancellationToken token = _cts.Token;
         Task.Run(async () =>
         {
-            await Task.Delay(5000, token);
-            while (!token.IsCancellationRequested && !UpdateAvailable)
+            try
             {
-                await CheckForUpdateAsync();
-                await Task.Delay(_checkInterval, token);
+                await Task.Delay(5000, token);
+                while (!token.IsCancellationRequested && !UpdateAvailable)
+                {
+                    await CheckOnceAsync();
+                    await Task.Delay(_checkInterval, token);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Dispose ended the loop.
             }
         }, token);
     }
@@ -32,9 +44,32 @@ public class UpdateCheckService : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    private async Task CheckForUpdateAsync()
+    /// <summary>A failed check is logged and the loop tries again on the next interval.</summary>
+    private async Task CheckOnceAsync()
     {
-        PackageUpdateAvailabilityResult result = await Package.Current.CheckUpdateAvailabilityAsync();
-        UpdateAvailable = result.Availability == PackageUpdateAvailability.Available;
+        try
+        {
+            // Package.Current.CheckUpdateAvailabilityAsync fails with "Access denied"; ask the system for the same package instead.
+            Package package = new PackageManager().FindPackageForUser(string.Empty, Package.Current.Id.FullName);
+            if (package is null)
+            {
+                LogCheckFailed("PackageNotFound", Package.Current.Id.FullName);
+                return;
+            }
+
+            PackageUpdateAvailabilityResult result = await package.CheckUpdateAvailabilityAsync();
+            if (result.Availability == PackageUpdateAvailability.Available)
+            {
+                UpdateAvailable = true;
+                Changed?.Invoke();
+            }
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            LogCheckFailed(ex.GetType().Name, ex.Message);
+        }
     }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Update check failed: {Type}: {Message}")]
+    private partial void LogCheckFailed(string type, string message);
 }

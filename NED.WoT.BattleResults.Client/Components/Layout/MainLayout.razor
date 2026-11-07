@@ -1,5 +1,6 @@
 ﻿@using NED.WoT.BattleResults.Client.Theme
 @inherits LayoutComponentBase
+@implements IDisposable
 
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
@@ -18,7 +19,10 @@
         <span class="wot-rivet wot-rivet-bl"></span><span class="wot-rivet wot-rivet-br"></span>
         <div class="wot-brand">
             <MudImage Src="img/gevechtslog-mark.svg" Alt="" Class="wot-brand-mark" />
-            <span class="wot-wordmark">WoT <b>Gevechtslog</b></span>
+            <span class="wot-brand-text">
+                <span class="wot-wordmark">WoT <b>Gevechtslog</b></span>
+                <span class="wot-byline">Een initiatief van <b>NED</b></span>
+            </span>
         </div>
         @if (!string.IsNullOrEmpty(SettingService.Settings.ClanAbbreviation))
         {
@@ -57,8 +61,14 @@
             await OpenSettings(false);
         }
 
+        UpdateCheckService.Changed += OnUpdateChanged;
         UpdateCheckService.Start();
     }
+
+    private void OnUpdateChanged() => _ = InvokeAsync(StateHasChanged);
+
+    /// <summary>A reload disposes the layout and its scope; a disposed layout must not be rendered again.</summary>
+    public void Dispose() => UpdateCheckService.Changed -= OnUpdateChanged;
 
     private void Refresh()
     {

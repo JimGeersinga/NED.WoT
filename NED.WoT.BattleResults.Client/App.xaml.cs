@@ -9,6 +9,6 @@ public partial class App : Application
 
     protected override Window CreateWindow(IActivationState? activationState)
     {
-        return new Window(new MainPage()) { Title = "WoT Gevechtslog" };
+        return new Window(new MainPage()) { Title = $"WoT Gevechtslog · V{AppInfo.Current.Version.ToString(3)}" };
     }
 }
