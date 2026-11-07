@@ -258,7 +258,7 @@
 .mud-table.player-table col.c-tank { width: 170px; }
 .mud-table.player-table col.c-life { width: 84px; }
 /* Geblokt in stats mode holds three parts (damage, hits of shots, percentage) and keeps its width; the other seven figure columns share what is left equally. */
-.mud-table.player-table.stats col.c-blk { width: 22.145%; }
+.mud-table.player-table.stats col.c-blk { width: 190px; }
 
 .mud-table.player-table .mud-table-cell {
     height: 34px;
