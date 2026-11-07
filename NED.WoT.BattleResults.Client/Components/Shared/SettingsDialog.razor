@@ -49,6 +49,23 @@
                 </div>
 
                 <MudDivider />
+                <MudText Typo="Typo.overline" Color="Color.Tertiary">Live gevecht</MudText>
+                <MudStack Spacing="1">
+                    <MudTextField Label="Pad naar temp-replay" Variant="Variant.Filled"
+                                  Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.FolderOpen"
+                                  AdornmentAriaLabel="Kies map voor temp-replay" OnAdornmentClick="PickLiveFolder"
+                                  Placeholder="@BattleReportService.LiveReplayFile(null, modal.ReplayFolders.FirstOrDefault()?.Path)"
+                                  HelperText="Het tijdelijke replay-bestand van het lopende gevecht. Hiermee zoekt de app de tegenstander live op."
+                                  @bind-Value="@modal.LiveReplayPath" For="(() => modal.LiveReplayPath)" />
+                    <MudSwitch Color="Color.Primary" @bind-Value="@modal.AutoClanLookup" For="(() => modal.AutoClanLookup)">
+                        <div>
+                            <div>Clan automatisch opzoeken bij de start van een gevecht</div>
+                            <MudText Typo="Typo.caption" Class="mud-text-secondary">Opent Clan gevecht zodra je clan tegen een andere clan speelt.</MudText>
+                        </div>
+                    </MudSwitch>
+                </MudStack>
+
+                <MudDivider />
                 <MudText Typo="Typo.overline" Color="Color.Tertiary">Laden</MudText>
                 <MudDatePicker Label="Laad gevechten sinds" Variant="Variant.Filled" Style="max-width: 320px" HelperText="Geldt voor alle mappen."
                                DateFormat="dd-MM-yyyy" FirstDayOfWeek="DayOfWeek.Monday"
@@ -80,21 +97,6 @@
                         <div>
                             <div>Scherm bijwerken tijdens het laden</div>
                             <MudText Typo="Typo.caption" Class="mud-text-secondary">Gevechten verschijnen terwijl ze worden gelezen.</MudText>
-                        </div>
-                    </MudSwitch>
-                </MudStack>
-
-                <MudDivider />
-                <MudText Typo="Typo.overline" Color="Color.Tertiary">Live gevecht</MudText>
-                <MudStack Spacing="1">
-                    <MudTextField Label="Pad naar temp-replay" Variant="Variant.Filled"
-                                  Placeholder="@BattleReportService.LiveReplayFile(null, modal.ReplayFolders.FirstOrDefault()?.Path)"
-                                  HelperText="Het tijdelijke replay-bestand van het lopende gevecht. Hiermee zoekt de app de tegenstander live op."
-                                  @bind-Value="@modal.LiveReplayPath" For="(() => modal.LiveReplayPath)" />
-                    <MudSwitch Color="Color.Primary" @bind-Value="@modal.AutoClanLookup" For="(() => modal.AutoClanLookup)">
-                        <div>
-                            <div>Clan automatisch opzoeken bij de start van een gevecht</div>
-                            <MudText Typo="Typo.caption" Class="mud-text-secondary">Opent Clan gevecht zodra je clan tegen een andere clan speelt.</MudText>
                         </div>
                     </MudSwitch>
                 </MudStack>
@@ -176,6 +178,19 @@
 
         folder.Path = path;
         _editContext.NotifyFieldChanged(new FieldIdentifier(folder, nameof(ReplayFolder.Path)));
+    }
+
+    /// <summary>A file picker can't work: temp.wotreplay exists only during a battle. The folder is picked and the file name added.</summary>
+    private async Task PickLiveFolder()
+    {
+        string? path = await FolderPicker.PickAsync();
+        if (path is null)
+        {
+            return;
+        }
+
+        modal.LiveReplayPath = Path.Combine(path, "temp.wotreplay");
+        _editContext.NotifyFieldChanged(new FieldIdentifier(modal, nameof(Settings.LiveReplayPath)));
     }
 
     private void OnSubmit(EditContext context)
