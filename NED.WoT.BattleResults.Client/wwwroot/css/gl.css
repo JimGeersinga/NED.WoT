@@ -131,11 +131,14 @@
 /* The "Geen toegang" page: a centred card on the background-gray well. */
 .gl-unauth { box-sizing: border-box; display: flex; align-items: center; justify-content: center; min-height: calc(100vh - var(--mud-appbar-height)); padding: 24px; background: var(--mud-palette-background-gray); }
 
-/* Replay folder list (SettingsDialog): a row holds the drag handle, Titel, Pad and the up, down and delete buttons (40px, the width of a MudIconButton). The row being dragged lifts with an orange ring; .drop is the orange line where it will land. */
-.fr { display: grid; grid-template-columns: 40px 180px minmax(0, 1fr) 40px 40px 40px; gap: 8px; align-items: start; padding: 8px 8px 8px 4px; border-radius: 4px; background: var(--mud-palette-surface); }
+/* Replay folder list (SettingsDialog): a row holds the drag handle, Titel, Pad and the up, down and delete buttons (square .gl-ibtn, 32px). The row being dragged lifts with an orange ring; MudBlazor's own drop placeholder is restyled into the orange line where it will land. */
+.fr { display: grid; grid-template-columns: 40px 180px minmax(0, 1fr) 32px 32px 32px; gap: 8px; align-items: start; padding: 8px 8px 8px 4px; border-radius: 4px; background: var(--mud-palette-surface); }
 .fr > .mud-drag-handle { display: flex; align-items: center; justify-content: center; height: 40px; margin-top: 8px; color: var(--mud-palette-text-secondary); cursor: grab; }
-.fr > .mud-icon-button { margin-top: 8px; }
+/* (56px filled field - 32px button) / 2 */
+.fr > .gl-ibtn { margin-top: 12px; }
 /* MudBlazor puts ItemDraggingClass on the wrapper around the row. */
 .drag { position: relative; z-index: 2; }
 .drag > .fr { background: var(--wot-surface-dialog); box-shadow: 0 12px 28px rgba(0, 0, 0, .6), 0 0 0 1px var(--mud-palette-primary); }
-.drop { height: 2px; background: var(--mud-palette-primary); border-radius: 1px; margin: -3px 0; }
+/* MudBlazor renders div.mud-dropitem-placeholder (a dashed box via utility classes) at the exact drop position; it becomes the orange line.
+   !important only on what MudBlazor's utility classes (pa-4, border-2, border-dashed, mud-chip-*) force. */
+.mud-dialog .mud-dropitem-placeholder { height: 2px; min-height: 0; padding: 0 !important; border: 0 !important; background: var(--mud-palette-primary) !important; border-radius: 1px; margin: -3px 0; }

@@ -28,18 +28,6 @@
                         @{
                             int index = modal.ReplayFolders.IndexOf(folder);
                             string name = string.IsNullOrWhiteSpace(folder.Title) ? "nieuwe map" : folder.Title;
-
-                            // The orange drop line: while a row is dragged, a line shows where it will land (after the row the target index
-                            // points at when it moves down, before it when it moves up).
-                            bool dragging = _container?.TransactionInProgress() == true && _container.GetTransactionItem() is { } dragged && dragged != folder;
-                            int target = dragging ? _container!.GetTransactionIndex() : -1;
-                            bool down = dragging && _container!.IsItemMovedDownwards();
-                            bool dropBefore = dragging && !down && index == target;
-                            bool dropAfter = dragging && down && index == target;
-                        }
-                        @if (dropBefore)
-                        {
-                            <div class="drop" aria-hidden="true"></div>
                         }
                         <div role="group" aria-label="@($"Map {index + 1}")" class="fr">
                             <MudDragHandle T="ReplayFolder">
@@ -51,21 +39,20 @@
                                           Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.FolderOpen"
                                           AdornmentAriaLabel="@($"Kies map voor {name}")" OnAdornmentClick="() => PickFolder(folder)"
                                           @bind-Value="folder.Path" For="(() => folder.Path)" />
-                            <MudIconButton Icon="@Icons.Material.Outlined.ArrowUpward" aria-label="@($"{name} omhoog")"
-                                           Disabled="@(index == 0)" OnClick="() => Move(folder, -1)" />
-                            <MudIconButton Icon="@Icons.Material.Outlined.ArrowDownward" aria-label="@($"{name} omlaag")"
-                                           Disabled="@(index == modal.ReplayFolders.Count - 1)" OnClick="() => Move(folder, 1)" />
-                            <MudIconButton Icon="@Icons.Material.Outlined.Delete" aria-label="@($"{name} verwijderen")"
-                                           Disabled="@(modal.ReplayFolders.Count == 1)" OnClick="() => Remove(folder)" />
+                            <button type="button" class="gl-ibtn" aria-label="@($"{name} omhoog")" disabled="@(index == 0)" @onclick="() => Move(folder, -1)">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Outlined.ArrowUpward)</svg>
+                            </button>
+                            <button type="button" class="gl-ibtn" aria-label="@($"{name} omlaag")" disabled="@(index == modal.ReplayFolders.Count - 1)" @onclick="() => Move(folder, 1)">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Outlined.ArrowDownward)</svg>
+                            </button>
+                            <button type="button" class="gl-ibtn" aria-label="@($"{name} verwijderen")" disabled="@(modal.ReplayFolders.Count == 1)" @onclick="() => Remove(folder)">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Outlined.Delete)</svg>
+                            </button>
                         </div>
-                        @if (dropAfter)
-                        {
-                            <div class="drop" aria-hidden="true"></div>
-                        }
                     </ItemRenderer>
                 </MudDropContainer>
                 <div>
-                    <MudButton Variant="Variant.Outlined" Size="Size.Small" StartIcon="@Icons.Material.Outlined.Add"
+                    <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Outlined.Add"
                                OnClick="Add">Map toevoegen</MudButton>
                 </div>
 
