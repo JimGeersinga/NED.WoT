@@ -23,7 +23,8 @@ public class SettingService
             SingleBattleResultOpenedOnly = Preferences.Default.Get(nameof(Settings.SingleBattleResultOpenedOnly), false),
             OnlyHighlistOwnMatches = Preferences.Default.Get(nameof(Settings.OnlyHighlistOwnMatches), false),
             UpdateScreeenWhileLoading = Preferences.Default.Get(nameof(Settings.UpdateScreeenWhileLoading), true),
-            AutoClanLookup = Preferences.Default.Get(nameof(Settings.AutoClanLookup), false)
+            AutoClanLookup = Preferences.Default.Get(nameof(Settings.AutoClanLookup), false),
+            LiveReplayPath = Preferences.Default.Get(nameof(Settings.LiveReplayPath), string.Empty)
         };
     }
 
@@ -37,6 +38,7 @@ public class SettingService
         Preferences.Default.Set(nameof(Settings.OnlyHighlistOwnMatches), Settings.OnlyHighlistOwnMatches);
         Preferences.Default.Set(nameof(Settings.UpdateScreeenWhileLoading), Settings.UpdateScreeenWhileLoading);
         Preferences.Default.Set(nameof(Settings.AutoClanLookup), Settings.AutoClanLookup);
+        Preferences.Default.Set(nameof(Settings.LiveReplayPath), Settings.LiveReplayPath ?? string.Empty);
     }
 
     /// <summary>The saved folders; without them (nothing saved yet, or unreadable) the old single path becomes one folder "Replays".</summary>
