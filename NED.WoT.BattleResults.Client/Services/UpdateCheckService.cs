@@ -24,11 +24,6 @@ public class UpdateCheckService : IDisposable
         }, token);
     }
 
-    public void Stop()
-    {
-        _cts?.Cancel();
-    }
-
     /// <summary>A reload makes a new DI scope; the scope disposes this one, which ends the check loop.</summary>
     public void Dispose()
     {

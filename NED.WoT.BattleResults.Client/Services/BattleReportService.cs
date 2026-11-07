@@ -94,6 +94,7 @@ public partial class BattleReportService : IDisposable
         });
 
         LoadingBattleReportsFinished?.Invoke(this, new EventArgs());
+        Debug.WriteLine($"Battle list loaded: managed heap {GC.GetTotalMemory(true) / 1048576} MB");
     }
 
     public void ListenForFileChanges()
@@ -130,6 +131,7 @@ public partial class BattleReportService : IDisposable
     public void Dispose()
     {
         _timer?.Dispose();
+        BattleReports.Clear();
 
         if (_watcher is not null)
         {
