@@ -131,16 +131,7 @@
 /* The "Geen toegang" page: a centred card on the background-gray well. */
 .gl-unauth { box-sizing: border-box; display: flex; align-items: center; justify-content: center; min-height: calc(100vh - var(--mud-appbar-height)); padding: 24px; background: var(--mud-palette-background-gray); }
 
-/* Replay folder list (SettingsDialog): a row holds the drag handle, Titel, Pad and the up, down and delete buttons (square .gl-ibtn, 32px). The row being dragged lifts with an orange ring; MudBlazor's own drop placeholder is restyled into the orange line where it will land. */
-.fr { display: grid; grid-template-columns: 40px 180px minmax(0, 1fr) 32px 32px 32px; gap: 8px; align-items: start; padding: 8px 8px 8px 4px; border-radius: 4px; background: var(--mud-palette-surface); }
-.fr > .mud-drag-handle { display: flex; align-items: center; justify-content: center; height: 40px; margin-top: 8px; color: var(--mud-palette-text-secondary); cursor: grab; }
+/* Replay folder list (SettingsDialog): a row holds Titel, Pad and the up, down and delete buttons (square .gl-ibtn, 32px). */
+.fr { display: grid; grid-template-columns: 180px minmax(0, 1fr) 32px 32px 32px; gap: 8px; align-items: start; padding: 8px; border-radius: 4px; background: var(--mud-palette-surface); }
 /* (56px filled field - 32px button) / 2 */
 .fr > .gl-ibtn { margin-top: 12px; }
-/* MudBlazor puts ItemDraggingClass on the wrapper around the row. */
-.drag { position: relative; z-index: 2; }
-.drag > .fr { background: var(--wot-surface-dialog); box-shadow: 0 12px 28px rgba(0, 0, 0, .6), 0 0 0 1px var(--mud-palette-primary); }
-/* MudBlazor renders div.mud-dropitem-placeholder (a dashed box via its !important utility classes pa-4, border-2, border-dashed) at the exact drop position; it becomes the orange line.
-   It sits in @layer mud-override (layers.css): a layered !important beats an unlayered one, and the earlier layer wins among !important, so only there can these rules beat MudBlazor's. Every declaration is !important for that reason. */
-@layer mud-override {
-    .mud-dialog .mud-dropitem-placeholder { height: 2px !important; min-height: 0 !important; padding: 0 !important; border: 0 !important; background: var(--mud-palette-primary) !important; border-radius: 1px !important; margin: -3px 0 !important; }
-}

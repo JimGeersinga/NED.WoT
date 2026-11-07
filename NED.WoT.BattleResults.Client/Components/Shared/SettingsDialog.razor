@@ -19,20 +19,12 @@
                     <MudText Typo="Typo.overline" Color="Color.Tertiary">Replaymappen</MudText>
                     <MudText Typo="Typo.caption" Class="mud-text-secondary">De volgorde hier is de volgorde van de navigatie in de app bar.</MudText>
                 </MudStack>
-                <MudDropContainer T="ReplayFolder" @ref="_container" Items="modal.ReplayFolders" ItemsSelector="@((folder, zone) => true)"
-                                  ItemDropped="OnFolderDropped" ItemDraggingClass="drag">
-                    <ChildContent>
-                        <MudDropZone T="ReplayFolder" Identifier="folders" AllowReorder Class="d-flex flex-column gap-2" />
-                    </ChildContent>
-                    <ItemRenderer Context="folder">
-                        @{
-                            int index = modal.ReplayFolders.IndexOf(folder);
-                            string name = string.IsNullOrWhiteSpace(folder.Title) ? "nieuwe map" : folder.Title;
-                        }
-                        <div role="group" aria-label="@($"Map {index + 1}")" class="fr">
-                            <MudDragHandle T="ReplayFolder">
-                                <MudIcon Icon="@Icons.Material.Outlined.DragIndicator" Title="@($"Verplaats {name}")" />
-                            </MudDragHandle>
+                <MudStack Spacing="2">
+                    @foreach (var folder in modal.ReplayFolders)
+                    {
+                        int index = modal.ReplayFolders.IndexOf(folder);
+                        string name = string.IsNullOrWhiteSpace(folder.Title) ? "nieuwe map" : folder.Title;
+                        <div @key="folder" role="group" aria-label="@($"Map {index + 1}")" class="fr">
                             <MudTextField Label="Titel" Variant="Variant.Filled"
                                           @bind-Value="folder.Title" For="(() => folder.Title)" />
                             <MudTextField Label="Pad" Variant="Variant.Filled" Placeholder="C:\Games\World_of_Tanks_EU\replays"
@@ -49,8 +41,8 @@
                                 <svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Outlined.Delete)</svg>
                             </button>
                         </div>
-                    </ItemRenderer>
-                </MudDropContainer>
+                    }
+                </MudStack>
                 <div>
                     <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Outlined.Add"
                                OnClick="Add">Map toevoegen</MudButton>
@@ -119,7 +111,6 @@
 
     private Settings modal = new Settings();
     private EditContext _editContext = new(new Settings());
-    private MudDropContainer<ReplayFolder>? _container;
 
     protected override void OnInitialized()
     {
@@ -153,19 +144,16 @@
         int index = modal.ReplayFolders.IndexOf(folder);
         modal.ReplayFolders.RemoveAt(index);
         modal.ReplayFolders.Insert(index + by, folder);
-        _container?.Refresh();
     }
 
     private void Add()
     {
         modal.ReplayFolders.Add(new ReplayFolder());
-        _container?.Refresh();
     }
 
     private void Remove(ReplayFolder folder)
     {
         modal.ReplayFolders.Remove(folder);
-        _container?.Refresh();
     }
 
     private async Task PickFolder(ReplayFolder folder)
@@ -178,20 +166,6 @@
 
         folder.Path = path;
         _editContext.NotifyFieldChanged(new FieldIdentifier(folder, nameof(ReplayFolder.Path)));
-        _container?.Refresh();
-    }
-
-    // IndexInZone is the new place in the zone (MudBlazor's own sorting example uses it the same way).
-    private void OnFolderDropped(MudItemDropInfo<ReplayFolder> drop)
-    {
-        if (drop.Item is null)
-        {
-            return;
-        }
-
-        modal.ReplayFolders.Remove(drop.Item);
-        modal.ReplayFolders.Insert(Math.Min(drop.IndexInZone, modal.ReplayFolders.Count), drop.Item);
-        _container?.Refresh();
     }
 
     private void OnSubmit(EditContext context)

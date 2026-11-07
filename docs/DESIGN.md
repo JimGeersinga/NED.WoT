@@ -72,7 +72,7 @@ Every style has one home, chosen by what it styles. Work through the list in thi
 | 6 | `Component.razor.css` | One component's own elements. |
 | (legacy) | `wwwroot/css/app.css` | Temporary: only the rules the screens not yet laid out again (the dialogs, Details) still need (`.Win`/`.Lose`/`.Draw`, the text utilities) and the splash. #3–#9 empty it; its `!important` rules are allowed until then. |
 
-- **Cascade layer.** `wwwroot/css/layers.css` (linked first, because it only imports) declares `@layer mud-override, mud` and imports `MudBlazor.min.css` into `mud`. `mud-override` is declared first only so that a rule in it beats MudBlazor's own `!important` utilities (the earlier layer wins for `!important`); nothing else goes there. Our CSS is unlayered, so it wins over MudBlazor whatever the selector's specificity: no doubled or quadrupled classes.
+- **Cascade layer.** `wwwroot/css/layers.css` (linked first, because it only imports) declares `@layer mud` and imports `MudBlazor.min.css` into it. Our CSS is unlayered, so it wins over MudBlazor whatever the selector's specificity: no doubled or quadrupled classes.
   `<head>` order: `css/layers.css`, `tokens.css`, `mud.css`, `wot.css`, `gl.css`, `app.css` (legacy, above), then the scoped bundle.
 - **`!important`** only in `mud.css`, only where MudBlazor writes an inline style, with a comment naming it. The focus ring in `wot.css` sits in `@layer mud` on purpose: it is a default that MudBlazor's controls override with their own outline.
 - **No `.mud-*` in a `.razor.css`**, `::deep` included. MudBlazor's own element does not get the component's scope attribute either, so a modifier class on it is styled in `mud.css`.
