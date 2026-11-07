@@ -10,7 +10,7 @@ namespace NED.WoT.BattleResults.Client.Services;
 
 public class CustomAuthenticationStateProvider() : AuthenticationStateProvider
 {
-    private static readonly HttpClient? _httpClient = new();
+    private static readonly HttpClient _httpClient = new();
     private readonly JsonSerializerOptions _jsonSerializerOptions = new()
     {
         PropertyNameCaseInsensitive = true
@@ -65,11 +65,6 @@ public class CustomAuthenticationStateProvider() : AuthenticationStateProvider
 
     public async Task<AuthResult?> CheckAuthenticationAsync()
     {
-        if (_httpClient is null)
-        {
-            return null;
-        }
-
         string user = Environment.UserName;
         string machine = Environment.MachineName;
         string machineVersion = DeviceInfo.Current.VersionString;

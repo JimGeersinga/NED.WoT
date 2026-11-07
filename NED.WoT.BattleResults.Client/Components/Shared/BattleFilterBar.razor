@@ -73,7 +73,7 @@
 		<ChildContent>
 			@if (_mapOpen)
 			{
-				var maps = BattleFilters.MapOptions(Scoped, Maps, _mapTerm);
+				var maps = BattleFilters.MapChoices(Scoped, Maps, _mapTerm);
 				<div class="wot-map-search" @onkeydown="MapKey">
 					<MudTextField T="string" @bind-Value="_mapTerm" Immediate="true" Placeholder="Zoek een map" aria-label="Map zoeken"
 								  Variant="Variant.Outlined" Margin="Margin.Dense" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.Search" />
@@ -220,13 +220,13 @@
 	private Task<IEnumerable<BattleFilters.Choice>> SearchClans(string? term, CancellationToken token)
 	{
 		_clanTerm = term ?? string.Empty;
-		return Task.Run(() => Filters.ClanOptions(term), token);
+		return Task.Run(() => Filters.ClanChoices(term), token);
 	}
 
 	private Task<IEnumerable<BattleFilters.Choice>> SearchPlayers(string? term, CancellationToken token)
 	{
 		_playerTerm = term ?? string.Empty;
-		return Task.Run(() => Filters.PlayerOptions(Clan, term), token);
+		return Task.Run(() => Filters.PlayerChoices(Clan, term), token);
 	}
 
 	/// <summary>Choosing a clan drops a chosen player who never played for it, so the two filters do not leave an empty table by themselves.</summary>

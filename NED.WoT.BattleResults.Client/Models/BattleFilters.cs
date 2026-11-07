@@ -118,7 +118,7 @@ public sealed class BattleFilters
     private static Choice Header(string text) => new(string.Empty, null, 0, text);
 
     /// <summary>The Clan list for the typed term: your own clan (with its battle count, 0 when it has none), then the opponents, most battles first.</summary>
-    public IEnumerable<Choice> ClanOptions(string? term)
+    public IEnumerable<Choice> ClanChoices(string? term)
     {
         term ??= string.Empty;
         Tables tables = _tables.Value;
@@ -146,7 +146,7 @@ public sealed class BattleFilters
     public static string? SpelerTag(string? chosenClan, Choice? player) => player == null ? null : chosenClan ?? (string.IsNullOrEmpty(player.Clan) ? null : player.Clan);
 
     /// <summary>The Speler list for the typed term. With a clan: only the players who were ever on that clan's team, each with the battles with that clan. Without: every player once, your own clan's players first, then the others, each A to Z.</summary>
-    public IEnumerable<Choice> PlayerOptions(string? clan, string? term)
+    public IEnumerable<Choice> PlayerChoices(string? clan, string? term)
     {
         term ??= string.Empty;
         Tables tables = _tables.Value;
@@ -166,11 +166,11 @@ public sealed class BattleFilters
         return rows;
     }
 
-    private static void AddSection(List<Choice> rows, string header, IEnumerable<Choice> options)
+    private static void AddSection(List<Choice> rows, string header, IEnumerable<Choice> choices)
     {
         int at = rows.Count;
         rows.Add(Header(header));
-        rows.AddRange(options);
+        rows.AddRange(choices);
 
         if (rows.Count == at + 1)
         {
@@ -179,7 +179,7 @@ public sealed class BattleFilters
     }
 
     /// <summary>The Map list for the typed term: every map in the battles with its number of battles, A to Z. A ticked map without a battle in <paramref name="battles"/> stays listed (with 0) so it can be unticked. Battles without a map name are not listed.</summary>
-    public static List<Choice> MapOptions(IEnumerable<BattleReport> battles, IEnumerable<string> ticked, string? term)
+    public static List<Choice> MapChoices(IEnumerable<BattleReport> battles, IEnumerable<string> ticked, string? term)
     {
         Dictionary<string, int> counts = new(StringComparer.Ordinal);
         foreach (string map in battles.Select(x => x.MapName).OfType<string>())
@@ -248,20 +248,20 @@ public sealed class BattleFilters
         ];
         BattleFilters filters = Build(reports, "NED-1");
 
-        List<Choice> clans = filters.ClanOptions(string.Empty).Where(x => x.Header == null).ToList();
+        List<Choice> clans = filters.ClanChoices(string.Empty).Where(x => x.Header == null).ToList();
         Debug.Assert(clans.Select(x => x.Name).SequenceEqual(["NED-1", "DUTCH", "RHINE"]) && clans.Select(x => x.Battles).SequenceEqual([4, 3, 1]), "clans: yours first, then most battles first; a normal battle is no clan");
-        Debug.Assert(filters.ClanOptions(string.Empty).Select(x => x.Header).OfType<string>().SequenceEqual(["Jouw clan", "Tegenstanders · 2"]), "clan headers: yours, the opponents with their number");
-        Debug.Assert(filters.ClanOptions("rh").Where(x => x.Header == null).Select(x => x.Name).SequenceEqual(["RHINE"]), "a typed term narrows the clans, case does not matter");
+        Debug.Assert(filters.ClanChoices(string.Empty).Select(x => x.Header).OfType<string>().SequenceEqual(["Jouw clan", "Tegenstanders · 2"]), "clan headers: yours, the opponents with their number");
+        Debug.Assert(filters.ClanChoices("rh").Where(x => x.Header == null).Select(x => x.Name).SequenceEqual(["RHINE"]), "a typed term narrows the clans, case does not matter");
 
         // No clan, typed "k": NED-1 players first, A to Z, then the others A to Z.
-        List<Choice> typed = filters.PlayerOptions(null, "k").ToList();
+        List<Choice> typed = filters.PlayerChoices(null, "k").ToList();
         Debug.Assert(typed.Where(x => x.Header == null).Select(x => x.Name).SequenceEqual(["Dijkdoorbraak", "Klompenklopper", "Tankgeneraal", "KaasKoning", "Kapitein_Kees", "KlompKees"]), "players without a clan: own clan first, then the others, A to Z");
         Debug.Assert(typed.Select(x => x.Header).OfType<string>().SequenceEqual(["NED-1 · A tot Z", "Overige spelers · A tot Z"]), "the two sections have their header");
-        Debug.Assert(filters.PlayerOptions(null, string.Empty).Count(x => x.Header == null) == 8, "players without a clan: every player seen in the battles, once");
-        Debug.Assert(filters.PlayerOptions(null, string.Empty).Single(x => x.Name == "KlompKees").Clan == "DUTCH", "a player carries the clan of the latest battle");
+        Debug.Assert(filters.PlayerChoices(null, string.Empty).Count(x => x.Header == null) == 8, "players without a clan: every player seen in the battles, once");
+        Debug.Assert(filters.PlayerChoices(null, string.Empty).Single(x => x.Name == "KlompKees").Clan == "DUTCH", "a player carries the clan of the latest battle");
 
         // A clan: only its players, with the battles with that clan.
-        List<Choice> dutch = filters.PlayerOptions("DUTCH", string.Empty).Where(x => x.Header == null).ToList();
+        List<Choice> dutch = filters.PlayerChoices("DUTCH", string.Empty).Where(x => x.Header == null).ToList();
         Debug.Assert(dutch.Select(x => x.Name).SequenceEqual(["KaasKoning", "KlompKees"]) && dutch.Select(x => x.Battles).SequenceEqual([1, 3]), "players of a clan: only that clan's, with battle counts");
 
         // The tag of the Speler field, only with a player picked: the chosen clan, else the player's latest clan; none at all without either.
@@ -275,26 +275,26 @@ public sealed class BattleFilters
         // Refresh: the same version keeps the tables (the renders in between cost nothing), a new version rebuilds them lazily even when the count is the same (a replaced replay).
         List<BattleReport> before = [Battle(1, "NED-1", "DUTCH", ["Tankgeneraal"], ["Oud"])];
         BattleFilters live = Build(before, "NED-1");
-        Debug.Assert(live.PlayerOptions(null, "oud").Count(x => x.Header == null) == 1, "the lookup knows the first battles");
+        Debug.Assert(live.PlayerChoices(null, "oud").Count(x => x.Header == null) == 1, "the lookup knows the first battles");
         List<BattleReport> replaced = [Battle(1, "NED-1", "DUTCH", ["Tankgeneraal"], ["Nieuw"])];
         live.Refresh(replaced, 0, "NED-1");
-        Debug.Assert(live.PlayerOptions(null, "oud").Count(x => x.Header == null) == 1 && live.PlayerOptions(null, "nieuw").All(x => x.Header != null), "the same version: the tables stay");
+        Debug.Assert(live.PlayerChoices(null, "oud").Count(x => x.Header == null) == 1 && live.PlayerChoices(null, "nieuw").All(x => x.Header != null), "the same version: the tables stay");
         live.Refresh(replaced, 1, "NED-1");
-        Debug.Assert(live.PlayerOptions(null, "oud").All(x => x.Header != null) && live.PlayerOptions(null, "nieuw").Count(x => x.Header == null) == 1, "a new version with the same count: rebuilt, no stale list");
+        Debug.Assert(live.PlayerChoices(null, "oud").All(x => x.Header != null) && live.PlayerChoices(null, "nieuw").Count(x => x.Header == null) == 1, "a new version with the same count: rebuilt, no stale list");
         live.Refresh(replaced, 1, "DUTCH");
-        Debug.Assert(live.ClanOptions(string.Empty).First().Header == "Jouw clan" && live.ClanOptions(string.Empty).ElementAt(1).Name == "DUTCH", "a changed own clan tag rebuilds the tables");
+        Debug.Assert(live.ClanChoices(string.Empty).First().Header == "Jouw clan" && live.ClanChoices(string.Empty).ElementAt(1).Name == "DUTCH", "a changed own clan tag rebuilds the tables");
 
         // The Map list: A to Z with counts, a ticked map without battles stays, a typed term narrows it; the box shows the first map and "+n".
         List<BattleReport> onMaps = [new() { MapName = "Steppes" }, new() { MapName = "Abbey" }, new() { MapName = "Steppes" }, new() { MapName = null }];
-        Debug.Assert(MapOptions(onMaps, [], null).Select(x => $"{x.Name}:{x.Battles}").SequenceEqual(["Abbey:1", "Steppes:2"]), "maps: A to Z with their battle count, no map name is not listed");
-        Debug.Assert(MapOptions(onMaps, ["Fjords"], null).Select(x => $"{x.Name}:{x.Battles}").SequenceEqual(["Abbey:1", "Fjords:0", "Steppes:2"]), "a ticked map with no battle stays listed");
-        Debug.Assert(MapOptions(onMaps, [], "STE").Select(x => x.Name).SequenceEqual(["Steppes"]), "a typed term narrows the maps, case does not matter");
+        Debug.Assert(MapChoices(onMaps, [], null).Select(x => $"{x.Name}:{x.Battles}").SequenceEqual(["Abbey:1", "Steppes:2"]), "maps: A to Z with their battle count, no map name is not listed");
+        Debug.Assert(MapChoices(onMaps, ["Fjords"], null).Select(x => $"{x.Name}:{x.Battles}").SequenceEqual(["Abbey:1", "Fjords:0", "Steppes:2"]), "a ticked map with no battle stays listed");
+        Debug.Assert(MapChoices(onMaps, [], "STE").Select(x => x.Name).SequenceEqual(["Steppes"]), "a typed term narrows the maps, case does not matter");
         Debug.Assert(MapSummary([]) == null && MapSummary(["Steppes"]) == "Steppes" && MapSummary(["Steppes", "Abbey", "Fjords"]) == "Abbey +2", "map box: nothing, one map, the first map and +n");
 
         // A player of two clans is one row without a clan and a row under each clan.
         List<BattleReport> moved = [Battle(1, "NED-1", "DUTCH", ["Tankgeneraal"], ["Wisselaar"]), Battle(2, "NED-1", "RHINE", ["Tankgeneraal"], ["Wisselaar"])];
         BattleFilters change = Build(moved, "NED-1");
-        Debug.Assert(change.PlayerOptions(null, "wissel").Count(x => x.Header == null) == 1 && change.PlayerOptions(null, "wissel").Single(x => x.Header == null).Clan == "RHINE", "one row, with the tag of the latest battle");
-        Debug.Assert(change.PlayerOptions("DUTCH", "wissel").Count(x => x.Header == null) == 1 && change.PlayerOptions("RHINE", "wissel").Count(x => x.Header == null) == 1, "listed under every clan they were ever on");
+        Debug.Assert(change.PlayerChoices(null, "wissel").Count(x => x.Header == null) == 1 && change.PlayerChoices(null, "wissel").Single(x => x.Header == null).Clan == "RHINE", "one row, with the tag of the latest battle");
+        Debug.Assert(change.PlayerChoices("DUTCH", "wissel").Count(x => x.Header == null) == 1 && change.PlayerChoices("RHINE", "wissel").Count(x => x.Header == null) == 1, "listed under every clan they were ever on");
     }
 }
