@@ -237,7 +237,7 @@
 
 /* ==== MudTable (the player table of Details: .player-table; the canvas's "Component: gevechtsdetails") ==== */
 /* Two header tiers, one group per team, the first five columns sticky. The widths are fixed because a sticky column needs the left offset of the ones before it:
-   expander 44, # 40, Naam 230, Tank 170, Speeltijd 84, then the eight figure columns, which have no width and share what is left of the panel equally (table-layout: fixed); below 1240px (1426px in stats mode, like the canvas's grid) the table scrolls sideways. The elements Details.razor renders itself are in Details.razor.css. */
+   expander 44, # 40, Naam 230, Tank 170, Speeltijd 84, then the figures; the last column takes what is left of the panel's width; below 1240px (1426px in stats mode, like the canvas's grid) the table scrolls sideways. The elements Details.razor renders itself are in Details.razor.css. */
 .mud-table.player-table {
     background: transparent;
 }
@@ -257,8 +257,24 @@
 .mud-table.player-table col.c-name { width: 230px; }
 .mud-table.player-table col.c-tank { width: 170px; }
 .mud-table.player-table col.c-life { width: 84px; }
-/* Geblokt in stats mode holds three parts (damage, hits of shots, percentage) and keeps its width; the other seven figure columns share what is left equally. */
-.mud-table.player-table.stats col.c-blk { width: 190px; }
+/* The figure columns share the width that is left of the panel after the sticky ones (568px) in the proportions of the canvas's widths. calc() with a percentage is ignored on a <col>, but percentages are not: the eight add up to 100%,
+   which together with the 568px of the sticky columns is more than the table, so the browser scales them down to fill it exactly and the 568px stay as they are. At the minimum width of the table (1240px, 1426px in stats mode) they come out as the canvas's widths (a sum of 672px, 858px in stats mode). */
+.mud-table.player-table col.c-xp { width: 9.524%; }
+.mud-table.player-table col.c-kills { width: 7.738%; }
+.mud-table.player-table col.c-dmg { width: 11.310%; }
+.mud-table.player-table col.c-blk { width: 16.667%; }
+.mud-table.player-table col.c-recv { width: 12.500%; }
+.mud-table.player-table col.c-shots { width: 14.286%; }
+.mud-table.player-table col.c-hits { width: 13.095%; }
+.mud-table.player-table col.c-pen { width: 14.881%; }
+.mud-table.player-table.stats col.c-xp { width: 7.459%; }
+.mud-table.player-table.stats col.c-kills { width: 6.061%; }
+.mud-table.player-table.stats col.c-dmg { width: 8.858%; }
+.mud-table.player-table.stats col.c-blk { width: 22.145%; }
+.mud-table.player-table.stats col.c-recv { width: 9.790%; }
+.mud-table.player-table.stats col.c-shots { width: 16.317%; }
+.mud-table.player-table.stats col.c-hits { width: 13.986%; }
+.mud-table.player-table.stats col.c-pen { width: 15.385%; }
 
 .mud-table.player-table .mud-table-cell {
     height: 34px;
