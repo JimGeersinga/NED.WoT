@@ -71,6 +71,24 @@ body {
     font-weight: 700;
 }
 
+.wot-brand-text {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.wot-byline {
+    font-size: 11px;
+    line-height: 1;
+    color: var(--mud-palette-text-secondary);
+    white-space: nowrap;
+}
+
+.wot-byline b {
+    color: var(--mud-palette-primary);
+    font-weight: 700;
+}
+
 .wot-vsep {
     width: 1px;
     height: 28px;

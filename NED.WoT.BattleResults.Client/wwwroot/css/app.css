@@ -56,6 +56,23 @@
     height: 220px;
 }
 
+/* The reticle lies over the tank and zooms in on it, then backs off; the tank stays put. Looped, not a one-shot intro: Blazor swaps index.html's splash for Splash.razor's, which would restart it. */
+.splash-sight img.splash-reticle {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    animation: 1.6s ease-in-out infinite alternate splash-aim;
+}
+
+@keyframes splash-aim {
+    from { transform: scale(1.35); }
+    to { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .splash-sight img.splash-reticle { animation: none; }
+}
+
 /* The sight's crosshair lines run off to both sides. */
 .splash-h {
     position: absolute;
@@ -94,6 +111,23 @@
     margin: -10px 0 0;
     font-size: 13px;
     color: var(--wot-skipped);
+}
+
+/* The byline sits at the bottom centre, between the lower corners. */
+.splash-byline {
+    position: absolute;
+    bottom: 36px;
+    left: 0;
+    right: 0;
+    margin: 0;
+    text-align: center;
+    font-size: 16px;
+    color: var(--wot-skipped);
+}
+
+.splash-byline b {
+    color: var(--wot-boot-primary);
+    font-weight: 700;
 }
 
 /* Orange on a steel track, hard 2px radius. */
