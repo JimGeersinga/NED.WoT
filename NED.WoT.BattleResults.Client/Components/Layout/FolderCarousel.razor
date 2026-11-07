@@ -23,7 +23,7 @@
 			</button>
 			<button type="button" class="side" tabindex="-1" aria-hidden="true" title="@folders[previous].Title" @onclick="() => SelectAsync(previous)">@folders[previous].Title</button>
 		}
-		<MudMenu @bind-Open="_open" PopoverClass="wot-folder-pop" AnchorOrigin="Origin.BottomCenter" TransformOrigin="Origin.TopCenter">
+		<MudMenu @bind-Open="_open" Class="wot-car-menu" PopoverClass="wot-folder-pop" AnchorOrigin="Origin.BottomCenter" TransformOrigin="Origin.TopCenter">
 			<ActivatorContent>
 				<button type="button" class="mid" aria-haspopup="menu" aria-expanded="@(_open ? "true" : "false")" aria-live="polite" title="@folder.Path" @ref="_mid" @onclick="() => context.ToggleAsync()">
 					<span class="ttl"><MudIcon Icon="@Icons.Material.Filled.FolderOpen" /><span class="t">@folder.Title</span></span>
@@ -41,7 +41,7 @@
 			<ChildContent>
 				@if (_open)
 				{
-					<div role="menu" aria-label="Replaymappen" @onkeydown="e => Key(e, -1)">
+					<div role="menu" aria-label="Replaymappen">
 						@for (int i = 0; i < count; i++)
 						{
 							int index = i;
@@ -134,7 +134,7 @@
 			_open = false;
 			await _mid.FocusAsync();
 		}
-		else if (index >= 0 && e.Key is "ArrowDown" or "ArrowUp")
+		else if (e.Key is "ArrowDown" or "ArrowUp")
 		{
 			await _rows[Wrap(index + (e.Key == "ArrowDown" ? 1 : -1), rows)].FocusAsync();
 		}

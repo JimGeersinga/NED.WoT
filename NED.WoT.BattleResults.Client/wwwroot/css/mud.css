@@ -269,6 +269,12 @@
 /* The p MudBlazor wraps a menu item's text in. */
 .wot-menu .mud-menu-item > p { margin: 0; }
 
+/* ==== MudMenu and MudIcon in the folder carousel (the .car rules of gl.css): the menu wrapper holds the current title, the icons are sized here ==== */
+.car .nv .mud-icon-root { width: 24px; height: 24px; }
+.car .wot-car-menu { display: flex; align-self: stretch; } /* MudBlazor centres the menu wrapper */
+.car .wot-car-menu .mud-menu-activator { display: flex; flex: 1; }
+.car .mid .ttl .mud-icon-root { flex: none; width: 18px; height: 18px; color: var(--mud-palette-tertiary); }
+
 /* ==== MudMenu (the folder menu of the carousel: design "Replaymappen: navigatie") ==== */
 /* 480px, below the current title. A row is a radio (the check, the title over the path, the number of battles once the folder is read); the last row opens the settings. */
 .mud-popover.wot-folder-pop { width: 480px; max-width: calc(100vw - 32px); padding: 6px 0; border: 1px solid var(--mud-palette-lines-default); border-radius: 6px; box-shadow: var(--wot-shadow-menu); overflow: hidden; }

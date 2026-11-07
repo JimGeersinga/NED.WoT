@@ -512,6 +512,13 @@
 				bool cached = folder is not null && BattleResultService.GetBattleCount(folder) is not null;
 				_reports = cached ? BattleResultService.BattleReports.Select(x => x.Value).OrderByDescending(x => x.MatchStart).ToList() : [];
 				_addedFiles = [];
+				// A folder shown from its cache has no load time of its own, and the filters of the old folder do not follow (the defaults of the fields).
+				_loadingTime = cached ? TimeSpan.Zero : _loadingTime;
+				_clan = null;
+				_player = null;
+				_clanOnly = true;
+				_maps = [];
+				_results = [];
 				_battlesVersion++;
 				_loadedOnce = cached;
 				_loading = !cached && Directory.Exists(folder?.Path);

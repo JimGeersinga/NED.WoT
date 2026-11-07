@@ -92,6 +92,7 @@ public class BattleReportService : IDisposable
 
     public BattleReportService(ISnackbar snackbar, SettingService settingService)
     {
+        SelfCheck();
         _snackbar = snackbar;
         _settingService = settingService;
         _folderCts = CancellationTokenSource.CreateLinkedTokenSource(_disposed.Token);
@@ -103,6 +104,15 @@ public class BattleReportService : IDisposable
     /// Makes the folder at <paramref name="index"/> the current one: stops what the old one was doing, shows the cache of a folder read before (catching up with the folder on disk)
     /// or reads a new one, and watches it. A second call while this one loads cancels that load.
     /// </summary>
+    /// <returns>The cached file names that are not in the folder any more.</returns>
+    private static List<string> MissingFrom(IEnumerable<string> cached, HashSet<string> onDisk) => cached.Where(x => !onDisk.Contains(x)).ToList();
+
+    private static void SelfCheck()
+    {
+        Debug.Assert(MissingFrom(["a.wotreplay", "b.wotreplay", "c.wotreplay"], new HashSet<string> { "b.wotreplay", "d.wotreplay" }).SequenceEqual(["a.wotreplay", "c.wotreplay"]), "catching up drops the cached files that left the folder and keeps the others");
+        Debug.Assert(MissingFrom([], new HashSet<string> { "x.wotreplay" }).Count == 0, "a new file is no reason to drop anything");
+    }
+
     public async Task SelectFolderAsync(int index)
     {
         if (index < 0 || index >= _settingService.Settings.ReplayFolders.Count || index == CurrentFolder || _disposed.IsCancellationRequested)
@@ -148,6 +158,13 @@ public class BattleReportService : IDisposable
             bool read;
             lock (_caches)
             {
+                if (!exists)
+                {
+                    // A folder that is gone shows no battles and no count, whatever an earlier visit read.
+                    _caches.Remove(directory ?? string.Empty);
+                    _read.Remove(directory ?? string.Empty);
+                }
+
                 read = exists && _read.Contains(directory!);
             }
 
@@ -180,7 +197,7 @@ public class BattleReportService : IDisposable
         List<FileInfo> files = ReplayFiles();
         HashSet<string> names = files.Select(x => x.Name).ToHashSet(StringComparer.Ordinal);
 
-        foreach (string name in cache.Keys.Where(x => !names.Contains(x)))
+        foreach (string name in MissingFrom(cache.Keys, names))
         {
             cache.TryRemove(name, out _);
         }
@@ -213,6 +230,15 @@ public class BattleReportService : IDisposable
     private void LoadCurrentFolder()
     {
         string path = ReplayDirectory!;
+        lock (_caches)
+        {
+            if (_read.Contains(path))
+            {
+                // Read before: SelectFolderAsync catches such a folder up instead of reading it again.
+                return;
+            }
+        }
+
         ConcurrentDictionary<string, BattleReport> cache = CacheOf(path);
         CancellationToken cancellation = _folderCts.Token;
 
