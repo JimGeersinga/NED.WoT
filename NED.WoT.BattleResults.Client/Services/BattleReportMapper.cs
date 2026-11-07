@@ -2,7 +2,6 @@
 
 using System.Globalization;
 using System.Runtime.InteropServices;
-using System.Text.Json.Nodes;
 
 namespace NED.WoT.BattleResults.Client.Services;
 
@@ -12,43 +11,46 @@ public class BattleReportMapper
 
     private static CultureInfo CultureInfo => CultureInfo.InvariantCulture;
 
-    public static BattleReport Map(JsonObject replay, JsonArray? stats, Settings settings)
+    public static BattleReport Map(ReplayHeader header, ReplayResults? results, Settings settings)
     {
-        if (!DateTime.TryParseExact(replay["dateTime"]?.GetValue<string>(), "dd.MM.yyyy HH:mm:ss", CultureInfo, DateTimeStyles.None, out DateTime matchStart))
+        if (!DateTime.TryParseExact(header.DateTime, "dd.MM.yyyy HH:mm:ss", CultureInfo, DateTimeStyles.None, out DateTime matchStart))
         {
-            throw new FormatException($"Could not parse match datetime '{replay["dateTime"]?.GetValue<string>()}' with culture '{CultureInfo.Name}'. Current culture is '{CultureInfo.CurrentCulture.Name}'.");
+            throw new FormatException($"Could not parse match datetime '{header.DateTime}' with culture '{CultureInfo.Name}'. Current culture is '{CultureInfo.CurrentCulture.Name}'.");
         }
 
         BattleReport game = new()
         {
-            MapName = MapNameResolver.GetMapName(replay["mapDisplayName"]?.GetValue<string>()),
+            MapName = MapNameResolver.GetMapName(header.MapDisplayName),
             MatchStart = matchStart,
             Team1 = new Team { Number = 1 },
             Team2 = new Team { Number = 2 }
         };
 
-        if (stats != null)
+        if (results != null)
         {
-            JsonNode? commonStats = stats[0]?["common"];
-            game.FinishReason = commonStats?["finishReason"]?.GetValue<int>();
-            game.MatchDuration = commonStats?["duration"]?.GetValue<int>();
-            game.Team1.Health = commonStats?["teamHealth"]?["1"]?.GetValue<int>();
-            game.Team1.IsWinner = commonStats?["winnerTeam"]?.GetValue<int>() == game.Team1.Number;
-            game.Team2.Health = commonStats?["teamHealth"]?["2"]?.GetValue<int>();
-            game.Team2.IsWinner = commonStats?["winnerTeam"]?.GetValue<int>() == game.Team2.Number;
+            ReplayCommon? common = results.Common;
+            game.FinishReason = common?.FinishReason;
+            game.MatchDuration = common?.Duration;
+            game.Team1.Health = TeamHealth(common, game.Team1.Number);
+            game.Team1.IsWinner = common?.WinnerTeam == game.Team1.Number;
+            game.Team2.Health = TeamHealth(common, game.Team2.Number);
+            game.Team2.IsWinner = common?.WinnerTeam == game.Team2.Number;
 
-            var vehicles = stats[0]?["vehicles"]?.AsObject() ?? [];
-            foreach (KeyValuePair<string, JsonNode?> vehicle in vehicles)
+            if (results.Vehicles != null)
             {
-                MapPlayerData(game, stats[1]?[vehicle.Key]?.AsObject(), vehicle.Value?.AsArray()[0]?.AsObject(), settings);
+                foreach (KeyValuePair<string, ReplayVehicleStats[]> vehicle in results.Vehicles)
+                {
+                    ReplayPlayer? player = null;
+                    results.Players?.TryGetValue(vehicle.Key, out player);
+                    MapPlayerData(game, player, vehicle.Value is { Length: > 0 } stats ? stats[0] : null, settings);
+                }
             }
         }
-        else
+        else if (header.Vehicles != null)
         {
-            var vehicles = replay["vehicles"]?.AsObject() ?? [];
-            foreach (KeyValuePair<string, JsonNode?> vehicle in vehicles)
+            foreach (ReplayPlayer? player in header.Vehicles.Values)
             {
-                MapPlayerData(game, vehicle.Value?.AsObject(), stats?[0]?["vehicles"]?.AsObject()?[vehicle.Key]?[0]?.AsObject(), settings);
+                MapPlayerData(game, player, null, settings);
             }
         }
 
@@ -136,41 +138,44 @@ public class BattleReportMapper
         }
     }
 
-    private static void MapPlayerData(BattleReport game, JsonObject? playerData, JsonObject? vehicleData, Settings settings)
-    {
-        string? clan = playerData?["clanAbbrev"]?.GetValue<string>();
+    private static int? TeamHealth(ReplayCommon? common, int team) =>
+        common?.TeamHealth is { } health && health.TryGetValue(team.ToString(CultureInfo), out int value) ? value : null;
 
-        Team team = playerData?["team"]?.GetValue<int>() == game.Team1.Number ? game.Team1 : game.Team2;
+    private static void MapPlayerData(BattleReport game, ReplayPlayer? playerData, ReplayVehicleStats? vehicleData, Settings settings)
+    {
+        string? clan = playerData?.ClanAbbrev;
+
+        Team team = playerData?.Team == game.Team1.Number ? game.Team1 : game.Team2;
 
         Player player = new(team)
         {
-            Name = playerData?["name"]?.GetValue<string>(),
+            Name = playerData?.Name,
             Clan = clan,
-            Vehicle = TankNameResolver.GetTankName(playerData?["vehicleType"]?.GetValue<string>()),
+            Vehicle = TankNameResolver.GetTankName(playerData?.VehicleType),
             IsClanMember = string.Equals(settings.ClanAbbreviation, clan, StringComparison.OrdinalIgnoreCase)
         };
 
         if (vehicleData != null)
         {
-            player.DamageDealt = vehicleData["damageDealt"]?.GetValue<int>();
-            player.DamageReceived = vehicleData["damageReceived"]?.GetValue<int>();
-            player.DamageBlocked = vehicleData["damageBlockedByArmor"]?.GetValue<int>();
-            player.Piercings = vehicleData["piercings"]?.GetValue<int>();
-            player.HitsReceived = vehicleData["piercingEnemyHits"]?.GetValue<int>();
-            player.ShotsReceived = vehicleData["directHitsReceived"]?.GetValue<int>();
-            player.ExperienceEarned = vehicleData["xp"]?.GetValue<int>();
-            player.CreditsEarned = vehicleData["credits"]?.GetValue<int>();
-            player.Shots = vehicleData["shots"]?.GetValue<int>();
-            player.Kills = vehicleData["kills"]?.GetValue<int>();
-            player.IsTeamKiller = vehicleData["isTeamKiller"]?.ToString() == "1";
-            player.CapturePoints = vehicleData["flagCapture"]?.GetValue<int>();
-            player.Health = vehicleData["health"]?.GetValue<int>();
-            player.DirectHits = vehicleData["directHits"]?.GetValue<int>();
-            player.Spotted = vehicleData["spotted"]?.GetValue<int>();
-            player.LifeTime = vehicleData["lifeTime"]?.GetValue<int>();
-            player.MaxHealth = vehicleData["maxHealth"]?.GetValue<int>();
-            player.DeathReason = vehicleData["deathReason"]?.GetValue<int>();
-            player.ShotsBlocked = vehicleData["noDamageDirectHitsReceived"]?.GetValue<int>();
+            player.DamageDealt = vehicleData.DamageDealt;
+            player.DamageReceived = vehicleData.DamageReceived;
+            player.DamageBlocked = vehicleData.DamageBlockedByArmor;
+            player.Piercings = vehicleData.Piercings;
+            player.HitsReceived = vehicleData.PiercingEnemyHits;
+            player.ShotsReceived = vehicleData.DirectHitsReceived;
+            player.ExperienceEarned = vehicleData.Xp;
+            player.CreditsEarned = vehicleData.Credits;
+            player.Shots = vehicleData.Shots;
+            player.Kills = vehicleData.Kills;
+            player.IsTeamKiller = vehicleData.IsTeamKiller;
+            player.CapturePoints = vehicleData.FlagCapture;
+            player.Health = vehicleData.Health;
+            player.DirectHits = vehicleData.DirectHits;
+            player.Spotted = vehicleData.Spotted;
+            player.LifeTime = vehicleData.LifeTime;
+            player.MaxHealth = vehicleData.MaxHealth;
+            player.DeathReason = vehicleData.DeathReason;
+            player.ShotsBlocked = vehicleData.NoDamageDirectHitsReceived;
         }
 
         team.Players.Add(player);
