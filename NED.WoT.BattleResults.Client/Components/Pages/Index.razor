@@ -427,6 +427,18 @@
 		BattleFilters.SelfCheck();
 		BattleStats.SelfCheck();
 		ReplayReader.SelfCheck();
+
+		// isTeamKiller is a JSON boolean; the results array is read at elements 0 and 1, the rest is skipped.
+		ReplayHeader header = new() { DateTime = "08.12.2023 22:50:00", MapDisplayName = "Lakeville" };
+		byte[] resultsJson = """
+			[{"common":{"winnerTeam":1,"teamHealth":{"1":100,"2":0}},"vehicles":{"1":[{"xp":300,"isTeamKiller":true}],"2":[{"xp":200,"isTeamKiller":false}]}},
+			 {"1":{"name":"Dader","team":1},"2":{"name":"Slachtoffer","team":1}},
+			 {"1":[{"x":1}]}]
+			"""u8.ToArray();
+		ReplayResults? results = System.Text.Json.JsonSerializer.Deserialize(resultsJson, ReplayJsonContext.Default.ReplayResults);
+		BattleReport mapped = BattleReportMapper.Map(header, results, new Settings());
+		Debug.Assert(mapped.Team1.Players.Count == 2 && mapped.Team1.Players.Single(x => x.Name == "Dader").IsTeamKiller == true, "isTeamKiller: true maps to IsTeamKiller == true");
+		Debug.Assert(mapped.Team1.Players.Single(x => x.Name == "Slachtoffer").IsTeamKiller == false && mapped.Team1.Health == 100 && mapped.Team1.IsWinner == true, "isTeamKiller: false stays false, and the other results fields are read");
 	}
 
 	/// <summary>The players whose figures the stat columns total: the own team's players, or the chosen player on either team.</summary>

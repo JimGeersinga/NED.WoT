@@ -8,7 +8,6 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
 namespace NED.WoT.BattleResults.Client.Services;
@@ -58,6 +57,7 @@ public partial class BattleReportService : IDisposable
         Interlocked.Exchange(ref _filesToLoad, 0);
         Interlocked.Exchange(ref _filesLoaded, 0);
         Interlocked.Exchange(ref _bytesRead, 0);
+        long allocatedBefore = GC.GetTotalAllocatedBytes(true);
         Stopwatch stopwatch = Stopwatch.StartNew();
         LoadingBattleReportsStarted?.Invoke(this, new EventArgs());
 
@@ -90,8 +90,9 @@ public partial class BattleReportService : IDisposable
         });
 
         long elapsedMs = stopwatch.ElapsedMilliseconds;
+        long allocated = GC.GetTotalAllocatedBytes(true) - allocatedBefore;
         LoadingBattleReportsFinished?.Invoke(this, new EventArgs());
-        Debug.WriteLine($"Battle list loaded: {files.Count} files, {Interlocked.Read(ref _bytesRead) / 1048576.0:F1} MB read, {elapsedMs} ms");
+        Debug.WriteLine($"Battle list loaded: {files.Count} files, {Interlocked.Read(ref _bytesRead) / 1048576.0:F1} MB read, {allocated / 1048576.0:F1} MB allocated, {elapsedMs} ms");
         Debug.WriteLine($"Battle list loaded: managed heap {GC.GetTotalMemory(true) / 1048576} MB");
     }
 
@@ -236,14 +237,14 @@ public partial class BattleReportService : IDisposable
             ReplayReader.ReplayBlocks blocks = ReplayReader.Read(file.FullName);
             Interlocked.Add(ref _bytesRead, blocks.Header.Length + (blocks.Results?.Length ?? 0));
 
-            JsonObject? replay = JsonNode.Parse(blocks.Header) as JsonObject;
-            if (replay?["dateTime"] == null)
+            ReplayHeader? header = JsonSerializer.Deserialize(blocks.Header, ReplayJsonContext.Default.ReplayHeader);
+            if (header?.DateTime == null)
             {
                 return Unreadable(file, "no dateTime in the replay header");
             }
 
-            JsonArray? stats = ParseResults(blocks.Results);
-            report = BattleReportMapper.Map(replay, stats, _settingService.Settings);
+            ReplayResults? results = ParseResults(blocks.Results);
+            report = BattleReportMapper.Map(header, results, _settingService.Settings);
         }
         catch (Exception ex)
         {
@@ -255,8 +256,8 @@ public partial class BattleReportService : IDisposable
         return report;
     }
 
-    /// <summary>The results block as an array; null when there is none or it isn't valid JSON (the battle then maps without stats, as on master).</summary>
-    private static JsonArray? ParseResults(byte[]? results)
+    /// <summary>The results block; null when there is none or it isn't a valid results array (the battle then maps without stats).</summary>
+    private static ReplayResults? ParseResults(byte[]? results)
     {
         if (results is null)
         {
@@ -265,7 +266,7 @@ public partial class BattleReportService : IDisposable
 
         try
         {
-            return JsonNode.Parse(results) as JsonArray;
+            return JsonSerializer.Deserialize(results, ReplayJsonContext.Default.ReplayResults);
         }
         catch (JsonException)
         {
