@@ -385,15 +385,13 @@ public class BattleReportService : IDisposable
     {
         if (_disposed.IsCancellationRequested)
         {
+            Debug.WriteLine($"Battle report not added, service disposed: {name}");
+
             return false;
         }
 
         bool added = BattleReports.TryAdd(name, report);
-        if (added)
-        {
-            Debug.WriteLine($"Battle report added: {name}");
-        }
-        else
+        if (!added)
         {
             _snackbar.Add(Notice("Niet toegevoegd", $"{name} staat al in de lijst"), Severity.Warning);
         }
