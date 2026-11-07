@@ -22,7 +22,7 @@
 					 Adornment="Adornment.Start" AdornmentIcon="@BattleFilters.Shield" Strict="false" OpenOnFocus="true"
 					 Clearable="true" ResetValueOnEmptyText="true" CoerceText="true" DebounceInterval="150" RelativeWidth="DropdownWidth.Adaptive">
 		<ItemTemplate Context="o">
-			<span class="wot-opt"><span class="wot-opt-tag">[@BattleFilters.Highlighted(o.Name, _clanTerm)]</span><span class="wot-opt-n wot-num">@BattleCount(o.Battles)</span></span>
+			<span class="wot-opt"><span class="wot-opt-tag">[@BattleFilters.Highlighted(o.Name, _clanTerm)]</span><span class="wot-opt-n">@BattleCount(o.Battles)</span></span>
 		</ItemTemplate>
 		<ItemDisabledTemplate Context="o"><span class="wot-opt-h">@o.Header</span></ItemDisabledTemplate>
 		<MoreItemsTemplate><span class="wot-opt-more">Nog @(_clanCount - MaxItems) clans · typ om te zoeken</span></MoreItemsTemplate>
@@ -45,7 +45,7 @@
 				<span>@BattleFilters.Highlighted(o.Name, _playerTerm)</span>
 				@if (Clan != null)
 				{
-					<span class="wot-opt-n wot-num">@BattleCount(o.Battles)</span>
+					<span class="wot-opt-n">@BattleCount(o.Battles)</span>
 				}
 			</span>
 		</ItemTemplate>
@@ -84,7 +84,7 @@
 						var name = map.Name;
 						<div role="option" aria-selected="@(Maps.Contains(name) ? "true" : "false")">
 							<MudCheckBox T="bool" Value="Maps.Contains(name)" ValueChanged="@(on => ToggleMapName(name, on))" Dense="true" Color="Color.Primary">
-								<span class="wot-opt"><span>@BattleFilters.Highlighted(name, _mapTerm)</span><span class="wot-opt-n wot-num">@BattleCount(map.Battles)</span></span>
+								<span class="wot-opt"><span>@BattleFilters.Highlighted(name, _mapTerm)</span><span class="wot-opt-n">@BattleCount(map.Battles)</span></span>
 							</MudCheckBox>
 						</div>
 					}
@@ -94,7 +94,7 @@
 					}
 				</div>
 				<div class="wot-map-foot">
-					<span class="wot-opt-more wot-num">@Maps.Count geselecteerd</span>
+					<span class="wot-opt-more">@Maps.Count geselecteerd</span>
 					<MudButton Variant="Variant.Text" Size="Size.Small" Disabled="@(Maps.Count == 0)" OnClick="ClearMaps">Wissen</MudButton>
 					<MudButton Variant="Variant.Outlined" Size="Size.Small" OnClick="() => TickAll(maps)">Alles</MudButton>
 				</div>
@@ -109,7 +109,7 @@
 		@foreach (var result in ResultChip.Order)
 		{
 			<MudSelectItem T="Result" Value="result">
-				<span class="wot-opt"><ResultChip Result="result" /><span class="wot-opt-n wot-num">@Filtered.Count(x => x.Result == result)</span></span>
+				<span class="wot-opt"><ResultChip Result="result" /><span class="wot-opt-n">@Filtered.Count(x => x.Result == result)</span></span>
 			</MudSelectItem>
 		}
 	</MudSelect>

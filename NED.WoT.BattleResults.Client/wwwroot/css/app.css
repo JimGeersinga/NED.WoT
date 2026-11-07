@@ -200,14 +200,6 @@ html, body {
     outline-offset: 2px;
 }
 
-.status-bar-safe-area {
-    display: none;
-}
-
-.no-break {
-    white-space: nowrap;
-}
-
 .Win {
     color: var(--mud-palette-success) !important;
 }
@@ -218,24 +210,4 @@ html, body {
 
 .Draw {
     color: var(--mud-palette-warning) !important;
-}
-
-.text-right {
-    text-align: right;
-}
-
-.text-center {
-    text-align: center;
-}
-
-.text-nowrap {
-    white-space: nowrap;
-}
-
-.justify-content-center {
-    justify-content: center;
-}
-
-.align-items-center {
-    align-items: center;
 }

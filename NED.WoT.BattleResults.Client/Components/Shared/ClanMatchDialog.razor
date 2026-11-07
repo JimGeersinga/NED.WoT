@@ -25,7 +25,7 @@
 					@foreach (var (result, count) in new[] { (Result.Win, _battles.Count(x => x.Result is Result.Win)), (Result.Draw, _battles.Count(x => x.Result is Result.Draw)), (Result.Lose, _battles.Count(x => x.Result is Result.Lose)) })
 					{
 						<MudStack Row AlignItems="AlignItems.Center" Spacing="2">
-							<MudText Typo="Typo.h5" Class="wot-num">@count</MudText>
+							<MudText Typo="Typo.h5">@count</MudText>
 							<ResultChip Result="result" />
 						</MudStack>
 					}
@@ -67,7 +67,7 @@
 	private string OpponentsTitle => $"Tegenstanders · {_enemyPlayers.Count}";
 	private string PastTitle => $"Eerdere gevechten · {_battles.Count}";
 
-	private RenderFragment Opponents => @<MudTable Items="@_enemyPlayers" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Elevation="0">
+	private RenderFragment Opponents => @<MudTable Items="@_enemyPlayers" Class="clan-match-table" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Elevation="0">
 		<HeaderContent>
 			<MudTh Style="text-align: right; width: 110px">
 				<MudTableSortLabel InitialDirection="SortDirection.Descending" SortBy="new Func<IGrouping<string?, Player>, object>(x => x.Count())">Gevechten</MudTableSortLabel>
@@ -85,14 +85,14 @@
 				{
 					<div class="d-flex justify-space-between gap-3">
 						<span>@vehicle.Key</span>
-						<MudText Typo="Typo.body2" Class="mud-text-secondary wot-num">@((int)Math.Round(100.0 * vehicle.Count() / context.Count(), MidpointRounding.AwayFromZero))%</MudText>
+						<MudText Typo="Typo.body2" Class="mud-text-secondary">@((int)Math.Round(100.0 * vehicle.Count() / context.Count(), MidpointRounding.AwayFromZero))%</MudText>
 					</div>
 				}
 			</MudTd>
 		</RowTemplate>
 	</MudTable>;
 
-	private RenderFragment Past => @<MudTable Items="@_battles" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Elevation="0">
+	private RenderFragment Past => @<MudTable Items="@_battles" Class="clan-match-table" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Elevation="0">
 		<HeaderContent>
 			<MudTh>
 				<MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<BattleReport, object>(x => x.MatchStart)">Datum</MudTableSortLabel>
@@ -109,8 +109,8 @@
 			@{
 				Team? ownTeam = context.OwnTeam;
 			}
-			<MudTd DataLabel="Datum" Class="wot-num">@context.MatchTimeDisplay</MudTd>
-			<MudTd DataLabel="Duur" Style="text-align: right" Class="wot-num mud-text-secondary">@context.MatchDurationDisplay</MudTd>
+			<MudTd DataLabel="Datum">@context.MatchTimeDisplay</MudTd>
+			<MudTd DataLabel="Duur" Style="text-align: right" Class="mud-text-secondary">@context.MatchDurationDisplay</MudTd>
 			<MudTd DataLabel="Map"><b>@context.MapName</b> @ownTeam?.Base</MudTd>
 			<MudTd DataLabel="Winnaar">
 				<MudStack Row AlignItems="AlignItems.Center" Spacing="2">

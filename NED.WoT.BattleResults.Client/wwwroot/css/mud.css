@@ -1,7 +1,8 @@
-/* MudBlazor overrides. Ported from WoT HQ (checked there against MudBlazor 9.11.0; this app is on 9.12.0). The groups with no markup in this app yet (ubtn, clan and filter chip, view toggle, tabs, grid, card header, divided list, menu) are unrendered until #3–#9 use them. Walk this file after every MudBlazor upgrade. */
+/* MudBlazor overrides. Ported from WoT HQ (checked there against MudBlazor 9.11.0; this app is on 9.12.0). Walk this file after every MudBlazor upgrade. */
 /* MudBlazor's CSS is in @layer mud (layers.css) and ours is not, so a plain selector wins: no doubled classes. An !important stays only where MudBlazor writes an inline style. Colours come from var(--wot-*) and var(--mud-palette-*). */
 
 /* ==== MudAppBar (and the MudToolbar it renders) ==== */
+/* MudAppBar sets no height of its own: the toolbar gives 56px, and the 1px border-bottom of .wot-appbar (border-box) would make the bar 57px, so the height is set here. */
 .mud-appbar.wot-appbar { height: 56px; }
 
 /* The toolbar MudAppBar renders inside itself. */
@@ -22,34 +23,6 @@
 .mud-button-root:focus-visible {
     outline: 2px solid var(--mud-palette-primary);
     outline-offset: 2px;
-}
-
-/* ==== MudButton (the user button) ==== */
-.mud-button-root.wot-ubtn {
-    height: 44px;
-    min-width: 0;
-    padding: 0 6px 0 4px;
-    border-radius: 4px;
-    text-transform: none;
-    text-align: left;
-    letter-spacing: 0;
-    font: inherit;
-    flex: none;
-}
-
-/* The label span MudButton wraps its content in. */
-.wot-ubtn .mud-button-label {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-}
-
-/* The MudIcon chevron in the button. */
-.mud-icon-root.wot-ubtn-chevron {
-    width: 20px;
-    height: 20px;
-    margin: 0;
-    color: var(--mud-palette-text-secondary);
 }
 
 /* ==== MudChip ==== */
@@ -74,23 +47,6 @@
 .mud-chip.wot-result-skipped {
     background: color-mix(in srgb, var(--wot-skipped) 15%, transparent);
     color: var(--wot-skipped);
-}
-
-/* A filter chip (design .fchip): 32px, outlined, the selected one on the soft Primary tint. */
-.mud-chip.wot-filter-chip {
-    height: 32px;
-    padding: 0 12px;
-    border: 1px solid var(--mud-palette-lines-inputs);
-    background: transparent;
-    color: var(--mud-palette-text-secondary);
-    font-size: 14px;
-    font-weight: 500;
-}
-
-.mud-chip.wot-filter-chip.mud-chip-selected {
-    border-color: var(--mud-palette-primary);
-    background: var(--wot-primary-soft);
-    color: var(--mud-palette-primary);
 }
 
 /* ==== MudToggleGroup ==== */
@@ -162,9 +118,6 @@
     box-shadow: var(--wot-shadow-dialog);
 }
 
-/* ==== MudDivider ==== */
-.wot-menu .mud-divider { margin: 0 0 6px; }
-
 /* ==== MudInput ==== */
 /* The filled input surface at rest: MudBlazor's own tint on hover and focus still wins, as before the layer. */
 .mud-input-filled:not(:hover):not(.mud-focused) { background-color: var(--wot-surface-input); }
@@ -225,50 +178,6 @@
 /* The result chip in the Resultaat list: icon and word only, as the design (.chip.tx) has it. */
 .wot-filter-pop .mud-list-item .mud-chip { background: none; padding: 0; margin: 0; }
 
-/* ==== MudMenu / MudPopover (the account menu: design .pop / .mitem) ==== */
-/* The popover renders outside its component, through MudPopoverProvider, so a .razor.css cannot reach it: its look is here. */
-/* Pinned as on the design board: 52px from the top, 16px from the right, 260px wide. */
-.mud-popover.wot-menu {
-    position: fixed;
-    top: 52px !important; /* beats the inline top MudBlazor computes from the anchor */
-    left: auto !important; /* beats the inline left MudBlazor computes from the anchor */
-    right: 16px;
-    width: 260px;
-    border: 1px solid var(--mud-palette-lines-default);
-    border-radius: 6px;
-    box-shadow: var(--wot-shadow-menu);
-    padding: 6px 0;
-}
-
-/* The MudList inside the popover. */
-.wot-menu .mud-list { padding: 0; }
-
-.wot-menu .mud-menu-item {
-    gap: 12px;
-    min-height: 40px;
-    padding: 0 16px;
-    font: 400 15px/1.55 var(--wot-font-text);
-    letter-spacing: 0;
-    text-transform: none;
-    color: var(--mud-palette-text-primary);
-}
-
-/* The icons of the menu items. */
-.wot-menu .mud-menu-item .mud-icon-root {
-    width: 20px;
-    height: 20px;
-    margin: 0;
-    color: var(--mud-palette-text-secondary);
-}
-
-.wot-menu .wot-menu-danger,
-.wot-menu .wot-menu-danger .mud-icon-root {
-    color: var(--mud-palette-error);
-}
-
-/* The p MudBlazor wraps a menu item's text in. */
-.wot-menu .mud-menu-item > p { margin: 0; }
-
 /* ==== MudMenu and MudIcon in the folder carousel (the .car rules of gl.css): the menu wrapper holds the current title, the icons are sized here ==== */
 .car .nv .mud-icon-root { width: 24px; height: 24px; }
 .car .wot-car-menu { display: flex; align-self: stretch; } /* MudBlazor centres the menu wrapper */
@@ -316,45 +225,6 @@
 }
 
 .mud-tabs.wot-tabs .mud-tab .mud-icon-root { margin: 0; }
-
-/* ==== MudDataGrid ==== */
-/* The head row: dialog surface, grey 13px labels. */
-.mud-data-grid.wot-grid thead .mud-table-cell {
-    padding: 8px 16px;
-    background: var(--wot-surface-dialog);
-    color: var(--mud-palette-text-secondary);
-    font-size: 13px;
-    font-weight: 600;
-    line-height: 1.45;
-    border-bottom: 1px solid var(--mud-palette-lines-default);
-}
-
-/* A grey cell (CellClass="mud-text-secondary"): MudBlazor's own .mud-table-cell colour comes later in its layer and wins over the utility class. */
-.mud-data-grid.wot-grid .mud-table-cell.mud-text-secondary { color: var(--mud-palette-text-secondary); }
-
-/* ==== MudCardHeader ==== */
-.mud-card-header.wot-card-hd {
-    min-height: 56px;
-    padding: 14px 16px 12px;
-    align-items: center;
-}
-
-/* MudBlazor nudges the actions up and out for a bare icon button; ours sit centred beside the title. */
-.mud-card-header.wot-card-hd .mud-card-header-actions {
-    align-self: center;
-    margin: 0;
-}
-
-/* ==== MudList ==== */
-/* Design .li: a 1px line between rows (not above the first). */
-.mud-list.wot-divided > .mud-list-item + .mud-list-item { border-top: 1px solid var(--mud-palette-table-lines); }
-
-/* ==== MudTable / MudChip / MudPicker numerals ==== */
-.mud-table-cell,
-.mud-chip,
-.mud-picker {
-    font-variant-numeric: tabular-nums;
-}
 
 /* ==== MudPaper (the panel around the player table of Details: .wot-details) ==== */
 /* The MudPaper gives the Surface ground, the steel edge (Outlined) and the radius; this adds the 16px of padding and the top highlight. It is here and not in Details.razor.css because Blazor's CSS isolation does not mark the MudPaper's own element.
@@ -408,7 +278,7 @@
 
 .mud-table.player-table .mud-table-cell {
     height: 34px;
-    padding: 0 12px;
+    padding: 0 6px;
     border-bottom: 1px solid var(--mud-palette-table-lines);
     font-size: 14px;
     white-space: nowrap;
@@ -488,7 +358,8 @@
     margin: 0 2px 0 0;
 }
 
-.mud-table.player-table .mud-table-head .tier .mud-table-cell {
+.mud-table.player-table .mud-table-head .player-table-column-groups .mud-table-cell {
+    text-align: center;
     font: 600 12px/1 var(--wot-font-display);
     letter-spacing: .12em;
     text-transform: uppercase;
@@ -507,13 +378,8 @@
     padding: 0 0 0 18px;
 }
 
-.mud-table-head .header-centered th {
-    text-align: center;
-}
-
-.mud-table-dense * .mud-table-row .mud-table-cell {
-    padding: 6px;
-}
+/* ==== MudTable (the two tables of the Clan battle dialog: .clan-match-table) ==== */
+.mud-table.clan-match-table .mud-table-cell { padding: 6px; }
 
 /* ==== MudTable (the battle table: .wot-battle-table; the rows, the day headers and the footer of the Gevechtslog) ==== */
 /* The expanded row nests Details' own MudTable inside this one, so every rule below walks down with child combinators: a descendant selector would restyle the nested table too. */
@@ -537,7 +403,6 @@
 .wot-battle-table > .mud-table-container > .mud-table-root {
     table-layout: fixed;
     width: 100%;
-    font-variant-numeric: tabular-nums;
 }
 
 .wot-battle-table > .mud-table-container > .mud-table-root > :is(thead, tbody, tfoot) > tr > .mud-table-cell {

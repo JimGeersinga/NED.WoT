@@ -49,7 +49,7 @@ Heading family `"Barlow Condensed", Rajdhani, "Arial Narrow", sans-serif`; text 
 | Caption | Inter | .75rem | 400 | 1.4 | .01em | none |
 | Overline | Barlow Condensed | .75rem | 600 | 1.6 | .12em | uppercase |
 
-Numbers in tables, chips and pickers use tabular figures; `.wot-num` does the same elsewhere.
+Tabular figures everywhere, from one `body` rule in `wot.css`.
 
 ## Shape and space
 - Radius 4px; chips 2px; dialogs 6px. No pill shapes except count chips.
@@ -70,34 +70,35 @@ Every style has one home, chosen by what it styles. Work through the list in thi
 | 4 | `wwwroot/css/wot.css` | Shared `wot-*` pieces used in more than one place or meant to be, with no `.mud-*` in the selector. |
 | 5 | `wwwroot/css/gl.css` | The Gevechtslog patterns (below) that no other WoT HQ app uses. |
 | 6 | `Component.razor.css` | One component's own elements. |
-| (legacy) | `wwwroot/css/app.css` | Temporary: only the rules the screens not yet laid out again (the dialogs, Details) still need (`.Win`/`.Lose`/`.Draw`, the text utilities) and the splash. #3–#9 empty it; its `!important` rules are allowed until then. |
+| (legacy) | `wwwroot/css/app.css` | Temporary: only the rules the screens not yet laid out again (the dialogs, Details) still need (`.Win`/`.Lose`/`.Draw`) and the splash. #3–#9 empty it; its `!important` rules are allowed until then. |
 
 - **Cascade layer.** `wwwroot/css/layers.css` (linked first, because it only imports) declares `@layer mud` and imports `MudBlazor.min.css` into it. Our CSS is unlayered, so it wins over MudBlazor whatever the selector's specificity: no doubled or quadrupled classes.
   `<head>` order: `css/layers.css`, `tokens.css`, `mud.css`, `wot.css`, `gl.css`, `app.css` (legacy, above), then the scoped bundle.
 - **`!important`** only in `mud.css`, only where MudBlazor writes an inline style, with a comment naming it. The focus ring in `wot.css` sits in `@layer mud` on purpose: it is a default that MudBlazor's controls override with their own outline.
 - **No `.mud-*` in a `.razor.css`**, `::deep` included. MudBlazor's own element does not get the component's scope attribute either, so a modifier class on it is styled in `mud.css`.
 - **Colours** in `mud.css`, `wot.css`, `gl.css` and `.razor.css` files are `var(--wot-*)` or `var(--mud-palette-*)`, never raw values.
+- **Class names.** New and rewritten classes get descriptive names; canvas names stay only on markup that is not touched.
 - **`mud.css` is the upgrade checklist.** It starts with the MudBlazor version it was checked against (9.12.0 today); after a MudBlazor upgrade, walk the file group by group.
 
 ## `wot-*` classes (shared with WoT HQ)
 Values come from the design canvas's `wot.css`; `mud.css`, `wot.css` and the components' `.razor.css` carry the same numbers on MudBlazor's DOM.
-- `.wot-num`, `.wot-dialog-title`, `.wot-dialog-bar` (above).
-- `.wot-card-hd` (a `MudCardHeader`): min height 56, padding `14px 16px 12px`. `.wot-divided` (a `MudList`): a 1px `--mud-palette-table-lines` line above every item but the first.
+- `.wot-dialog-title`, `.wot-dialog-bar` (above).
 - `.wot-tabs` (`MudTabs`): no band, a 1px `--mud-palette-divider` line under the bar, tabs sized to their text (padding `0 20px`, height 48, icon + label gap 8), the active tab Primary with a 2px underline.
 - `.wot-view-toggle` (`MudToggleGroup`): items 36px high, padding `0 14px`, gap 6, unselected text-secondary, selected `--wot-primary-soft` with Primary text.
-- `.wot-filter-chip` (`MudChip`): 32px, `1px solid --mud-palette-lines-inputs`, transparent; selected `--wot-primary-soft` with Primary border and text.
-- `.wot-grid` (`MudDataGrid`): head row on `--wot-surface-dialog`, text-secondary 600 13px labels, padding `8px 16px`, bottom border `--mud-palette-lines-default`; a grey cell is `CellClass="mud-text-secondary"`.
 - `.wot-appbar`: 56px, padding `0 18px 0 16px`, gap 16. Background `repeating-linear-gradient(90deg, rgba(255,255,255,.014) 0 1px, transparent 1px 3px)` over
   `linear-gradient(180deg, #1b2026 0%, #14181d 55%, #111418 100%)`, `border-bottom: 1px solid #343c45`, `inset 0 1px 0 rgba(255,255,255,.09)`.
 - `.wot-rivet` and its corner classes `.wot-rivet-tl`/`-tr`/`-bl`/`-br`: 6px, bronze `radial-gradient(circle at 35% 35%, #dcc7a6 0, #b0916a 45%, #6e5a42 100%)`, `0 1px 0 rgba(0,0,0,.65)`, 5px from each corner.
 - `.wot-brand` (gap 10; mark 36px, `.wot-brand-mark`), `.wot-wordmark` (Barlow Condensed 700 22px, `.01em`; `WoT` in text-primary, `Gevechtslog` in Primary), `.wot-vsep` (1×28px `#343c45`).
 - `.wot-clan-chip`: height 40, padding `0 12px 0 4px` (the 4px is for the emblem; **with the tag only, as here, `0 12px`**), gap 10, `1px solid #6e5a42`, radius 4, `rgba(176,145,106,.06)`. In this app the chip shows the **tag only, no emblem image**. `.wot-clan-tag` 600 17px Barlow Condensed `.03em`.
+- Focus ring (above).
+
+**Not used in this app** (WoT HQ only): reserve colours (`ReserveStyle`), run status (`RunStatusStyle`), the calendar, the navigation drawer and rail, the landing page's HUD hero and the EN | NL switch (`.wot-lang`). Ported once and removed from `mud.css` because nothing here renders them; the values stay so WoT HQ can still be matched:
+- `.wot-card-hd` (a `MudCardHeader`): min height 56, padding `14px 16px 12px`. `.wot-divided` (a `MudList`): a 1px `--mud-palette-table-lines` line above every item but the first.
+- `.wot-filter-chip` (`MudChip`): 32px, `1px solid --mud-palette-lines-inputs`, transparent; selected `--wot-primary-soft` with Primary border and text.
+- `.wot-grid` (`MudDataGrid`): head row on `--wot-surface-dialog`, text-secondary 600 13px labels, padding `8px 16px`, bottom border `--mud-palette-lines-default`; a grey cell is `CellClass="mud-text-secondary"`.
 - `.wot-ubtn` (user button): height 44, gap 10, padding `0 6px 0 4px`, radius 4; `.wot-avatar` 32×32 square (radius 4), `1px solid #6e5a42`, `#262c33`, text Tertiary, 700 14px Barlow Condensed; name 600 14px Inter, role 12px Tertiary, `ExpandMore` chevron `#a2abb5`.
   Menu (`.wot-menu`): 260px wide, pinned 52px from the top and 16px from the right, dialog surface, `1px solid #343c45`, radius 6, padding `6px 0`, `0 16px 40px rgba(0,0,0,.55)`;
   items (`.wot-mitem`, MudMenuItem) 40px min height, padding `0 16px`, 15px, icon `#a2abb5`; the danger item (`.wot-menu-danger`) in the error colour.
-- Focus ring (above).
-
-**Not used in this app** (WoT HQ only): reserve colours (`ReserveStyle`), run status (`RunStatusStyle`), the calendar, the navigation drawer and rail, the landing page's HUD hero and the EN | NL switch (`.wot-lang`).
 
 ## Gevechtslog patterns (`wwwroot/css/gl.css`, from the canvas's `project/gl.css` and its "New patterns" note)
 - **Result chip** (variant Text, tinted): Gewonnen `Success` + `CheckCircle`; Verloren `Error` + `Cancel`; Gelijkspel `Warning` + `Remove`; Onbekend skipped grey (`--wot-skipped`) + `HelpOutline`.
