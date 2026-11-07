@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components;
 
 using MudBlazor;
 
@@ -269,12 +269,12 @@ public class BattleReportService : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    /// <returns>The configured temp.wotreplay, else temp.wotreplay in the first replay folder; null when neither is known.</returns>
-    private static string? LiveReplayFile(string? configured, string? firstFolder)
+    /// <returns>The configured temp.wotreplay (a configured folder gives temp.wotreplay in it), else temp.wotreplay in the first replay folder; null when neither is known.</returns>
+    public static string? LiveReplayFile(string? configured, string? firstFolder)
     {
         if (!string.IsNullOrWhiteSpace(configured))
         {
-            return configured;
+            return Directory.Exists(configured) ? Path.Combine(configured, "temp.wotreplay") : configured;
         }
 
         return string.IsNullOrWhiteSpace(firstFolder) ? null : Path.Combine(firstFolder, "temp.wotreplay");
@@ -285,6 +285,8 @@ public class BattleReportService : IDisposable
     {
         Debug.Assert(LiveReplayFile(@"D:\Live\temp.wotreplay", @"C:\replays") == @"D:\Live\temp.wotreplay", "a set path wins");
         Debug.Assert(LiveReplayFile("  ", @"C:\replays") == @"C:\replays\temp.wotreplay", "empty falls back to the first folder");
+        string folder = Path.GetTempPath();
+        Debug.Assert(LiveReplayFile(folder, @"C:\replays") == Path.Combine(folder, "temp.wotreplay"), "a configured folder gives temp.wotreplay in it");
         Debug.Assert(LiveReplayFile(null, null) is null, "nothing known: no lookup");
     }
 
@@ -301,6 +303,8 @@ public class BattleReportService : IDisposable
             string? tempFile = LiveReplayFile(_settingService.Settings.LiveReplayPath, _settingService.Settings.ReplayFolders.FirstOrDefault()?.Path);
             if (tempFile is null || !File.Exists(tempFile))
             {
+                // temp.wotreplay exists only during a battle: once it is gone the next battle's match is new again.
+                _clanMatch = null;
                 return Task.CompletedTask;
             }
 
