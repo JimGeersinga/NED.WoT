@@ -14,7 +14,7 @@
 
 	<span class="wot-vsep" role="separator" aria-orientation="vertical"></span>
 
-	<MudAutocomplete T="BattleFilters.Option" Placeholder="Clan kiezen" aria-label="Clan"
+	<MudAutocomplete T="BattleFilters.Choice" Placeholder="Clan kiezen" aria-label="Clan"
 					 Value="_clan" ValueChanged="PickClan"
 					 SearchFunc="SearchClans" ToStringFunc="@(o => o?.Name)" ItemDisabledFunc="@(o => o.Header != null)"
 					 MaxItems="MaxItems" ReturnedItemsCountChanged="@(n => _clanCount = n)"
@@ -29,7 +29,7 @@
 		<NoItemsTemplate><span class="wot-opt-more">Geen clan gevonden</span></NoItemsTemplate>
 	</MudAutocomplete>
 
-	<MudAutocomplete T="BattleFilters.Option" Placeholder="Speler zoeken" aria-label="Speler"
+	<MudAutocomplete T="BattleFilters.Choice" Placeholder="Speler zoeken" aria-label="Speler"
 					 Value="_player" ValueChanged="PickPlayer"
 					 SearchFunc="SearchPlayers" ToStringFunc="@(o => o?.Name)" ItemDisabledFunc="@(o => o.Header != null)"
 					 MaxItems="@(Clan == null ? MaxItems : (int?)null)" ReturnedItemsCountChanged="@(n => _playerCount = n)"
@@ -195,8 +195,8 @@
 	/// <summary>A dropdown shows this many lines (headers included); the rest is found by typing. MudAutocomplete does not virtualize. The Speler list of a chosen clan is not capped: a clan has far fewer players than the whole log.</summary>
 	private const int MaxItems = 100;
 
-	private BattleFilters.Option? _clan;
-	private BattleFilters.Option? _player;
+	private BattleFilters.Choice? _clan;
+	private BattleFilters.Choice? _player;
 	private string _clanTerm = string.Empty;
 	private string _playerTerm = string.Empty;
 	private int _clanCount;
@@ -208,8 +208,8 @@
 	protected override void OnParametersSet()
 	{
 		// The chosen values live in Index as plain strings (and are cleared there by "Filters wissen"): the boxes follow them.
-		_clan = Clan == null ? null : _clan?.Name == Clan ? _clan : new BattleFilters.Option(Clan, Clan, 0);
-		_player = Player == null ? null : _player?.Name == Player ? _player : new BattleFilters.Option(Player, null, 0);
+		_clan = Clan == null ? null : _clan?.Name == Clan ? _clan : new BattleFilters.Choice(Clan, Clan, 0);
+		_player = Player == null ? null : _player?.Name == Player ? _player : new BattleFilters.Choice(Player, null, 0);
 	}
 
 	private static string BattleCount(int battles) => $"{battles} {(battles == 1 ? "gevecht" : "gevechten")}";
@@ -217,20 +217,20 @@
 	/// <summary>The clan tag as the start adornment of the Speler box (mud.css colours it and draws the helmet in front of it); with no tag the helmet icon shows.</summary>
 	private string? PlayerTag => BattleFilters.SpelerTag(Clan, _player) is { } tag ? $"[{tag}]" : null;
 
-	private Task<IEnumerable<BattleFilters.Option>> SearchClans(string? term, CancellationToken token)
+	private Task<IEnumerable<BattleFilters.Choice>> SearchClans(string? term, CancellationToken token)
 	{
 		_clanTerm = term ?? string.Empty;
 		return Task.Run(() => Filters.ClanOptions(term), token);
 	}
 
-	private Task<IEnumerable<BattleFilters.Option>> SearchPlayers(string? term, CancellationToken token)
+	private Task<IEnumerable<BattleFilters.Choice>> SearchPlayers(string? term, CancellationToken token)
 	{
 		_playerTerm = term ?? string.Empty;
 		return Task.Run(() => Filters.PlayerOptions(Clan, term), token);
 	}
 
 	/// <summary>Choosing a clan drops a chosen player who never played for it, so the two filters do not leave an empty table by themselves.</summary>
-	private async Task PickClan(BattleFilters.Option? clan)
+	private async Task PickClan(BattleFilters.Choice? clan)
 	{
 		_clan = clan;
 		await ClanChanged.InvokeAsync(clan?.Name);
@@ -241,7 +241,7 @@
 		}
 	}
 
-	private Task PickPlayer(BattleFilters.Option? player)
+	private Task PickPlayer(BattleFilters.Choice? player)
 	{
 		_player = player;
 		return PlayerChanged.InvokeAsync(player?.Name);
@@ -300,7 +300,7 @@
 	}
 
 	/// <summary>Alles ticks every map in the list as it is now (the typed term narrows it).</summary>
-	private Task TickAll(IEnumerable<BattleFilters.Option> listed) => MapsChanged.InvokeAsync([.. Maps, .. listed.Select(x => x.Name)]);
+	private Task TickAll(IEnumerable<BattleFilters.Choice> listed) => MapsChanged.InvokeAsync([.. Maps, .. listed.Select(x => x.Name)]);
 
 	private Task PickResults(IEnumerable<Result>? results) => ResultsChanged.InvokeAsync([.. results ?? []]);
 

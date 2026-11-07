@@ -33,7 +33,7 @@ public class BattleReport
         get
         {
             string day = MatchStart.ToString("dddd dd-MM-yyyy", DutchCulture);
-            return $"{char.ToUpper(day[0])}{day[1..]}{Environment.NewLine}Start {MatchStart:HH:mm:ss} · einde {MatchEnd?.ToString("HH:mm:ss") ?? "?"}";
+            return $"{char.ToUpper(day[0], DutchCulture)}{day[1..]}{Environment.NewLine}Start {MatchStart:HH:mm:ss} · einde {MatchEnd?.ToString("HH:mm:ss", DutchCulture) ?? "?"}";
         }
     }
 

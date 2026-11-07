@@ -199,8 +199,11 @@ PR as a screenshot, at **1280×800 and 1920×1080** (desktop only, no phone).
 This app is one MAUI Blazor Hybrid project, and the owner chose process and docs
 only. So these rules of `JimGeersinga/NED.WoT.Clan` do **not** apply here:
 
-- The Recur build rules: analyzers, warnings as errors, central package
-  management, the `var` and block-body rules, the `DateTime.Now` ban.
+- The Recur build rules: central package management, the `var` and block-body
+  rules, the `DateTime.Now` ban. (Analyzers and warnings as errors **are** adopted:
+  the csproj sets `AnalysisLevel` `latest-recommended` and `TreatWarningsAsErrors`,
+  so a new warning fails the build; fix it, don't suppress it without a reason
+  in the PR.)
 - The Core/Web/AppHost layering and the command/query handler pattern.
 - Test projects, test fakes and the "one rule, one test" suite.
 

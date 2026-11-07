@@ -10,7 +10,7 @@ namespace NED.WoT.BattleResults.Client.Services;
 
 public class CustomAuthenticationStateProvider() : AuthenticationStateProvider
 {
-    private readonly HttpClient? _httpClient = new();
+    private static readonly HttpClient? _httpClient = new();
     private readonly JsonSerializerOptions _jsonSerializerOptions = new()
     {
         PropertyNameCaseInsensitive = true

@@ -7,7 +7,7 @@ namespace NED.WoT.BattleResults.Client.Models;
 public sealed class BattleFilters
 {
     /// <summary>One line of a dropdown. A clan: Name is its tag, Clan the same tag, Battles the battles it is in. A player: Name, Clan the tag of their latest battle (null when they had none) and, with a clan chosen, Battles the battles with that clan. A section header: only Header is set.</summary>
-    public sealed record Option(string Name, string? Clan, int Battles, string? Header = null);
+    public sealed record Choice(string Name, string? Clan, int Battles, string? Header = null);
 
     /// <summary>The icons of the two boxes: the game-art glyphs of the design board, as markup like the MudBlazor icons.</summary>
     public const string Shield = "<path fill-rule=\"evenodd\" d=\"M12 2.5l7.5 2.8v6.2c0 4.6-3.1 8.6-7.5 10.5-4.4-1.9-7.5-5.9-7.5-10.5V5.3zM12 7.4L8 9.9v1.3l4-2.2 4 2.2V9.9zM12 12.2l-4 2.5V16l4-2.2 4 2.2v-1.3z\"/>";
@@ -42,7 +42,7 @@ public sealed class BattleFilters
         _tables = LazyTables(reports, tag);
     }
 
-    private sealed record Tables(string OwnTag, Option[] Clans, Option[] Players, int OwnPlayers, Dictionary<string, Option[]> ByClan)
+    private sealed record Tables(string OwnTag, Choice[] Clans, Choice[] Players, int OwnPlayers, Dictionary<string, Choice[]> ByClan)
     {
         public static Tables From(IEnumerable<BattleReport> reports, string ownTag)
         {
@@ -88,20 +88,20 @@ public sealed class BattleFilters
                 }
             }
 
-            Option[] clans = clanBattles
-                .Select(x => new Option(x.Key, x.Key, x.Value))
+            Choice[] clans = clanBattles
+                .Select(x => new Choice(x.Key, x.Key, x.Value))
                 .OrderByDescending(x => x.Battles)
                 .ThenBy(x => x.Name, StringComparer.InvariantCultureIgnoreCase)
                 .ToArray();
 
             // Your own clan's players first, each group A to Z. The tag is the one of the latest battle.
-            Option[] all = latest.Select(x => new Option(x.Key, x.Value.Clan, 0)).ToArray();
-            Option[] own = all.Where(x => SameTag(x.Clan, ownTag)).OrderBy(x => x.Name, StringComparer.InvariantCultureIgnoreCase).ToArray();
-            Option[] rest = all.Where(x => !SameTag(x.Clan, ownTag)).OrderBy(x => x.Name, StringComparer.InvariantCultureIgnoreCase).ToArray();
+            Choice[] all = latest.Select(x => new Choice(x.Key, x.Value.Clan, 0)).ToArray();
+            Choice[] own = all.Where(x => SameTag(x.Clan, ownTag)).OrderBy(x => x.Name, StringComparer.InvariantCultureIgnoreCase).ToArray();
+            Choice[] rest = all.Where(x => !SameTag(x.Clan, ownTag)).OrderBy(x => x.Name, StringComparer.InvariantCultureIgnoreCase).ToArray();
 
-            Dictionary<string, Option[]> byClan = perClan.ToDictionary(
+            Dictionary<string, Choice[]> byClan = perClan.ToDictionary(
                 x => x.Key,
-                x => x.Value.Select(p => new Option(p.Key, latest[p.Key].Clan, p.Value)).OrderBy(p => p.Name, StringComparer.InvariantCultureIgnoreCase).ToArray(),
+                x => x.Value.Select(p => new Choice(p.Key, latest[p.Key].Clan, p.Value)).OrderBy(p => p.Name, StringComparer.InvariantCultureIgnoreCase).ToArray(),
                 StringComparer.OrdinalIgnoreCase);
 
             return new Tables(ownTag, clans, [.. own, .. rest], own.Length, byClan);
@@ -115,17 +115,17 @@ public sealed class BattleFilters
 
     private static bool Has(string text, string term) => text.Contains(term, StringComparison.OrdinalIgnoreCase);
 
-    private static Option Header(string text) => new(string.Empty, null, 0, text);
+    private static Choice Header(string text) => new(string.Empty, null, 0, text);
 
     /// <summary>The Clan list for the typed term: your own clan (with its battle count, 0 when it has none), then the opponents, most battles first.</summary>
-    public IEnumerable<Option> ClanOptions(string? term)
+    public IEnumerable<Choice> ClanOptions(string? term)
     {
         term ??= string.Empty;
         Tables tables = _tables.Value;
         string ownTag = tables.OwnTag;
-        Option? mine = ownTag.Length == 0 ? null : tables.Clans.FirstOrDefault(x => SameTag(x.Name, ownTag)) ?? new Option(ownTag, ownTag, 0);
-        List<Option> others = tables.Clans.Where(x => !SameTag(x.Name, ownTag) && Has(x.Name, term)).ToList();
-        List<Option> rows = [];
+        Choice? mine = ownTag.Length == 0 ? null : tables.Clans.FirstOrDefault(x => SameTag(x.Name, ownTag)) ?? new Choice(ownTag, ownTag, 0);
+        List<Choice> others = tables.Clans.Where(x => !SameTag(x.Name, ownTag) && Has(x.Name, term)).ToList();
+        List<Choice> rows = [];
 
         if (mine != null && Has(mine.Name, term))
         {
@@ -143,30 +143,30 @@ public sealed class BattleFilters
     }
 
     /// <summary>The clan tag in front of the Speler field, only while a player is picked: the chosen clan's, otherwise that player's latest clan. Null (the field shows only the helmet icon) without a player, also with a clan chosen, and for a player with no clan tag and no clan chosen.</summary>
-    public static string? SpelerTag(string? chosenClan, Option? player) => player == null ? null : chosenClan ?? (string.IsNullOrEmpty(player.Clan) ? null : player.Clan);
+    public static string? SpelerTag(string? chosenClan, Choice? player) => player == null ? null : chosenClan ?? (string.IsNullOrEmpty(player.Clan) ? null : player.Clan);
 
     /// <summary>The Speler list for the typed term. With a clan: only the players who were ever on that clan's team, each with the battles with that clan. Without: every player once, your own clan's players first, then the others, each A to Z.</summary>
-    public IEnumerable<Option> PlayerOptions(string? clan, string? term)
+    public IEnumerable<Choice> PlayerOptions(string? clan, string? term)
     {
         term ??= string.Empty;
         Tables tables = _tables.Value;
-        List<Option> rows = [];
+        List<Choice> rows = [];
 
         if (clan != null)
         {
-            Option[] players = tables.ByClan.GetValueOrDefault(clan) ?? [];
-            IEnumerable<Option> hits = players.Where(x => Has(x.Name, term));
+            Choice[] players = tables.ByClan.GetValueOrDefault(clan) ?? [];
+            IEnumerable<Choice> hits = players.Where(x => Has(x.Name, term));
             AddSection(rows, $"Spelers van [{clan}]", hits);
             return rows;
         }
 
-        Option[] everyone = tables.Players;
+        Choice[] everyone = tables.Players;
         AddSection(rows, $"{tables.OwnTag} · A tot Z", tables.OwnTag.Length == 0 ? [] : everyone.Take(tables.OwnPlayers).Where(x => Has(x.Name, term)));
         AddSection(rows, "Overige spelers · A tot Z", everyone.Skip(tables.OwnPlayers).Where(x => Has(x.Name, term)));
         return rows;
     }
 
-    private static void AddSection(List<Option> rows, string header, IEnumerable<Option> options)
+    private static void AddSection(List<Choice> rows, string header, IEnumerable<Choice> options)
     {
         int at = rows.Count;
         rows.Add(Header(header));
@@ -179,7 +179,7 @@ public sealed class BattleFilters
     }
 
     /// <summary>The Map list for the typed term: every map in the battles with its number of battles, A to Z. A ticked map without a battle in <paramref name="battles"/> stays listed (with 0) so it can be unticked. Battles without a map name are not listed.</summary>
-    public static List<Option> MapOptions(IEnumerable<BattleReport> battles, IEnumerable<string> ticked, string? term)
+    public static List<Choice> MapOptions(IEnumerable<BattleReport> battles, IEnumerable<string> ticked, string? term)
     {
         Dictionary<string, int> counts = new(StringComparer.Ordinal);
         foreach (string map in battles.Select(x => x.MapName).OfType<string>())
@@ -195,7 +195,7 @@ public sealed class BattleFilters
         return counts
             .Where(x => Has(x.Key, term ?? string.Empty))
             .OrderBy(x => x.Key, StringComparer.InvariantCultureIgnoreCase)
-            .Select(x => new Option(x.Key, null, x.Value))
+            .Select(x => new Choice(x.Key, null, x.Value))
             .ToList();
     }
 
@@ -248,26 +248,26 @@ public sealed class BattleFilters
         ];
         BattleFilters filters = Build(reports, "NED-1");
 
-        List<Option> clans = filters.ClanOptions(string.Empty).Where(x => x.Header == null).ToList();
+        List<Choice> clans = filters.ClanOptions(string.Empty).Where(x => x.Header == null).ToList();
         Debug.Assert(clans.Select(x => x.Name).SequenceEqual(["NED-1", "DUTCH", "RHINE"]) && clans.Select(x => x.Battles).SequenceEqual([4, 3, 1]), "clans: yours first, then most battles first; a normal battle is no clan");
         Debug.Assert(filters.ClanOptions(string.Empty).Select(x => x.Header).OfType<string>().SequenceEqual(["Jouw clan", "Tegenstanders · 2"]), "clan headers: yours, the opponents with their number");
         Debug.Assert(filters.ClanOptions("rh").Where(x => x.Header == null).Select(x => x.Name).SequenceEqual(["RHINE"]), "a typed term narrows the clans, case does not matter");
 
         // No clan, typed "k": NED-1 players first, A to Z, then the others A to Z.
-        List<Option> typed = filters.PlayerOptions(null, "k").ToList();
+        List<Choice> typed = filters.PlayerOptions(null, "k").ToList();
         Debug.Assert(typed.Where(x => x.Header == null).Select(x => x.Name).SequenceEqual(["Dijkdoorbraak", "Klompenklopper", "Tankgeneraal", "KaasKoning", "Kapitein_Kees", "KlompKees"]), "players without a clan: own clan first, then the others, A to Z");
         Debug.Assert(typed.Select(x => x.Header).OfType<string>().SequenceEqual(["NED-1 · A tot Z", "Overige spelers · A tot Z"]), "the two sections have their header");
         Debug.Assert(filters.PlayerOptions(null, string.Empty).Count(x => x.Header == null) == 8, "players without a clan: every player seen in the battles, once");
         Debug.Assert(filters.PlayerOptions(null, string.Empty).Single(x => x.Name == "KlompKees").Clan == "DUTCH", "a player carries the clan of the latest battle");
 
         // A clan: only its players, with the battles with that clan.
-        List<Option> dutch = filters.PlayerOptions("DUTCH", string.Empty).Where(x => x.Header == null).ToList();
+        List<Choice> dutch = filters.PlayerOptions("DUTCH", string.Empty).Where(x => x.Header == null).ToList();
         Debug.Assert(dutch.Select(x => x.Name).SequenceEqual(["KaasKoning", "KlompKees"]) && dutch.Select(x => x.Battles).SequenceEqual([1, 3]), "players of a clan: only that clan's, with battle counts");
 
         // The tag of the Speler field, only with a player picked: the chosen clan, else the player's latest clan; none at all without either.
-        Option picked = new("KlompKees", "DUTCH", 0);
+        Choice picked = new("KlompKees", "DUTCH", 0);
         Debug.Assert(SpelerTag(null, null) == null && SpelerTag("RHINE", null) == null, "Speler tag: no player, no tag, also with a clan chosen");
-        Debug.Assert(SpelerTag(null, picked) == "DUTCH" && SpelerTag("RHINE", picked) == "RHINE" && SpelerTag(null, new Option("Zonder", null, 0)) == null && SpelerTag("RHINE", new Option("Zonder", null, 0)) == "RHINE", "Speler tag: the chosen clan, else the player's clan, else no tag (helmet icon only)");
+        Debug.Assert(SpelerTag(null, picked) == "DUTCH" && SpelerTag("RHINE", picked) == "RHINE" && SpelerTag(null, new Choice("Zonder", null, 0)) == null && SpelerTag("RHINE", new Choice("Zonder", null, 0)) == "RHINE", "Speler tag: the chosen clan, else the player's clan, else no tag (helmet icon only)");
 
         // Choosing a clan keeps a player who was ever on it and drops one who never was.
         Debug.Assert(filters.PlayerAfterClan("KlompKees", "DUTCH") == "KlompKees" && filters.PlayerAfterClan("klompkees", "RHINE") == null && filters.PlayerAfterClan("Kapitein_Kees", "RHINE") == "Kapitein_Kees", "a chosen player stays only when they were on the chosen clan");
@@ -278,9 +278,9 @@ public sealed class BattleFilters
         Debug.Assert(live.PlayerOptions(null, "oud").Count(x => x.Header == null) == 1, "the lookup knows the first battles");
         List<BattleReport> replaced = [Battle(1, "NED-1", "DUTCH", ["Tankgeneraal"], ["Nieuw"])];
         live.Refresh(replaced, 0, "NED-1");
-        Debug.Assert(live.PlayerOptions(null, "oud").Count(x => x.Header == null) == 1 && live.PlayerOptions(null, "nieuw").Count(x => x.Header == null) == 0, "the same version: the tables stay");
+        Debug.Assert(live.PlayerOptions(null, "oud").Count(x => x.Header == null) == 1 && live.PlayerOptions(null, "nieuw").All(x => x.Header != null), "the same version: the tables stay");
         live.Refresh(replaced, 1, "NED-1");
-        Debug.Assert(live.PlayerOptions(null, "oud").Count(x => x.Header == null) == 0 && live.PlayerOptions(null, "nieuw").Count(x => x.Header == null) == 1, "a new version with the same count: rebuilt, no stale list");
+        Debug.Assert(live.PlayerOptions(null, "oud").All(x => x.Header != null) && live.PlayerOptions(null, "nieuw").Count(x => x.Header == null) == 1, "a new version with the same count: rebuilt, no stale list");
         live.Refresh(replaced, 1, "DUTCH");
         Debug.Assert(live.ClanOptions(string.Empty).First().Header == "Jouw clan" && live.ClanOptions(string.Empty).ElementAt(1).Name == "DUTCH", "a changed own clan tag rebuilds the tables");
 

@@ -155,9 +155,9 @@ public partial class BattleReportService : IDisposable
             using (FileStream fs = new(tempFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             using (StreamReader reader = new(fs))
             {
-                while (!reader.EndOfStream)
+                string? line;
+                while ((line = await reader.ReadLineAsync()) is not null)
                 {
-                    string? line = await reader.ReadLineAsync();
                     Match clan1Match = ClanMatchRegex().Match(line ?? string.Empty);
                     if (clan1Match.Success)
                     {
