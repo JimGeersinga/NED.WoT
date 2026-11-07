@@ -7,7 +7,7 @@
 @inject BattleReportService BattleReportService
 @inject NavigationManager NavigationManager
 
-<EditForm Model="@modal" OnValidSubmit="OnValidSubmit" class="d-flex flex-column overflow-hidden">
+<EditForm EditContext="_editContext" OnSubmit="OnSubmit" class="d-flex flex-column overflow-hidden">
     <DataAnnotationsValidator />
     <MudDialog Class="wot-dialog overflow-hidden" ContentClass="overflow-y-auto" TitleClass="wot-dialog-bar" Style="max-width: 760px">
         <TitleContent>
@@ -15,11 +15,50 @@
         </TitleContent>
         <DialogContent>
             <MudStack Spacing="3" Class="pt-2">
-                <MudText Typo="Typo.overline" Color="Color.Tertiary">Replays</MudText>
-                <MudTextField Label="Pad naar WoT-replays" Variant="Variant.Filled"
-                              Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.FolderOpen"
-                              @bind-Value="@modal.WotReplayDirectory" For="(() => modal.WotReplayDirectory)" />
-                <MudDatePicker Label="Laad gevechten sinds" Variant="Variant.Filled" Style="max-width: 320px"
+                <MudStack Row Spacing="3" AlignItems="AlignItems.Baseline">
+                    <MudText Typo="Typo.overline" Color="Color.Tertiary">Replaymappen</MudText>
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary">De volgorde hier is de volgorde van de navigatie in de app bar.</MudText>
+                </MudStack>
+                <MudDropContainer T="ReplayFolder" @ref="_container" Items="modal.ReplayFolders" ItemsSelector="@((folder, zone) => true)"
+                                  ItemDropped="OnFolderDropped" ItemDraggingClass="drag">
+                    <ChildContent>
+                        <MudDropZone T="ReplayFolder" Identifier="folders" AllowReorder Class="d-flex flex-column gap-2" />
+                    </ChildContent>
+                    <ItemRenderer Context="folder">
+                        @{
+                            int index = modal.ReplayFolders.IndexOf(folder);
+                            string name = string.IsNullOrWhiteSpace(folder.Title) ? "nieuwe map" : folder.Title;
+                        }
+                        <div role="group" aria-label="@($"Map {index + 1}")" class="fr">
+                            <MudDragHandle T="ReplayFolder">
+                                <MudIcon Icon="@Icons.Material.Outlined.DragIndicator" Title="@($"Verplaats {name}")" />
+                            </MudDragHandle>
+                            <MudTextField Label="Titel" Variant="Variant.Filled"
+                                          @bind-Value="folder.Title" For="(() => folder.Title)" />
+                            <MudTextField Label="Pad" Variant="Variant.Filled" Placeholder="C:\Games\World_of_Tanks_EU\replays"
+                                          Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.FolderOpen"
+                                          AdornmentAriaLabel="@($"Kies map voor {name}")" OnAdornmentClick="() => PickFolder(folder)"
+                                          @bind-Value="folder.Path" For="(() => folder.Path)" />
+                            <button type="button" class="gl-ibtn" aria-label="@($"{name} omhoog")" disabled="@(index == 0)" @onclick="() => Move(folder, -1)">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Outlined.ArrowUpward)</svg>
+                            </button>
+                            <button type="button" class="gl-ibtn" aria-label="@($"{name} omlaag")" disabled="@(index == modal.ReplayFolders.Count - 1)" @onclick="() => Move(folder, 1)">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Outlined.ArrowDownward)</svg>
+                            </button>
+                            <button type="button" class="gl-ibtn" aria-label="@($"{name} verwijderen")" disabled="@(modal.ReplayFolders.Count == 1)" @onclick="() => Remove(folder)">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Outlined.Delete)</svg>
+                            </button>
+                        </div>
+                    </ItemRenderer>
+                </MudDropContainer>
+                <div>
+                    <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Outlined.Add"
+                               OnClick="Add">Map toevoegen</MudButton>
+                </div>
+
+                <MudDivider />
+                <MudText Typo="Typo.overline" Color="Color.Tertiary">Laden</MudText>
+                <MudDatePicker Label="Laad gevechten sinds" Variant="Variant.Filled" Style="max-width: 320px" HelperText="Geldt voor alle mappen."
                                DateFormat="dd-MM-yyyy" FirstDayOfWeek="DayOfWeek.Monday"
                                @bind-Date="@modal.LoadBattlesSince" For="(() => modal.LoadBattlesSince)" />
 
@@ -79,12 +118,14 @@
     public bool CanCancel { get; set; } = true;
 
     private Settings modal = new Settings();
+    private EditContext _editContext = new(new Settings());
+    private MudDropContainer<ReplayFolder>? _container;
 
     protected override void OnInitialized()
     {
         modal = new Settings
             {
-                WotReplayDirectory = SettingService.Settings.WotReplayDirectory,
+                ReplayFolders = [.. SettingService.Settings.ReplayFolders.Select(f => new ReplayFolder { Title = f.Title, Path = f.Path })],
                 LoadBattlesSince = SettingService.Settings.LoadBattlesSince,
                 ClanAbbreviation = SettingService.Settings.ClanAbbreviation,
                 PlayerName = SettingService.Settings.PlayerName,
@@ -93,6 +134,13 @@
                 UpdateScreeenWhileLoading = SettingService.Settings.UpdateScreeenWhileLoading,
                 AutoClanLookup = SettingService.Settings.AutoClanLookup
             };
+
+        if (modal.ReplayFolders.Count == 0)
+        {
+            modal.ReplayFolders.Add(new ReplayFolder());
+        }
+
+        _editContext = new EditContext(modal);
     }
 
     private void Cancel()
@@ -100,9 +148,70 @@
         MudDialog.Cancel();
     }
 
-    private void OnValidSubmit(EditContext context)
+    private void Move(ReplayFolder folder, int by)
     {
-        bool reloadNeeded = !(SettingService.Settings.WotReplayDirectory ?? string.Empty).Equals(modal.WotReplayDirectory)
+        int index = modal.ReplayFolders.IndexOf(folder);
+        modal.ReplayFolders.RemoveAt(index);
+        modal.ReplayFolders.Insert(index + by, folder);
+        _container?.Refresh();
+    }
+
+    private void Add()
+    {
+        modal.ReplayFolders.Add(new ReplayFolder());
+        _container?.Refresh();
+    }
+
+    private void Remove(ReplayFolder folder)
+    {
+        modal.ReplayFolders.Remove(folder);
+        _container?.Refresh();
+    }
+
+    private async Task PickFolder(ReplayFolder folder)
+    {
+        string? path = await FolderPicker.PickAsync();
+        if (path is null)
+        {
+            return;
+        }
+
+        folder.Path = path;
+        _editContext.NotifyFieldChanged(new FieldIdentifier(folder, nameof(ReplayFolder.Path)));
+        _container?.Refresh();
+    }
+
+    // IndexInZone is the new place in the zone (MudBlazor's own sorting example uses it the same way).
+    private void OnFolderDropped(MudItemDropInfo<ReplayFolder> drop)
+    {
+        if (drop.Item is null)
+        {
+            return;
+        }
+
+        modal.ReplayFolders.Remove(drop.Item);
+        modal.ReplayFolders.Insert(Math.Min(drop.IndexInZone, modal.ReplayFolders.Count), drop.Item);
+        _container?.Refresh();
+    }
+
+    private void OnSubmit(EditContext context)
+    {
+        // Validate() only reaches the Settings object, not the folders in its list: every row field is validated by hand,
+        // which makes the DataAnnotationsValidator put each row's message on that field.
+        bool valid = context.Validate();
+        foreach (var folder in modal.ReplayFolders)
+        {
+            context.NotifyFieldChanged(new FieldIdentifier(folder, nameof(ReplayFolder.Title)));
+            context.NotifyFieldChanged(new FieldIdentifier(folder, nameof(ReplayFolder.Path)));
+        }
+
+        if (!valid || context.GetValidationMessages().Any())
+        {
+            return;
+        }
+
+        // Only the first folder is read until #16 adds the selection, so only a new first path (or date) needs a reload.
+        bool reloadNeeded = SettingService.Settings.ReplayFolders.FirstOrDefault()?.Path != modal.ReplayFolders[0].Path
             || SettingService.Settings.LoadBattlesSince != modal.LoadBattlesSince;
         SettingService.Settings = modal;
 

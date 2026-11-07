@@ -23,6 +23,9 @@ public class BattleReportService : IDisposable
     private readonly SemaphoreSlim _tempFileGate = new(1);
     private readonly CancellationTokenSource _disposed = new();
 
+    /// <summary>The folder that is read and watched: the first replay folder, until #16 adds the selection.</summary>
+    private string? ReplayDirectory => _settingService.Settings.ReplayFolders.FirstOrDefault()?.Path;
+
     /// <summary>New replays (name → path) waiting for the batch: it runs once no new file has arrived for 1 s.</summary>
     private readonly ConcurrentDictionary<string, string> _pending = new();
     private readonly Timer _batchTimer;
@@ -56,7 +59,7 @@ public class BattleReportService : IDisposable
 
     public void LoadBattleReports()
     {
-        if (!Directory.Exists(_settingService.Settings.WotReplayDirectory))
+        if (!Directory.Exists(ReplayDirectory))
         {
             return;
         }
@@ -111,13 +114,13 @@ public class BattleReportService : IDisposable
 
     public void ListenForFileChanges()
     {
-        if (!Directory.Exists(_settingService.Settings.WotReplayDirectory))
+        if (!Directory.Exists(ReplayDirectory))
         {
             return;
         }
 
         _watcher?.Dispose();
-        _watcher = new FileSystemWatcher(_settingService.Settings.WotReplayDirectory)
+        _watcher = new FileSystemWatcher(ReplayDirectory)
         {
             // Created, Renamed and Deleted need only the file name; every other filter adds events per copied file.
             NotifyFilter = NotifyFilters.FileName,
@@ -168,7 +171,7 @@ public class BattleReportService : IDisposable
 
         try
         {
-            string tempFile = Path.Combine(_settingService.Settings.WotReplayDirectory ?? string.Empty, "temp.wotreplay");
+            string tempFile = Path.Combine(ReplayDirectory ?? string.Empty, "temp.wotreplay");
             if (!File.Exists(tempFile))
             {
                 return Task.CompletedTask;
@@ -400,7 +403,7 @@ public class BattleReportService : IDisposable
     }
 
     /// <summary>The replays a load reads (the callers have checked that the folder is set): the folder's .wotreplay files since the start date, newest first, without temp.wotreplay.</summary>
-    private List<FileInfo> ReplayFiles() => new DirectoryInfo(_settingService.Settings.WotReplayDirectory!)
+    private List<FileInfo> ReplayFiles() => new DirectoryInfo(ReplayDirectory!)
         .EnumerateFiles(SEARCH_PATTERN)
         .Where(x => x.LastWriteTime > _settingService.Settings.LoadBattlesSince && !IsTempFile(x.Name))
         .OrderByDescending(x => x.CreationTime)
