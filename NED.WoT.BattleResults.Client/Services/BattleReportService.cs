@@ -48,7 +48,7 @@ public class BattleReportService : IDisposable
     private volatile bool _loaded;
 
     /// <returns>The readable battles of the current folder once its read has finished; null for every other folder, and while it is being read.</returns>
-    public int? GetBattleCount(ReplayFolder folder) => _loaded && ReferenceEquals(folder, _settingService.Settings.ReplayFolders.ElementAtOrDefault(CurrentFolder))
+    public int? GetBattleCount(ReplayFolder folder) => _loaded && string.Equals(folder.Path, ReplayDirectory, StringComparison.OrdinalIgnoreCase)
         ? BattleReports.Values.Count(x => x.Error == null)
         : null;
 
@@ -150,7 +150,11 @@ public class BattleReportService : IDisposable
         _loadGate.Wait();
         try
         {
-            LoadCurrentFolder();
+            // A switch may have read this folder already (Index's start-up load can arrive after it).
+            if (!_loaded)
+            {
+                LoadCurrentFolder();
+            }
         }
         finally
         {
@@ -260,7 +264,6 @@ public class BattleReportService : IDisposable
     {
         _disposed.Cancel();
         StopWatching();
-        BattleReports.Clear();
 
         _batchTimer.Dispose();
         _pending.Clear();
