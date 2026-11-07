@@ -40,7 +40,7 @@ public class SettingService
     }
 
     /// <summary>The saved folders; without them (nothing saved yet, or unreadable) the old single path becomes one folder "Replays".</summary>
-    internal static List<ReplayFolder> ParseFolders(string? json, string? legacyPath)
+    private static List<ReplayFolder> ParseFolders(string? json, string? legacyPath)
     {
         List<ReplayFolder>? folders = null;
         if (!string.IsNullOrEmpty(json))

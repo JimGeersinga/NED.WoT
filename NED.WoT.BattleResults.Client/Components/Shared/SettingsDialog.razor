@@ -7,7 +7,7 @@
 @inject BattleReportService BattleReportService
 @inject NavigationManager NavigationManager
 
-<EditForm Model="@modal" OnSubmit="OnSubmit" class="d-flex flex-column overflow-hidden">
+<EditForm EditContext="_editContext" OnSubmit="OnSubmit" class="d-flex flex-column overflow-hidden">
     <DataAnnotationsValidator />
     <MudDialog Class="wot-dialog overflow-hidden" ContentClass="overflow-y-auto" TitleClass="wot-dialog-bar" Style="max-width: 760px">
         <TitleContent>
@@ -19,8 +19,8 @@
                     <MudText Typo="Typo.overline" Color="Color.Tertiary">Replaymappen</MudText>
                     <MudText Typo="Typo.caption" Class="mud-text-secondary">De volgorde hier is de volgorde van de navigatie in de app bar.</MudText>
                 </MudStack>
-                <MudDropContainer T="ReplayFolder" Items="modal.ReplayFolders" ItemsSelector="@((folder, zone) => true)"
-                                  ItemDropped="OnFolderDropped" ItemDraggingClass="mud-elevation-8 mud-border-primary">
+                <MudDropContainer T="ReplayFolder" @ref="_container" Items="modal.ReplayFolders" ItemsSelector="@((folder, zone) => true)"
+                                  ItemDropped="OnFolderDropped" ItemDraggingClass="drag">
                     <ChildContent>
                         <MudDropZone T="ReplayFolder" Identifier="folders" AllowReorder Class="d-flex flex-column gap-2" />
                     </ChildContent>
@@ -28,10 +28,21 @@
                         @{
                             int index = modal.ReplayFolders.IndexOf(folder);
                             string name = string.IsNullOrWhiteSpace(folder.Title) ? "nieuwe map" : folder.Title;
+
+                            // The orange drop line: while a row is dragged, a line shows where it will land (after the row the target index
+                            // points at when it moves down, before it when it moves up).
+                            bool dragging = _container?.TransactionInProgress() == true && _container.GetTransactionItem() is { } dragged && dragged != folder;
+                            int target = dragging ? _container!.GetTransactionIndex() : -1;
+                            bool down = dragging && _container!.IsItemMovedDownwards();
+                            bool dropBefore = dragging && !down && index == target;
+                            bool dropAfter = dragging && down && index == target;
                         }
-                        <div role="group" aria-label="@($"Map {index + 1}")" class="rounded"
-                             style="display: grid; grid-template-columns: 40px 180px minmax(0, 1fr) 40px 40px 40px; gap: 8px; align-items: start; padding: 8px 8px 8px 4px; background: var(--mud-palette-surface); border: 1px solid transparent">
-                            <MudDragHandle T="ReplayFolder" Class="d-flex align-center justify-center mud-text-secondary" Style="height: 40px; margin-top: 8px; cursor: grab">
+                        @if (dropBefore)
+                        {
+                            <div class="drop" aria-hidden="true"></div>
+                        }
+                        <div role="group" aria-label="@($"Map {index + 1}")" class="fr">
+                            <MudDragHandle T="ReplayFolder">
                                 <MudIcon Icon="@Icons.Material.Outlined.DragIndicator" Title="@($"Verplaats {name}")" />
                             </MudDragHandle>
                             <MudTextField Label="Titel" Variant="Variant.Filled"
@@ -39,18 +50,22 @@
                             <MudTextField Label="Pad" Variant="Variant.Filled" Placeholder="C:\Games\World_of_Tanks_EU\replays"
                                           Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.FolderOpen"
                                           @bind-Value="folder.Path" For="(() => folder.Path)" />
-                            <MudIconButton Icon="@Icons.Material.Outlined.ArrowUpward" Style="margin-top: 8px" aria-label="@($"{name} omhoog")"
+                            <MudIconButton Icon="@Icons.Material.Outlined.ArrowUpward" aria-label="@($"{name} omhoog")"
                                            Disabled="@(index == 0)" OnClick="() => Move(folder, -1)" />
-                            <MudIconButton Icon="@Icons.Material.Outlined.ArrowDownward" Style="margin-top: 8px" aria-label="@($"{name} omlaag")"
+                            <MudIconButton Icon="@Icons.Material.Outlined.ArrowDownward" aria-label="@($"{name} omlaag")"
                                            Disabled="@(index == modal.ReplayFolders.Count - 1)" OnClick="() => Move(folder, 1)" />
-                            <MudIconButton Icon="@Icons.Material.Outlined.Delete" Style="margin-top: 8px" aria-label="@($"{name} verwijderen")"
-                                           Disabled="@(modal.ReplayFolders.Count == 1)" OnClick="() => modal.ReplayFolders.Remove(folder)" />
+                            <MudIconButton Icon="@Icons.Material.Outlined.Delete" aria-label="@($"{name} verwijderen")"
+                                           Disabled="@(modal.ReplayFolders.Count == 1)" OnClick="() => Remove(folder)" />
                         </div>
+                        @if (dropAfter)
+                        {
+                            <div class="drop" aria-hidden="true"></div>
+                        }
                     </ItemRenderer>
                 </MudDropContainer>
                 <div>
                     <MudButton Variant="Variant.Outlined" Size="Size.Small" StartIcon="@Icons.Material.Outlined.Add"
-                               OnClick="() => modal.ReplayFolders.Add(new ReplayFolder())">Map toevoegen</MudButton>
+                               OnClick="Add">Map toevoegen</MudButton>
                 </div>
 
                 <MudDivider />
@@ -115,6 +130,8 @@
     public bool CanCancel { get; set; } = true;
 
     private Settings modal = new Settings();
+    private EditContext _editContext = new(new Settings());
+    private MudDropContainer<ReplayFolder>? _container;
 
     protected override void OnInitialized()
     {
@@ -134,6 +151,8 @@
         {
             modal.ReplayFolders.Add(new ReplayFolder());
         }
+
+        _editContext = new EditContext(modal);
     }
 
     private void Cancel()
@@ -146,6 +165,19 @@
         int index = modal.ReplayFolders.IndexOf(folder);
         modal.ReplayFolders.RemoveAt(index);
         modal.ReplayFolders.Insert(index + by, folder);
+        _container?.Refresh();
+    }
+
+    private void Add()
+    {
+        modal.ReplayFolders.Add(new ReplayFolder());
+        _container?.Refresh();
+    }
+
+    private void Remove(ReplayFolder folder)
+    {
+        modal.ReplayFolders.Remove(folder);
+        _container?.Refresh();
     }
 
     // IndexInZone is the new place in the zone (MudBlazor's own sorting example uses it the same way).
@@ -158,6 +190,7 @@
 
         modal.ReplayFolders.Remove(drop.Item);
         modal.ReplayFolders.Insert(Math.Min(drop.IndexInZone, modal.ReplayFolders.Count), drop.Item);
+        _container?.Refresh();
     }
 
     private void OnSubmit(EditContext context)
