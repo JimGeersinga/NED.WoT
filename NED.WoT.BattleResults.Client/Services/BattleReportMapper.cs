@@ -16,7 +16,7 @@ public class BattleReportMapper
     {
         if (!DateTime.TryParseExact(replay["dateTime"]?.GetValue<string>(), "dd.MM.yyyy HH:mm:ss", CultureInfo, DateTimeStyles.None, out DateTime matchStart))
         {
-            throw new Exception($"Could not parse match datetime '{replay["dateTime"]?.GetValue<string>()}' with culture '{CultureInfo.Name}'. Current culture is '{CultureInfo.CurrentCulture.Name}'.");
+            throw new FormatException($"Could not parse match datetime '{replay["dateTime"]?.GetValue<string>()}' with culture '{CultureInfo.Name}'. Current culture is '{CultureInfo.CurrentCulture.Name}'.");
         }
 
         BattleReport game = new()
@@ -58,8 +58,8 @@ public class BattleReportMapper
         game.Team1.Result = GetResult(game.Team1.IsWinner, game.Team2.IsWinner);
         game.Team2.Result = GetResult(game.Team2.IsWinner, game.Team1.IsWinner);
 
-        game.Team1.IsOwnTeam = game.Team1.Abbreviation?.ToLower() == settings.ClanAbbreviation?.ToLower() || game.Team1.Players.Any(x => x.Name?.ToLower() == settings.PlayerName?.ToLower());
-        game.Team2.IsOwnTeam = game.Team2.Abbreviation?.ToLower() == settings.ClanAbbreviation?.ToLower() || game.Team2.Players.Any(x => x.Name?.ToLower() == settings.PlayerName?.ToLower());
+        game.Team1.IsOwnTeam = string.Equals(game.Team1.Abbreviation, settings.ClanAbbreviation, StringComparison.OrdinalIgnoreCase) || game.Team1.Players.Any(x => string.Equals(x.Name, settings.PlayerName, StringComparison.OrdinalIgnoreCase));
+        game.Team2.IsOwnTeam = string.Equals(game.Team2.Abbreviation, settings.ClanAbbreviation, StringComparison.OrdinalIgnoreCase) || game.Team2.Players.Any(x => string.Equals(x.Name, settings.PlayerName, StringComparison.OrdinalIgnoreCase));
 
         game.OwnTeam = game.Team1.IsOwnTeam ? game.Team1 : game.Team2.IsOwnTeam ? game.Team2 : null;
 
@@ -147,7 +147,7 @@ public class BattleReportMapper
             Name = playerData?["name"]?.GetValue<string>(),
             Clan = clan,
             Vehicle = TankNameResolver.GetTankName(playerData?["vehicleType"]?.GetValue<string>()),
-            IsClanMember = settings.ClanAbbreviation?.ToLower() == clan?.ToLower()
+            IsClanMember = string.Equals(settings.ClanAbbreviation, clan, StringComparison.OrdinalIgnoreCase)
         };
 
         if (vehicleData != null)

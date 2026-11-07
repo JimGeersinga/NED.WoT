@@ -148,7 +148,7 @@
 		</HeaderContent>
 		<GroupHeaderTemplate>
 			@{
-				var day = dayByLabel[(string)context.Key];
+				var day = dayByLabel[context.Key?.ToString() ?? string.Empty];
 			}
 			<BattleGroupHeader Label="@day.Label"
 							   Date="day.Date"
