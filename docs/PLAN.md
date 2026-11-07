@@ -18,7 +18,7 @@ A path marked "created by #N" does not exist yet.
 | Live battle | One temp-replay path setting, separate from the folders. |
 | Ratings | PR, WTR and clan rating in the Clan battle dialog, for everyone with access, from Wargaming's public API under the app's own application id. |
 | Tests | No test project. Acceptance is checked by hand and with screenshots (CLAUDE.md, "Screenshots instead of UI tests"). |
-| Build | The .NET recommended analyzers run (`AnalysisLevel` `latest-recommended`) and any warning fails the build (`TreatWarningsAsErrors`); decided by the owner on 2026-11-07. The other Recur build rules stay out (CLAUDE.md). |
+| Build | The .NET recommended analyzers run (`AnalysisLevel` `latest-recommended`) and any warning fails the build (`TreatWarningsAsErrors`); decided by the owner on 2026-11-07. The other Recur build rules stay out (CLAUDE.md). The SDK is pinned to 10.0.x by `global.json`, the same band CI uses. |
 
 ## 2. Project layout (as it is)
 
