@@ -25,9 +25,7 @@ public partial class BattleReportService : IDisposable
 
     private int _filesToLoad;
     private int _filesLoaded;
-#if DEBUG
     private long _bytesRead;
-#endif
 
     public ConcurrentDictionary<string, BattleReport> BattleReports { get; set; } = new ConcurrentDictionary<string, BattleReport>();
 
@@ -59,10 +57,8 @@ public partial class BattleReportService : IDisposable
 
         Interlocked.Exchange(ref _filesToLoad, 0);
         Interlocked.Exchange(ref _filesLoaded, 0);
-#if DEBUG
         Interlocked.Exchange(ref _bytesRead, 0);
         Stopwatch stopwatch = Stopwatch.StartNew();
-#endif
         LoadingBattleReportsStarted?.Invoke(this, new EventArgs());
 
         DirectoryInfo directoryInfo = new(_settingService.Settings.WotReplayDirectory);
@@ -93,13 +89,9 @@ public partial class BattleReportService : IDisposable
             }
         });
 
-#if DEBUG
         long elapsedMs = stopwatch.ElapsedMilliseconds;
-#endif
         LoadingBattleReportsFinished?.Invoke(this, new EventArgs());
-#if DEBUG
         Debug.WriteLine($"Battle list loaded: {files.Count} files, {Interlocked.Read(ref _bytesRead) / 1048576.0:F1} MB read, {elapsedMs} ms");
-#endif
         Debug.WriteLine($"Battle list loaded: managed heap {GC.GetTotalMemory(true) / 1048576} MB");
     }
 
@@ -242,9 +234,7 @@ public partial class BattleReportService : IDisposable
         try
         {
             ReplayReader.ReplayBlocks blocks = ReplayReader.Read(file.FullName);
-#if DEBUG
             Interlocked.Add(ref _bytesRead, blocks.Header.Length + (blocks.Results?.Length ?? 0));
-#endif
 
             JsonObject? replay = JsonNode.Parse(blocks.Header) as JsonObject;
             if (replay?["dateTime"] == null)
