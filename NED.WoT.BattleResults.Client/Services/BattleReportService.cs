@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Components;
+﻿using Microsoft.AspNetCore.Components;
 
 using MudBlazor;
 
@@ -18,7 +18,7 @@ public class BattleReportService : IDisposable
     private readonly ISnackbar _snackbar;
     private readonly SettingService _settingService;
     private FileSystemWatcher? _watcher;
-    private Timer? _timer;
+    private readonly Timer _timer;
     private (string, string)? _clanMatch;
     private readonly SemaphoreSlim _tempFileGate = new(1);
     private readonly CancellationTokenSource _disposed = new();
@@ -73,6 +73,9 @@ public class BattleReportService : IDisposable
         _settingService = settingService;
         _folderCts = CancellationTokenSource.CreateLinkedTokenSource(_disposed.Token);
         _batchTimer = new Timer(async _ => await AddPendingFilesAsync(), null, Timeout.Infinite, Timeout.Infinite);
+        SelfCheck();
+        // The live lookup runs whichever folder is selected; every tick reads the setting, so a changed path needs no restart.
+        _timer = new Timer(async _ => await TempFileWatcherAsync(), null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2));
         ListenForFileChanges();
     }
 
@@ -108,7 +111,6 @@ public class BattleReportService : IDisposable
             {
                 StopWatching();
                 _pending.Clear();
-                _clanMatch = null;
                 _folderCts.Dispose();
                 _folderCts = CancellationTokenSource.CreateLinkedTokenSource(_disposed.Token);
                 CurrentFolder = index;
@@ -238,16 +240,11 @@ public class BattleReportService : IDisposable
         _watcher.Renamed += OnRenamed;
         _watcher.Deleted += OnDeleted;
         _watcher.Error += OnError;
-
-        _timer = new Timer(async _ => await TempFileWatcherAsync(), null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2));
     }
 
-    /// <summary>Stops the watcher and the temp.wotreplay timer of the folder that is left (or of one that does not exist any more).</summary>
+    /// <summary>Stops the watcher of the folder that is left (or of one that does not exist any more).</summary>
     private void StopWatching()
     {
-        _timer?.Dispose();
-        _timer = null;
-
         if (_watcher is not null)
         {
             _watcher.Created -= OnCreated;
@@ -265,10 +262,30 @@ public class BattleReportService : IDisposable
         _disposed.Cancel();
         StopWatching();
 
+        _timer.Dispose();
         _batchTimer.Dispose();
         _pending.Clear();
 
         GC.SuppressFinalize(this);
+    }
+
+    /// <returns>The configured temp.wotreplay, else temp.wotreplay in the first replay folder; null when neither is known.</returns>
+    private static string? LiveReplayFile(string? configured, string? firstFolder)
+    {
+        if (!string.IsNullOrWhiteSpace(configured))
+        {
+            return configured;
+        }
+
+        return string.IsNullOrWhiteSpace(firstFolder) ? null : Path.Combine(firstFolder, "temp.wotreplay");
+    }
+
+    [Conditional("DEBUG")]
+    private static void SelfCheck()
+    {
+        Debug.Assert(LiveReplayFile(@"D:\Live\temp.wotreplay", @"C:\replays") == @"D:\Live\temp.wotreplay", "a set path wins");
+        Debug.Assert(LiveReplayFile("  ", @"C:\replays") == @"C:\replays\temp.wotreplay", "empty falls back to the first folder");
+        Debug.Assert(LiveReplayFile(null, null) is null, "nothing known: no lookup");
     }
 
     /// <summary>Every 2 s: the two clan tags of the battle being played, from block 0 of temp.wotreplay. A tick that finds the previous one still running is skipped.</summary>
@@ -281,8 +298,8 @@ public class BattleReportService : IDisposable
 
         try
         {
-            string tempFile = Path.Combine(ReplayDirectory ?? string.Empty, "temp.wotreplay");
-            if (!File.Exists(tempFile))
+            string? tempFile = LiveReplayFile(_settingService.Settings.LiveReplayPath, _settingService.Settings.ReplayFolders.FirstOrDefault()?.Path);
+            if (tempFile is null || !File.Exists(tempFile))
             {
                 return Task.CompletedTask;
             }

@@ -82,13 +82,19 @@
                             <MudText Typo="Typo.caption" Class="mud-text-secondary">Gevechten verschijnen terwijl ze worden gelezen.</MudText>
                         </div>
                     </MudSwitch>
-                    <MudSwitch Color="Color.Primary" @bind-Value="@modal.AutoClanLookup" For="(() => modal.AutoClanLookup)">
-                        <div>
-                            <div>Clan automatisch opzoeken bij de start van een gevecht</div>
-                            <MudText Typo="Typo.caption" Class="mud-text-secondary">Opent Clan gevecht zodra je clan tegen een andere clan speelt.</MudText>
-                        </div>
-                    </MudSwitch>
                 </MudStack>
+
+                <MudDivider />
+                <MudText Typo="Typo.overline" Color="Color.Tertiary">Live gevecht</MudText>
+                <MudTextField Label="Pad naar temp-replay" Variant="Variant.Filled" Placeholder="C:\Games\World_of_Tanks_EU\replays\temp.wotreplay"
+                              HelperText="Het tijdelijke replay-bestand van het lopende gevecht. Hiermee zoekt de app de tegenstander live op."
+                              @bind-Value="@modal.LiveReplayPath" For="(() => modal.LiveReplayPath)" />
+                <MudSwitch Color="Color.Primary" @bind-Value="@modal.AutoClanLookup" For="(() => modal.AutoClanLookup)">
+                    <div>
+                        <div>Clan automatisch opzoeken bij de start van een gevecht</div>
+                        <MudText Typo="Typo.caption" Class="mud-text-secondary">Opent Clan gevecht zodra je clan tegen een andere clan speelt.</MudText>
+                    </div>
+                </MudSwitch>
             </MudStack>
         </DialogContent>
         <DialogActions>
@@ -123,7 +129,8 @@
                 SingleBattleResultOpenedOnly = SettingService.Settings.SingleBattleResultOpenedOnly,
                 OnlyHighlistOwnMatches = SettingService.Settings.OnlyHighlistOwnMatches,
                 UpdateScreeenWhileLoading = SettingService.Settings.UpdateScreeenWhileLoading,
-                AutoClanLookup = SettingService.Settings.AutoClanLookup
+                AutoClanLookup = SettingService.Settings.AutoClanLookup,
+                LiveReplayPath = SettingService.Settings.LiveReplayPath
             };
 
         if (modal.ReplayFolders.Count == 0)
