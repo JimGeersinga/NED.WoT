@@ -186,7 +186,7 @@
 
 /* ==== MudMenu (the folder menu of the carousel: design "Replaymappen: navigatie") ==== */
 /* 480px, below the current title. A row is a radio (the check, the title over the path, the number of battles once the folder is read); the last row opens the settings. */
-.mud-popover.wot-folder-pop { width: 480px; max-width: calc(100vw - 32px); padding: 6px 0; border: 1px solid var(--mud-palette-lines-default); border-radius: 6px; box-shadow: var(--wot-shadow-menu); overflow: hidden; }
+.mud-popover.wot-folder-pop { width: max-content; min-width: 480px; max-width: min(760px, calc(100vw - 32px)); padding: 6px 0; border: 1px solid var(--mud-palette-lines-default); border-radius: 6px; box-shadow: var(--wot-shadow-menu); overflow: hidden; }
 .wot-folder-pop .fm-row { display: flex; align-items: center; justify-content: flex-start; gap: 12px; width: 100%; min-height: 56px; padding: 0 16px; border: 0; background: none; color: var(--mud-palette-text-primary); font: 400 15px/1.55 var(--wot-font-text); text-align: left; cursor: pointer; }
 .wot-folder-pop .fm-row:hover { background: var(--mud-palette-action-default-hover); }
 .wot-folder-pop .fm-row:focus-visible { outline-offset: -2px; }
@@ -194,8 +194,9 @@
 .wot-folder-pop .fm-check { color: transparent; }
 .wot-folder-pop .fm-row[aria-checked="true"] .fm-check { color: var(--mud-palette-primary); }
 .wot-folder-pop .fm-text { display: flex; flex-direction: column; flex: 1; gap: 2px; min-width: 0; }
-.wot-folder-pop .fm-title { font: 500 15px/1.3 var(--wot-font-text); }
-.wot-folder-pop .fm-path { font: 400 12px/1.3 var(--wot-font-text); color: var(--mud-palette-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wot-folder-pop .fm-title { font: 500 15px/1.3 var(--wot-font-text); overflow-wrap: anywhere; }
+/* A long path is cut at the start, not the end: the folder name is the part that tells the folders apart. rtl puts the ellipsis on the left, the bdo keeps the characters in reading order. */
+.wot-folder-pop .fm-path { font: 400 12px/1.3 var(--wot-font-text); color: var(--mud-palette-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; direction: rtl; text-align: left; }
 .wot-folder-pop .fm-div { height: 1px; margin: 6px 0; background: var(--mud-palette-lines-default); }
 .wot-folder-pop .fm-manage { min-height: 48px; }
 .wot-folder-pop .fm-manage .mud-icon-root { color: var(--mud-palette-text-secondary); }

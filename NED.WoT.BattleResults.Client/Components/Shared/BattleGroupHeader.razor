@@ -1,16 +1,23 @@
 @* The day header of the battle table: the content of the MudTable's GroupHeaderTemplate. It renders cells, so it sits inside the group header row. *@
 <MudTh colspan="5" scope="rowgroup">
 	<div class="gl">
-		<MudText Typo="Typo.h6" HtmlTag="h2">@Label</MudText>
-		<MudText Typo="Typo.caption" Class="mud-text-secondary">@Date.ToString("dd-MM-yyyy")</MudText>
-		<BattleTotals Reports="Reports" ShowRecord="!ShowBattleStats" />
+		<div class="gl-dayname">
+			<span class="gl-daydate">@Date.ToString("dddd dd-MM-yyyy", BattleReport.DutchCulture)</span>
+			<MudText Typo="Typo.h6" HtmlTag="h2">@Label</MudText>
+		</div>
+		<BattleTotals Reports="Reports" />
 	</div>
 </MudTh>
 @if (ShowBattleStats && Stats != null)
 {
 	@Stats(Reports)
 }
-<MudTd></MudTd>
+<MudTd Class="res">
+	@if (!ShowBattleStats)
+	{
+		<BattleRecord Reports="Reports" />
+	}
+</MudTd>
 <MudTd Class="p4">
 	<button type="button" class="gl-ibtn out primary" aria-label="Kopieer opstellingen van deze dag" title="Kopieer opstellingen van deze dag" @onclick="() => OnCopy.InvokeAsync(Reports)">
 		<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Filled.ContentCopy)</svg>
