@@ -1,0 +1,23 @@
+@* The record of a set of battles in the Resultaat column of the day header and the totals footer. The footer adds the result icons of the chips. *@
+<span class="gl-rec">
+    <span class="w">@Icon(Icons.Material.Filled.CheckCircle)@Reports.Count(x => x.Result is Result.Win) gewonnen</span>
+    <span class="d">@Icon(Icons.Material.Filled.RemoveCircle)@Reports.Count(x => x.Result is Result.Draw) gelijkspel</span>
+    <span class="l">@Icon(Icons.Material.Filled.Cancel)@Reports.Count(x => x.Result is Result.Lose) verloren</span>
+    @if (Reports.Any(x => x.Result is Result.Unknown))
+    {
+        <span>@Icon(Icons.Material.Filled.HelpOutline)@Reports.Count(x => x.Result is Result.Unknown) onbekend</span>
+    }
+</span>
+
+@code {
+    [Parameter, EditorRequired]
+    public required IReadOnlyCollection<BattleReport> Reports { get; set; }
+
+    /// <summary>The result icon in front of each count (the footer; the day header has none).</summary>
+    [Parameter]
+    public bool ShowIcons { get; set; }
+
+    private RenderFragment Icon(string path) => ShowIcons
+        ? @<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)path)</svg>
+        : @<text></text>;
+}

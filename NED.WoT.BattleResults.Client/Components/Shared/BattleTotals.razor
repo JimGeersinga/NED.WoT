@@ -1,11 +1,10 @@
 @using System.Diagnostics
 
-@* The count, win % and record of a set of battles: the day header and the totals footer both use it. *@
+@* The count and win % of a set of battles: the day header and the totals footer both use it. The record is BattleRecord. *@
 @{
     var wins = Reports.Count(x => x.Result is Result.Win);
     var draws = Reports.Count(x => x.Result is Result.Draw);
     var loses = Reports.Count(x => x.Result is Result.Lose);
-    var unknowns = Reports.Count(x => x.Result is Result.Unknown);
     var decided = wins + draws + loses;
     var percentage = WinPercentage(wins, draws, loses);
 }
@@ -20,24 +19,10 @@
         @percentage.ToString("0.#", BattleReport.DutchCulture)% gewonnen
     </MudChip>
 }
-@if (ShowRecord)
-{
-    <MudText Typo="Typo.caption" Class="mud-text-secondary">
-        @wins gewonnen · @draws gelijkspel · @loses verloren@(unknowns > 0 ? $" · {unknowns} onbekend" : string.Empty)@Suffix
-    </MudText>
-}
 
 @code {
     [Parameter, EditorRequired]
     public required IReadOnlyCollection<BattleReport> Reports { get; set; }
-
-    /// <summary>The record as a caption. Off in stats mode, where the stat columns take the room.</summary>
-    [Parameter]
-    public bool ShowRecord { get; set; } = true;
-
-    /// <summary>Appended to the record caption, for example the load time of the footer.</summary>
-    [Parameter]
-    public string? Suffix { get; set; }
 
     /// <summary>Wins over the decided battles (won, drawn, lost); an unknown result counts for neither side.</summary>
     public static decimal WinPercentage(int wins, int draws, int loses)

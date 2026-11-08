@@ -66,12 +66,6 @@
                 </MudStack>
 
                 <MudDivider />
-                <MudText Typo="Typo.overline" Color="Color.Tertiary">Laden</MudText>
-                <MudDatePicker Label="Laad gevechten sinds" Variant="Variant.Filled" Style="max-width: 320px" HelperText="Geldt voor alle mappen."
-                               DateFormat="dd-MM-yyyy" FirstDayOfWeek="DayOfWeek.Monday"
-                               @bind-Date="@modal.LoadBattlesSince" For="(() => modal.LoadBattlesSince)" />
-
-                <MudDivider />
                 <MudText Typo="Typo.overline" Color="Color.Tertiary">Identiteit</MudText>
                 <MudTextField Label="Clanafkorting" Variant="Variant.Filled"
                               @bind-Value="@modal.ClanAbbreviation" For="(() => modal.ClanAbbreviation)" />
@@ -128,7 +122,6 @@
         modal = new Settings
             {
                 ReplayFolders = [.. SettingService.Settings.ReplayFolders.Select(f => new ReplayFolder { Title = f.Title, Path = f.Path })],
-                LoadBattlesSince = SettingService.Settings.LoadBattlesSince,
                 ClanAbbreviation = SettingService.Settings.ClanAbbreviation,
                 PlayerName = SettingService.Settings.PlayerName,
                 SingleBattleResultOpenedOnly = SettingService.Settings.SingleBattleResultOpenedOnly,
@@ -209,9 +202,8 @@
             return;
         }
 
-        // A new folder list (a path added, removed or moved) or date starts the app over on the first folder; a title alone changes nothing that was read.
-        bool reloadNeeded = !SettingService.Settings.ReplayFolders.Select(f => f.Path).SequenceEqual(modal.ReplayFolders.Select(f => f.Path))
-            || SettingService.Settings.LoadBattlesSince != modal.LoadBattlesSince;
+        // A new folder list (a path added, removed or moved) starts the app over on the first folder; a title alone changes nothing that was read.
+        bool reloadNeeded = !SettingService.Settings.ReplayFolders.Select(f => f.Path).SequenceEqual(modal.ReplayFolders.Select(f => f.Path));
         SettingService.Settings = modal;
 
         SettingService.Save();

@@ -13,6 +13,7 @@
 @inject IDialogService DialogService;
 @inject ISnackbar Snackbar;
 
+
 @{
 	// One pass per render: the readable battles that pass the Clangevechten | Alles switch, the clan and the player (the Map list counts these), then the map (the totals follow these), then their days.
 	var readable = _reports.Where(x => x.Error == null).ToList();
@@ -73,14 +74,14 @@
 						OnAction="OpenSettingsAsync" />
 		</div>
 	}
-	else if (emptyCause == EmptyCause.NothingSinceDate)
+	else if (emptyCause == EmptyCause.NoReplays)
 	{
 		<div class="gl-empty-well">
 			<EmptyState Icon="@Icons.Material.Outlined.History"
-						Title="@($"Geen gevechten sinds {SettingService.Settings.LoadBattlesSince?.ToString("dd-MM-yyyy")}")"
-						Text="Er staan geen nieuwere .wotreplay-bestanden in de map. Speel een gevecht, kies een andere map of laad een eerdere periode."
-						ActionText="Datum aanpassen"
-						ActionIcon="@Icons.Material.Outlined.Event"
+						Title="Geen gevechten gevonden"
+						Text="Er staan geen .wotreplay-bestanden in de map. Speel een gevecht of kies een andere map."
+						ActionText="Instellingen openen"
+						ActionIcon="@Icons.Material.Outlined.Settings"
 						OnAction="OpenSettingsAsync" />
 		</div>
 	}
@@ -133,7 +134,7 @@
 				</button>
 			</MudTh>
 			<MudTh Class="c">#</MudTh>
-			<MudTh><span class="gl-sorted">Tijd · duur<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Filled.ArrowDownward)</svg></span></MudTh>
+			<MudTh><span class="gl-sorted">Tijd · Duur<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Filled.ArrowDownward)</svg></span></MudTh>
 			<MudTh Class="mapcol"><div class="mapc"><span>Map</span><span></span></div></MudTh>
 			<MudTh>Teams</MudTh>
 			@if (_showBattleStats)
@@ -199,11 +200,7 @@
 					{
 						<MudText Typo="Typo.caption" Class="mud-text-secondary">@filesLoaded van @filesToLoad bestanden gelezen</MudText>
 					}
-					else
-					{
-						<MudText Typo="Typo.caption" Class="mud-text-secondary">sinds @SettingService.Settings.LoadBattlesSince?.ToString("dd-MM-yyyy")</MudText>
-					}
-					<BattleTotals Reports="filtered" ShowRecord="!_showBattleStats" Suffix="@(_loading || _loadingTime == TimeSpan.Zero ? null : $" · geladen in {_loadingTime.TotalSeconds.ToString("0.0", BattleReport.DutchCulture)} s")" />
+					<BattleTotals Reports="filtered" />
 					@if (_loading && SettingService.Settings.UpdateScreeenWhileLoading)
 					{
 						<MudText Typo="Typo.caption" Class="mud-text-secondary">wordt bijgewerkt tijdens het laden</MudText>
@@ -214,7 +211,12 @@
 			{
 				@StatCells(filtered)
 			}
-			<MudTd></MudTd>
+			<MudTd Class="res">
+				@if (!_showBattleStats)
+				{
+					<BattleRecord Reports="filtered" ShowIcons="true" />
+				}
+			</MudTd>
 			<MudTd></MudTd>
 		</FooterContent>
 	</MudTable>
@@ -235,7 +237,6 @@
 	private bool _clanOnly = true;
 	private HashSet<string> _maps = [];
 	private HashSet<Result> _results = [];
-	private TimeSpan _loadingTime = TimeSpan.Zero;
 
 	private bool _canToggleBattleStats = false;
 	private bool _showBattleStats = false;
@@ -260,7 +261,7 @@
 	{
 		None,
 		ReplayFolderMissing,
-		NothingSinceDate,
+		NoReplays,
 		FiltersHideAll
 	}
 
@@ -268,10 +269,10 @@
 	private static List<BattleReport> UnreadableShown(int battleRows, bool noFilter, IEnumerable<BattleReport> reports) =>
 		battleRows > 0 && noFilter ? reports.Where(x => x.Error != null).ToList() : [];
 
-	/// <summary>The cause of an empty table once loading is done and no battle row is shown: no folder, no replay at all since the date (all the replays, readable or not), or replays that the filters hide.</summary>
+	/// <summary>The cause of an empty table once loading is done and no battle row is shown: no folder, no replay at all in the folder (readable or not), or replays that the filters hide.</summary>
 	private static EmptyCause EmptyCauseOf(bool folderExists, int replayCount) =>
 		!folderExists ? EmptyCause.ReplayFolderMissing
-		: replayCount == 0 ? EmptyCause.NothingSinceDate
+		: replayCount == 0 ? EmptyCause.NoReplays
 		: EmptyCause.FiltersHideAll;
 
 	/// <summary>One day of battles, newest first. The number of a battle in its day is its place counted from the oldest (oldest = 1). Items are the readable battles; Newest also counts an unreadable replay of the day, which has a row but no number and no count.</summary>
@@ -315,7 +316,7 @@
 		_results = [];
 	}
 
-	/// <summary>Opens the settings, for the empty states that are fixed there. The dialog reloads the battles itself when the folder or the start date changes.</summary>
+	/// <summary>Opens the settings, for the empty states that are fixed there. The dialog reloads the battles itself when the folders change.</summary>
 	private async Task OpenSettingsAsync()
 	{
 		await DialogService.ShowAsync<SettingsDialog>("Instellingen", new DialogOptions
@@ -366,7 +367,7 @@
 		// The cause of an empty table picks its empty state.
 		Debug.Assert(EmptyCauseOf(false, 0) == EmptyCause.ReplayFolderMissing, "no folder is the missing-folder state, whatever else is true");
 		Debug.Assert(EmptyCauseOf(false, 7) == EmptyCause.ReplayFolderMissing, "no folder wins over the replay count");
-		Debug.Assert(EmptyCauseOf(true, 0) == EmptyCause.NothingSinceDate, "a folder without replays since the date is the since-date state");
+		Debug.Assert(EmptyCauseOf(true, 0) == EmptyCause.NoReplays, "a folder without replays is the no-replays state");
 		Debug.Assert(EmptyCauseOf(true, 7) == EmptyCause.FiltersHideAll, "replays that no row shows are hidden by the filters");
 
 		// An unreadable replay is a row of its own: it has its day but no count and no number.
@@ -492,6 +493,7 @@
 				_reports = new List<BattleReport>();
 				_battlesVersion++;
 				_loading = true;
+				App.SetTitle(null);
 				StateHasChanged();
 
 				// The progress bar moves with it, so it runs for every load, not only when the battles show while loading.
@@ -530,11 +532,7 @@
 				_reports.Add(e.Report);
 				_battlesVersion++;
 				_clanMatchDialog?.Close();
-				if (_loading)
-				{
-					_loadingTime = Stopwatch.GetElapsedTime(timestamp);
-				}
-				else if (_loadedOnce)
+				if (!_loading && _loadedOnce)
 				{
 					_addedFiles.Add(e.Report.FileName);
 				}
@@ -560,7 +558,8 @@
 				_loading = false;
 				if (!_loadedOnce)
 				{
-					_loadingTime = Stopwatch.GetElapsedTime(timestamp);
+					// The load time goes behind the version in the window title.
+					App.SetTitle($" · geladen in {Stopwatch.GetElapsedTime(timestamp).TotalSeconds.ToString("0.0", BattleReport.DutchCulture)} s");
 				}
 
 				_loadedOnce = true;

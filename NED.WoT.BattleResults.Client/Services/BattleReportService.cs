@@ -536,10 +536,10 @@ public class BattleReportService : IDisposable
         }
     }
 
-    /// <summary>The replays a load reads (the callers have checked that the folder is set): the folder's .wotreplay files since the start date, newest first, without temp.wotreplay.</summary>
+    /// <summary>The replays a load reads (the callers have checked that the folder is set): the folder's .wotreplay files, newest first, without temp.wotreplay.</summary>
     private List<FileInfo> ReplayFiles() => new DirectoryInfo(ReplayDirectory!)
         .EnumerateFiles(SEARCH_PATTERN)
-        .Where(x => x.LastWriteTime > _settingService.Settings.LoadBattlesSince && !IsTempFile(x.Name))
+        .Where(x => !IsTempFile(x.Name))
         .OrderByDescending(x => x.CreationTime)
         .ToList();
 
