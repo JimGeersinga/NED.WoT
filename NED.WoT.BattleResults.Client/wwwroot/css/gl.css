@@ -25,7 +25,7 @@
 .gl-bar .wot-vsep { height: 32px; }
 .gl-tools { display: flex; align-items: center; gap: 8px; margin-left: auto; flex: none; }
 
-.gl-sorted { display: flex; align-items: center; gap: 2px; color: var(--mud-palette-text-primary); }
+.gl-sorted { display: flex; align-items: center; gap: 2px; color: inherit; }
 .gl-sorted svg { width: 16px; height: 16px; fill: currentColor; }
 .gl-dim { color: var(--mud-palette-text-secondary); }
 .gl-err svg { width: 20px; height: 20px; fill: currentColor; }
@@ -146,10 +146,12 @@
 .car .nv { width: 40px; display: inline-flex; align-items: center; justify-content: center; border: 0; background: none; color: var(--mud-palette-text-secondary); cursor: pointer; }
 .car .nv:first-child { border-right: 1px solid var(--mud-palette-lines-default); }
 .car .nv:last-child { border-left: 1px solid var(--mud-palette-lines-default); }
-.car .side { display: inline-flex; align-items: center; max-width: clamp(80px, 9vw, 180px); padding: 0 14px; border: 0; background: none; color: var(--mud-palette-text-secondary); font: 500 15px/1 var(--wot-font-display); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+/* Previous and next are one width; a longer title is cut with an ellipsis (block, not flex: text-overflow does not reach the text of a flex container). */
+.car .side { display: block; flex: none; box-sizing: border-box; width: clamp(100px, 9vw, 180px); padding: 0 14px; border: 0; background: none; color: var(--mud-palette-text-secondary); font: 500 15px/42px var(--wot-font-display); letter-spacing: .02em; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
 .car .nv:hover, .car .side:hover { background: var(--mud-palette-action-default-hover); color: var(--mud-palette-text-primary); }
 .car .nv:focus-visible, .car .mid:focus-visible { outline-offset: -2px; }
-.car .mid { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; min-width: 176px; max-width: clamp(240px, 28vw, 460px); padding: 0 18px; border: 0; border-left: 1px solid var(--mud-palette-lines-default); border-right: 1px solid var(--mud-palette-lines-default); background: color-mix(in srgb, var(--mud-palette-primary) 8%, transparent); color: var(--mud-palette-text-primary); font: inherit; cursor: pointer; }
+/* A fixed width, so stepping from a short title to a long one does not move the arrows. */
+.car .mid { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; flex: none; box-sizing: border-box; width: clamp(200px, 16vw, 280px); min-width: 200px; padding: 0 18px; border: 0; border-left: 1px solid var(--mud-palette-lines-default); border-right: 1px solid var(--mud-palette-lines-default); background: color-mix(in srgb, var(--mud-palette-primary) 8%, transparent); color: var(--mud-palette-text-primary); font: inherit; cursor: pointer; }
 .car-1 .mid { border-left: 0; border-right: 0; }
 .car .mid .ttl { display: inline-flex; align-items: center; gap: 8px; max-width: 100%; font: 700 18px/1 var(--wot-font-display); letter-spacing: .02em; white-space: nowrap; }
 .car .mid .ttl .t { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
