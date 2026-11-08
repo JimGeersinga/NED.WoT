@@ -550,3 +550,16 @@
 }
 
 .mud-image.gl-unauth-mark { width: 64px; height: 64px; }
+
+/* ==== MudTooltip and the right-click menu of a battle row ==== */
+.mud-tooltip { padding: 0; border: 1px solid var(--mud-palette-lines-inputs); border-radius: 4px; background: var(--wot-surface-dialog); box-shadow: var(--wot-shadow-menu); color: var(--mud-palette-text-primary); font: 500 13px/1.4 var(--wot-font-text); }
+/* The time tooltip reads like the team list of the details: a bronze display-font header, then numbered-style rows with a dim label. */
+.wot-tt { display: grid; grid-template-columns: 1fr auto; min-width: 200px; column-gap: 24px; row-gap: 3px; padding: 8px 14px 10px; }
+.wot-tt b { grid-column: 1 / -1; padding-bottom: 6px; margin-bottom: 3px; border-bottom: 1px solid var(--mud-palette-lines-default); font: 600 15px/1.3 var(--wot-font-display); letter-spacing: .06em; text-transform: uppercase; color: var(--mud-palette-tertiary); }
+.wot-tt span { color: var(--mud-palette-text-secondary); text-align:left; }
+.wot-tt i { font-style: normal; font-weight: 600; text-align: right; }
+.mud-popover.wot-ctx-pop { min-width: 240px; max-width: 420px; border: 1px solid var(--mud-palette-lines-default); border-radius: 6px; box-shadow: var(--wot-shadow-menu); overflow: hidden; }
+.wot-ctx-pop .wot-ctx-file { display: flex; flex-direction: column; gap: 2px; padding: 8px 16px; border-bottom: 1px solid var(--mud-palette-lines-default); user-select: text; }
+.wot-ctx-pop .wot-ctx-file span { font: 600 11px/1.4 var(--wot-font-display); letter-spacing: .12em; text-transform: uppercase; color: var(--mud-palette-tertiary); }
+.wot-ctx-pop .wot-ctx-file code { font: 400 12px/1.4 ui-monospace, Consolas, monospace; color: var(--mud-palette-text-primary); overflow-wrap: anywhere; }
+.gl-ctx-anchor { display: block; width: 0; height: 0; }

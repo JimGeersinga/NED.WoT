@@ -27,13 +27,13 @@ public class BattleReport
 
     public string MatchTimeDisplay => $"{MatchStart:dd-MM-yyyy HH:mm}";
 
-    /// <summary>The exact day and the start and end to the second, for the hover of the time cell.</summary>
-    public string MatchTimeTooltip
+    /// <summary>The weekday and day, for the hover of the time cell.</summary>
+    public string MatchDayDisplay
     {
         get
         {
             string day = MatchStart.ToString("dddd dd-MM-yyyy", DutchCulture);
-            return $"{char.ToUpper(day[0], DutchCulture)}{day[1..]}{Environment.NewLine}Start {MatchStart:HH:mm:ss} · einde {MatchEnd?.ToString("HH:mm:ss", DutchCulture) ?? "?"}";
+            return $"{char.ToUpper(day[0], DutchCulture)}{day[1..]}";
         }
     }
 

@@ -35,7 +35,7 @@
         <HeaderContent>
             <MudTHeadRow Class="player-table-column-groups">
                 <MudTh colspan="5" Class="sticky-left lead"></MudTh>
-                <MudTh colspan="2">Prestatie</MudTh>
+                <MudTh colspan="2">Prestaties</MudTh>
                 <MudTh colspan="3">Schade</MudTh>
                 <MudTh colspan="3">Schoten</MudTh>
             </MudTHeadRow>
@@ -76,24 +76,22 @@
                 // The tooltip carries the full name too: the name cell cuts a long name off with an ellipsis.
                 string tooltip = $"{context.DisplayName}{'\n'}" + string.Join(" · ", new[] { context.MaxHealth.HasValue ? $"Pantser {Fmt(context.Health)} / {Fmt(context.MaxHealth)} HP" : null, $"Leefde {Duration(context.LifeTime)}" }.OfType<string>());
             }
-            <MudTd DataLabel="Number" Class="sticky-left num">@context.Number</MudTd>
+            <MudTd DataLabel="Number" Class="sticky-left num">
+                @if (own)
+                {
+                    <svg class="wot-name-person" viewBox="0 0 24 24" role="img" aria-label="Jij"><title>Jij</title>@((MarkupString)Icons.Material.Filled.Person)</svg>
+                }
+                @context.Number
+            </MudTd>
             <MudTd DataLabel="Name" Class="@("sticky-left name " + (dead ? "dead" : "hp"))" Style="@($"--hp: {HealthPercent(context)}%")" title="@tooltip">
                 <div class="wot-name">
-                    <span class="wot-name-slot">
-                        @if (own)
-                        {
-                            <svg class="wot-name-person" viewBox="0 0 24 24" role="img" aria-label="Jij"><title>Jij</title>@((MarkupString)Icons.Material.Filled.Person)</svg>
-                        }
-                        else if (dead)
+                    <span class="wot-name-slot">                        
+                        @if (dead)
                         {
                             <img src="img/destroyed.png" alt="Uitgeschakeld" />
                         }
                     </span>
-                    <span class="@("wot-name-text" + (own ? " me" : string.Empty) + (teamKiller ? " tk" : string.Empty))">@context.DisplayName</span>
-                    @if (own && dead)
-                    {
-                        <img src="img/destroyed.png" alt="Uitgeschakeld" />
-                    }
+                    <span class="@("wot-name-text" + (own ? " me" : string.Empty) + (teamKiller ? " tk" : string.Empty))">@context.DisplayName</span>           
                     @if (teamKiller)
                     {
                         <svg class="wot-name-tk" viewBox="0 0 24 24" role="img" aria-label="Teamkiller"><title>Teamkiller</title>@((MarkupString)Icons.Material.Filled.Report)</svg>

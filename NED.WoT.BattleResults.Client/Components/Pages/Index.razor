@@ -135,7 +135,7 @@
 			<MudTh Class="c">#</MudTh>
 			<MudTh><span class="gl-sorted">Tijd · duur<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Filled.ArrowDownward)</svg></span></MudTh>
 			<MudTh Class="mapcol"><div class="mapc"><span>Map</span><span></span></div></MudTh>
-			<MudTh>Team 1 · Team 2</MudTh>
+			<MudTh>Teams</MudTh>
 			@if (_showBattleStats)
 			{
 				<MudTh Class="r">Geschoten</MudTh>
@@ -651,6 +651,15 @@
 		string text = team?.GetResult(report.MapName) ?? string.Empty;
 		await Clipboard.SetTextAsync(text);
 		NotifyCopied(text);
+	}
+
+	private async Task CopyFileNameAsync(BattleReport report)
+	{
+		if (!string.IsNullOrEmpty(report.FileName))
+		{
+			await Clipboard.SetTextAsync(report.FileName);
+			Snackbar.Add(BattleReportService.Notice("Gekopieerd", "bestandsnaam staat op het klembord"), Severity.Success);
+		}
 	}
 
 	private void NotifyCopied(string text)

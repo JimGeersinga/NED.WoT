@@ -26,7 +26,7 @@
                 <div class="splash-prog" role="progressbar" aria-label="Laden"><i></i></div>
                 <p class="splash-caption">Gevechten laden…</p>
             </div>
-            <p class="splash-byline">Een initiatief van <b>NED</b></p>
+            <p class="splash-byline">Een initiatief van <b>NED-1</b></p>
         </div>
     </div>
 
@@ -45,6 +45,9 @@
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
 
     <script>
+        // The copy cell of a battle row has its own right-click menu (BattleRow); the browser's one never shows there.
+        document.addEventListener('contextmenu', e => { if (e.target.closest('.wot-battle-table td.p4')) e.preventDefault(); });
+
         function scrollIntoView(elementId) {
             console.log('scrollIntoView', elementId);
             var elem = document.getElementById(elementId);

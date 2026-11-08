@@ -38,8 +38,16 @@
     fill: currentColor;
 }
 
+/* "Jij": hangs in the expander column, left of the # cell (a sticky cell, so it is the anchor). */
 .wot-name-person {
-    color: var(--mud-palette-primary);
+    position: absolute;
+    right: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-right: 8px;
+    width: 18px;
+    height: 18px;
+    fill: var(--mud-palette-primary);
 }
 
 .wot-name-text {

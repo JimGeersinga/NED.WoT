@@ -15,6 +15,7 @@
 .tag.own { padding: 3px 6px; border: 1px solid var(--wot-bronze-edge); border-radius: 2px; background: color-mix(in srgb, var(--mud-palette-tertiary) 8%, transparent); min-width: 0; }
 .vs { display: flex; align-items: center; gap: 10px; }
 .vs > * { flex: none; }
+.vs > .tag:first-child { justify-content: flex-end; }
 .score { display: inline-flex; align-items: center; gap: 6px; font: 600 18px/1 var(--wot-font-display); min-width: 64px; justify-content: center; color: var(--mud-palette-text-secondary); }
 .score b { color: var(--mud-palette-text-primary); font-weight: 700; }
 
@@ -36,6 +37,7 @@
 .gl-ibtn { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border: 1px solid transparent; border-radius: 4px; background: none; color: var(--mud-palette-text-secondary); cursor: pointer; flex: none; }
 .gl-ibtn svg { width: 20px; height: 20px; fill: currentColor; }
 .gl-ibtn.out { border-color: var(--mud-palette-lines-inputs); }
+.gl-ibtn.out.primary { border-color: var(--mud-palette-primary); color: var(--mud-palette-primary); }
 .gl-ibtn.out svg { width: 18px; height: 18px; }
 .gl-ibtn:hover:not(:disabled) { background: var(--mud-palette-table-hover); color: var(--mud-palette-text-primary); }
 .gl-ibtn:disabled { color: var(--mud-palette-action-disabled); cursor: default; }

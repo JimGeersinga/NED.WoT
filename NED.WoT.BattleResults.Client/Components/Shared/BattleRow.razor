@@ -25,8 +25,23 @@ else
 		</button>
 	</MudTd>
 	<MudTd Class="c gl-dim">@Number</MudTd>
-	<MudTd title="@Report.MatchTimeTooltip">
-		<div class="two"><b>@Report.MatchStart.ToString("HH:mm")@(Report.MatchEnd.HasValue ? $" – {Report.MatchEnd.Value:HH:mm}" : string.Empty)</b><small>@Report.MatchDurationDisplay</small></div>
+	<MudTd>
+		<MudTooltip Delay="450" Placement="Placement.Bottom">
+			<TooltipContent>
+				<div class="wot-tt">
+					<b>@Report.MatchDayDisplay</b>
+					<span>Start</span><i>@Report.MatchStart.ToString("HH:mm:ss")</i>
+					<span>Einde</span><i>@(Report.MatchEnd?.ToString("HH:mm:ss") ?? "?")</i>
+					@if (Report.MatchDuration.HasValue)
+					{
+						<span>Duur</span><i>@Report.MatchDurationDisplay</i>
+					}
+				</div>
+			</TooltipContent>
+			<ChildContent>
+				<div class="two"><b>@Report.MatchStart.ToString("HH:mm")@(Report.MatchEnd.HasValue ? $" – {Report.MatchEnd.Value:HH:mm}" : string.Empty)</b><small>@Report.MatchDurationDisplay</small></div>
+			</ChildContent>
+		</MudTooltip>
 	</MudTd>
 	<MudTd Class="mapcol"><div class="mapc"><b title="@Report.MapName">@Report.MapName</b><span class="gl-chip">@ownTeam?.Base</span></div></MudTd>
 	<MudTd>
@@ -41,7 +56,15 @@ else
 		@Stats(new[] { Report })
 	}
 	<MudTd Class="res"><ResultChip Result="Report.Result" /></MudTd>
-	<MudTd Class="p4">
+	<MudTd Class="p4" @oncontextmenu="OpenMenu">
+		@* Right-click menu of the row: the replay's file name, and a button to copy it. Opened from the cells at the cursor; the activator is only an anchor. *@
+		<MudMenu @ref="_menu" PositionAtCursor="true" ActivationEvent="MouseEvent.RightClick" PopoverClass="wot-ctx-pop" Dense="true">
+			<ActivatorContent><span class="gl-ctx-anchor"></span></ActivatorContent>
+			<ChildContent>
+				<div class="wot-ctx-file"><span>Replaybestand</span><code>@Report.FileName</code></div>
+				<MudMenuItem Icon="@Icons.Material.Filled.ContentCopy" OnClick="() => OnCopyFileName.InvokeAsync(Report)">Kopieer bestandsnaam</MudMenuItem>
+			</ChildContent>
+		</MudMenu>
 		<button type="button" class="gl-ibtn out" aria-label="Kopieer opstelling" title="Kopieer opstelling" disabled="@(ownTeam == null)" @onclick="() => OnCopy.InvokeAsync(Report)" @onclick:stopPropagation="true">
 			<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Filled.ContentCopy)</svg>
 		</button>
@@ -69,6 +92,14 @@ else
 
 	[Parameter]
 	public EventCallback<BattleReport> OnCopy { get; set; }
+
+	/// <summary>The "Kopieer bestandsnaam" item of the right-click menu.</summary>
+	[Parameter]
+	public EventCallback<BattleReport> OnCopyFileName { get; set; }
+
+	private MudMenu? _menu;
+
+	private Task OpenMenu(MouseEventArgs e) => _menu?.OpenMenuAsync(e) ?? Task.CompletedTask;
 
 	/// <summary>A team tag in the VS cell (Team 1 left, Team 2 right): coloured by the team's result, and with the clan-chip edge when it is the own team. With "Alleen eigen gevechten uitlichten" only the own tag is coloured.</summary>
 	public static string TagClass(Team team, bool own, bool onlyOwn)
