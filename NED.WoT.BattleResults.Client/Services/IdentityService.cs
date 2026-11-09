@@ -26,7 +26,7 @@ public sealed class IdentityService(WargamingAuthService auth, HttpClient http)
 
     public void SignOut()
     {
-        auth.SignOut();
+        WargamingAuthService.SignOut();
         Current = null;
         Changed?.Invoke();
     }
