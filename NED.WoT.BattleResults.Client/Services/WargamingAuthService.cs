@@ -25,6 +25,7 @@ public sealed class WargamingAuthService
     private static readonly TimeSpan SignInTimeout = TimeSpan.FromMinutes(5);
 
     private readonly HttpClient _http;
+    private readonly SemaphoreSlim _sessionLock = new(1, 1);
 
     public WargamingAuthService(HttpClient http)
     {
@@ -34,6 +35,20 @@ public sealed class WargamingAuthService
 
     /// <summary>The stored session, prolonged when it expires within 72 h. Null when none, expired or rejected (then cleared). Unreachable Wargaming keeps and returns the old token.</summary>
     public async Task<WargamingSession?> GetSessionAsync()
+    {
+        // One at a time: the stored session is re-read after the lock, so overlapping calls never both prolong (the old token dies at the first).
+        await _sessionLock.WaitAsync();
+        try
+        {
+            return await GetSessionCoreAsync();
+        }
+        finally
+        {
+            _sessionLock.Release();
+        }
+    }
+
+    private async Task<WargamingSession?> GetSessionCoreAsync()
     {
         WargamingSession? session = await LoadAsync();
         if (session is null)
@@ -125,7 +140,7 @@ public sealed class WargamingAuthService
                 {
                     session = await VerifyCallbackAsync(context.Request.QueryString, state, timeout.Token);
                 }
-                catch (Exception ex) when (ex is HttpRequestException or JsonException or KeyNotFoundException or InvalidOperationException)
+                catch (Exception ex) when (ex is HttpRequestException or JsonException or KeyNotFoundException or InvalidOperationException or OperationCanceledException)
                 {
                     // Treated as refused.
                 }
@@ -181,7 +196,7 @@ public sealed class WargamingAuthService
         }
 
         DateTimeOffset expires = long.TryParse(query["expires_at"], CultureInfo.InvariantCulture, out long unix)
-            ? DateTimeOffset.FromUnixTimeSeconds(unix)
+            ? DateTimeOffset.FromUnixTimeSeconds(Math.Min(unix, DateTimeOffset.UtcNow.Add(TokenLifetime).ToUnixTimeSeconds()))
             : DateTimeOffset.UtcNow.Add(TokenLifetime);
         return new WargamingSession(accountId, nickname, token!, expires);
     }

@@ -58,7 +58,7 @@ from WoT HQ's.
    `access_token`, `expires_at`, `account_id`, `nickname`, then shuts down.
 3. **The query values are not trusted.** The token is verified by a POST to
    `account/info/` (form: `access_token`, `account_id`) before anything is
-   stored; the nickname is taken from that answer. Checked 2026-11-09: a loopback
+   stored; the nickname is taken from that answer. The call asks `fields=nickname,private`: `private` is required, and is only returned when the token belongs to that account **(verify)**. Checked 2026-11-09: a loopback
    `redirect_uri` with a port is accepted for application
    `953ad65cc3872f5a909dc1921ba5acf7`, and a bad token answers HTTP 200 with
    `INVALID_ACCESS_TOKEN` (whose `value` echoes the token).
