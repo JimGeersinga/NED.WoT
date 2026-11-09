@@ -1,4 +1,4 @@
-using System.Collections.Specialized;
+﻿using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Globalization;
 using System.Net;
@@ -145,9 +145,7 @@ public sealed class WargamingAuthService(HttpClient http) : IDisposable
     }
 
     /// <summary>Forgets the token locally. Never calls Wargaming's logout endpoint.</summary>
-#pragma warning disable CA1822 // instance member on purpose: consumers call it on the injected service
-    public void SignOut() => SecureStorage.Default.Remove(StorageKey);
-#pragma warning restore CA1822
+    public static void SignOut() => SecureStorage.Default.Remove(StorageKey);
 
     public void Dispose() => _lock.Dispose();
 
