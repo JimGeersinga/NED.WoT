@@ -12,8 +12,8 @@ A path marked "created by #N" does not exist yet.
 | Name | WoT Gevechtslog, a sibling of WoT HQ. `ApplicationId` and the package identity stay the same, so installed copies keep updating. |
 | Look | The WoT HQ design system, dark only. The canvas "WoT Gevechtslog" (https://claude.ai/artifact/Xi6h8kaLxdDjXZLHoH7Fro) is the look of record; the design system is https://claude.ai/artifact/MnaxNrvDVemYHNzsu5rBQD. |
 | Sign-in | Wargaming OpenID in the system browser with a loopback redirect, under the app's own WG application (Mobile/Standalone). The token is kept in `SecureStorage` and prolonged at start when it expires within 72 h. |
-| Rights | Stay with the Excel / Google Apps Script check (`CustomAuthenticationStateProvider`), unchanged (owner, 2026-11-09). The Wargaming login decides no rights. The earlier plan to take rights from NED.WoT.Clan is dropped. |
-| Identity | After the Excel check the player must sign in with Wargaming. Clan tag and player name come from that login (`clans/accountinfo`), not from Settings. |
+| Rights | From WoT HQ (`POST /api/gevechtslog/session`, `JimGeersinga/NED.WoT.Clan#149`): the app sends the Wargaming token at every start (and daily while open); HQ verifies it and answers identity, clan, role, `canUse` and `canSeeAdvancedStats`. **HQ down means no access** (owner, 2026-11-09). Until #75 lands the Excel / Google Apps Script check stays; #75 removes it. |
+| Identity | After the access check the player must sign in with Wargaming. Nickname, clan tag, name and emblem and role come from HQ's answer (#75), not from Settings. Until #75, #11 looks the clan up itself with `clans/accountinfo`. |
 | Replay folders | Several folders (title + path) and a carousel in the app bar. Only the selected folder is read, watched and held in memory; switching folders drops the old one's battles and reads the new one from disk. |
 | Live battle | One temp-replay path setting, separate from the folders. |
 | Ratings | PR and clan rating (no WTR: the public API has none) in the Clan battle dialog, for everyone with access, from Wargaming's public API under the app's own application id. |
@@ -68,12 +68,16 @@ from WoT HQ's.
    app asks the player to sign in again.
 5. Sign-out forgets the token locally. `auth/logout` is never called.
 
-### 3.3 Rights and identity (created by #11)
-Rights stay with the Excel / Google Apps Script check, unchanged. After it allows
-the player, the app needs a Wargaming session (§3.2); without one it shows the
-login screen. The identity (nickname, account id, clan tag and name) comes from
-the session and `GET clans/accountinfo/` (public, no token), and replaces the
-clan and player fields in Settings (#12).
+### 3.3 Rights and identity (created by #75; the login screen by #11)
+The app logs in itself (§3.2) and then sends the verified token to
+`POST {ClanApiBaseUrl}api/gevechtslog/session` (form: `account_id`, `access_token`,
+HTTPS only). HQ verifies the token under its own `Gevechtslog:ApplicationId`
+(the app's application id `953ad65cc3872f5a909dc1921ba5acf7`, a separate id from
+HQ's reserves application) and answers `{ accountId, nickname, clanId, clanTag,
+clanName, emblemUrl, role, canUse, canSeeAdvancedStats }`; 401 means the token is
+invalid (sign in again), 503 that Wargaming is unreachable. The app trusts the
+answer and never decides rights itself. Nothing is kept on the HQ side. HQ down,
+or any other failure to get an answer, shows "Geen verbinding met WoT HQ".
 
 ### 3.4 Public reads (created by #18)
 Under the app's own application id, no token: `account/list` (name → account id),
@@ -113,7 +117,7 @@ Titles match the GitHub milestones one to one.
 | 00 | Working agreements | #1, #21, #23, #25 | CLAUDE.md, this plan and docs/DESIGN.md; a manual release workflow and a version bump in every PR. |
 | 01 | WoT Gevechtslog look and feel | #2–#9 | The WoT HQ design system on today's screens: theme, logo, app bar, battle table, stats mode, details, dialogs and every state. |
 | 02 | Filter dropdowns | #13–#14 | Clan, Speler, Map and Resultaat dropdowns and the Clangevechten \| Alles switch. |
-| 03 | Sign in with Wargaming | #10–#12 | Wargaming login in the desktop app after the Excel check (which stays); clan and player name from the login replace the Settings fields. |
+| 03 | Sign in with Wargaming | #10–#12, #75 | Wargaming login in the desktop app (#10, #11); access and identity from WoT HQ replace the Excel check (#75); the account menu and the removal of the clan and player Settings fields (#12). |
 | 04 | Replay folders | #15–#16 | Several replay folders in Settings and a folder carousel in the app bar. |
 | 05 | Live battle | #17 | A separate temp-replay path for the live clan lookup. |
 | 06 | Clan battle statistics | #18–#19 | Clan rating and PR in the Clan battle dialog, from Wargaming's public API. |
