@@ -17,7 +17,7 @@ namespace NED.WoT.BattleResults.Client.Services;
 /// errors, so the envelope's <c>status</c> decides. The error's <c>value</c> echoes the token and is never read. Nothing here
 /// logs, and no exception message carries a token. the logout endpoint is never called.
 /// </summary>
-public sealed class WargamingAuthService
+public sealed class WargamingAuthService : IDisposable
 {
     private const string StorageKey = "wargaming.session";
     private static readonly TimeSpan ProlongWithin = TimeSpan.FromHours(72);
@@ -270,6 +270,8 @@ public sealed class WargamingAuthService
         Debug.Assert(!IsValidCallback("a", "a", "error", "t"));
         Debug.Assert(!IsValidCallback("a", "a", "ok", ""));
     }
+
+    public void Dispose() => _sessionLock.Dispose();
 
     private readonly record struct Reply(bool Ok, string? ErrorMessage, JsonElement Data);
 }
