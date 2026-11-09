@@ -51,9 +51,9 @@ from WoT HQ's.
 
 ### 3.2 Sign-in (created by #10)
 1. The app opens `https://api.worldoftanks.eu/wot/auth/login/` in the system
-   browser with `application_id`, a `redirect_uri` of `http://127.0.0.1:<port>/…`
+   browser with `application_id`, a `redirect_uri` of `http://localhost:<port>/…`
    served by a loopback listener in the app, a random `state`, and
-   `expires_at`.
+   `expires_at`. Wargaming's firewall blocks a redirect_uri with a literal IP (checked 2026-11-09), so the loopback listener uses `localhost`.
 2. The listener accepts one request, checks `state`, reads `status`,
    `access_token`, `expires_at`, `account_id`, `nickname`, then shuts down.
 3. **The query values are not trusted.** The token is verified by a POST to
