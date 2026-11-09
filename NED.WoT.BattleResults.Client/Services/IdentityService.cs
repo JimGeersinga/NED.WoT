@@ -12,6 +12,8 @@ namespace NED.WoT.BattleResults.Client.Services;
 /// </summary>
 public sealed class IdentityService(WargamingAuthService auth, HttpClient http)
 {
+    private static readonly TimeSpan ClanLookupTimeout = TimeSpan.FromSeconds(5);
+
     public WargamingIdentity? Current { get; private set; }
 
     public event Action? Changed;
@@ -38,10 +40,11 @@ public sealed class IdentityService(WargamingAuthService auth, HttpClient http)
 
         long? clanId = null;
         string? tag = null, name = null, emblem = null;
+        using var timeout = new CancellationTokenSource(ClanLookupTimeout);
         try
         {
             string id = session.AccountId.ToString(CultureInfo.InvariantCulture);
-            JsonElement? clan = await GetDataAsync($"clans/accountinfo/?application_id={AppConfig.WargamingApplicationId}&account_id={id}&fields=clan.clan_id,clan.tag,clan.name", id);
+            JsonElement? clan = await GetDataAsync($"clans/accountinfo/?application_id={AppConfig.WargamingApplicationId}&account_id={id}&fields=clan.clan_id,clan.tag,clan.name", id, timeout.Token);
             if (clan is { ValueKind: JsonValueKind.Object } info
                 && info.TryGetProperty("clan", out JsonElement c) && c.ValueKind == JsonValueKind.Object)
             {
@@ -50,7 +53,7 @@ public sealed class IdentityService(WargamingAuthService auth, HttpClient http)
                 name = c.GetProperty("name").GetString();
 
                 string cid = clanId.Value.ToString(CultureInfo.InvariantCulture);
-                JsonElement? emblems = await GetDataAsync($"clans/info/?application_id={AppConfig.WargamingApplicationId}&clan_id={cid}&fields=emblems.x64", cid);
+                JsonElement? emblems = await GetDataAsync($"clans/info/?application_id={AppConfig.WargamingApplicationId}&clan_id={cid}&fields=emblems.x64", cid, timeout.Token);
                 if (emblems is { ValueKind: JsonValueKind.Object } e
                     && e.TryGetProperty("emblems", out JsonElement em) && em.TryGetProperty("x64", out JsonElement x64)
                     && x64.TryGetProperty("portal", out JsonElement portal))
@@ -59,7 +62,7 @@ public sealed class IdentityService(WargamingAuthService auth, HttpClient http)
                 }
             }
         }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException or KeyNotFoundException or InvalidOperationException)
+        catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException or JsonException or KeyNotFoundException or InvalidOperationException)
         {
             // Wargaming unreachable or an odd answer: the session stays, the clan stays empty.
         }
@@ -70,10 +73,10 @@ public sealed class IdentityService(WargamingAuthService auth, HttpClient http)
     }
 
     // data[key] of an ok envelope; null for an error status or a null entry.
-    private async Task<JsonElement?> GetDataAsync(string relativeUrl, string key)
+    private async Task<JsonElement?> GetDataAsync(string relativeUrl, string key, CancellationToken ct)
     {
-        using HttpResponseMessage response = await http.GetAsync(new Uri(AppConfig.WargamingApiBaseUrl + relativeUrl));
-        using JsonDocument doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+        using HttpResponseMessage response = await http.GetAsync(new Uri(AppConfig.WargamingApiBaseUrl + relativeUrl), ct);
+        using JsonDocument doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
         JsonElement root = doc.RootElement;
         if (root.GetProperty("status").GetString() != "ok"
             || !root.GetProperty("data").TryGetProperty(key, out JsonElement entry))
