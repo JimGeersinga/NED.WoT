@@ -1,5 +1,6 @@
 ﻿@using Microsoft.AspNetCore.Components.Authorization
 @inject NavigationManager NavigationManager
+@inject Services.IdentityService Identity
 
 <CascadingAuthenticationState>
     <Router AppAssembly="@typeof(MauiProgram).Assembly">
@@ -7,7 +8,19 @@
             <CascadingValue Value="@routeData">
                 <AuthorizeView Context="AppAuthState">
                     <Authorized>
-                        <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)" />
+                        @if (!_identityLoaded)
+                        {
+                            <Splash />
+                        }
+                        else if (Identity.Current is null && routeData.PageType != typeof(Pages.Login))
+                        {
+                            @* Excel lets the user in, but there is no Wargaming session yet. *@
+                            NavigationManager.NavigateTo("login");
+                        }
+                        else
+                        {
+                            <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)" />
+                        }
                     </Authorized>
                     <NotAuthorized>
                         <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)">
@@ -29,3 +42,14 @@
         </NotFound>
     </Router>
 </CascadingAuthenticationState>
+
+@code {
+    private bool _identityLoaded;
+
+    // Stored session (prolonged when due) and clan, once at start. A failed clan lookup keeps the session.
+    protected override async Task OnInitializedAsync()
+    {
+        await Identity.InitializeAsync();
+        _identityLoaded = true;
+    }
+}

@@ -1,0 +1,85 @@
+@page "/login"
+@implements IDisposable
+@inject IdentityService Identity
+@inject NavigationManager NavigationManager
+
+@* Same card as Geen toegang (`.gl-unauth` in gl.css). Three states: ready, waiting, failed. *@
+<div class="gl-unauth">
+    <MudPaper Outlined="true" Elevation="0" Class="gl-unauth-card">
+        <MudImage Src="img/gevechtslog-mark.svg" Alt="" Class="gl-unauth-mark" />
+        @if (_state == LoginState.Waiting)
+        {
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+            <MudText Typo="Typo.h3" HtmlTag="h1">Wachten op Wargaming</MudText>
+            <MudText Typo="Typo.body1">Keur de aanmelding goed in je browser.</MudText>
+            <MudStack Row="true" Spacing="2" Justify="Justify.Center">
+                <MudButton Variant="Variant.Outlined" OnClick="Cancel">Annuleren</MudButton>
+                <MudButton Variant="Variant.Text" OnClick="StartAsync">Browser opnieuw openen</MudButton>
+            </MudStack>
+        }
+        else if (_state == LoginState.Failed)
+        {
+            <MudText Typo="Typo.h3" HtmlTag="h1">Inloggen mislukt</MudText>
+            <MudText Typo="Typo.body1">Mislukt · Wargaming gaf geen antwoord. Probeer het opnieuw.</MudText>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="StartAsync">Opnieuw inloggen</MudButton>
+        }
+        else
+        {
+            <MudText Typo="Typo.h3" HtmlTag="h1">Niet ingelogd</MudText>
+            <MudText Typo="Typo.body1">Log in met je Wargaming-account zodat de app weet wie je bent en bij welke clan je speelt.</MudText>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="StartAsync">Inloggen met Wargaming</MudButton>
+        }
+    </MudPaper>
+</div>
+
+@code {
+    private enum LoginState { Ready, Waiting, Failed }
+
+    private LoginState _state = LoginState.Ready;
+    private CancellationTokenSource? _cts;
+
+    protected override void OnInitialized()
+    {
+        if (Identity.Current is not null)
+        {
+            NavigationManager.NavigateTo("/");
+        }
+    }
+
+    private async Task StartAsync()
+    {
+        // Starting again (browser reopened) cancels the run before; its late answer is ignored below.
+        _cts?.Cancel();
+        CancellationTokenSource cts = _cts = new CancellationTokenSource();
+        _state = LoginState.Waiting;
+
+        bool ok = await Identity.SignInAsync(cts.Token);
+        if (!ReferenceEquals(_cts, cts))
+        {
+            return;
+        }
+
+        if (ok)
+        {
+            NavigationManager.NavigateTo("/");
+        }
+        else
+        {
+            _state = LoginState.Failed;
+        }
+    }
+
+    private void Cancel()
+    {
+        CancellationTokenSource? cts = _cts;
+        _cts = null;
+        cts?.Cancel();
+        _state = LoginState.Ready;
+    }
+
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _cts = null;
+    }
+}
