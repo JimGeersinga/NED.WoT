@@ -12,11 +12,11 @@ A path marked "created by #N" does not exist yet.
 | Name | WoT Gevechtslog, a sibling of WoT HQ. `ApplicationId` and the package identity stay the same, so installed copies keep updating. |
 | Look | The WoT HQ design system, dark only. The canvas "WoT Gevechtslog" (https://claude.ai/artifact/Xi6h8kaLxdDjXZLHoH7Fro) is the look of record; the design system is https://claude.ai/artifact/MnaxNrvDVemYHNzsu5rBQD. |
 | Sign-in | Wargaming OpenID in the system browser with a loopback redirect, under the app's own WG application (Mobile/Standalone). The token is kept in `SecureStorage` and prolonged at start when it expires within 72 h. |
-| Rights | From NED.WoT.Clan (`POST /api/gevechtslog/session`): the same clan whitelist as WoT HQ; battle stats for the commander by default; per-player Allow/Deny set by the platform admin. The Excel / Google Apps Script check is removed. |
-| Identity | Clan tag and player name come from the login, not from Settings. |
+| Rights | Stay with the Excel / Google Apps Script check (`CustomAuthenticationStateProvider`), unchanged (owner, 2026-11-09). The Wargaming login decides no rights. The earlier plan to take rights from NED.WoT.Clan is dropped. |
+| Identity | After the Excel check the player must sign in with Wargaming. Clan tag and player name come from that login (`clans/accountinfo`), not from Settings. |
 | Replay folders | Several folders (title + path) and a carousel in the app bar. Only the selected folder is read, watched and held in memory; switching folders drops the old one's battles and reads the new one from disk. |
 | Live battle | One temp-replay path setting, separate from the folders. |
-| Ratings | PR, WTR and clan rating in the Clan battle dialog, for everyone with access, from Wargaming's public API under the app's own application id. |
+| Ratings | PR and clan rating (no WTR: the public API has none) in the Clan battle dialog, for everyone with access, from Wargaming's public API under the app's own application id. |
 | Tests | No test project. Acceptance is checked by hand and with screenshots (CLAUDE.md, "Screenshots instead of UI tests"). |
 | Build | The .NET recommended analyzers run (`AnalysisLevel` `latest-recommended`) and any warning fails the build (`TreatWarningsAsErrors`); decided by the owner on 2026-11-07. The other Recur build rules stay out (CLAUDE.md). The SDK is pinned to 10.0.x by `global.json`, the same band CI uses. |
 
@@ -51,31 +51,33 @@ from WoT HQ's.
 
 ### 3.2 Sign-in (created by #10)
 1. The app opens `https://api.worldoftanks.eu/wot/auth/login/` in the system
-   browser with `application_id`, a `redirect_uri` of `http://127.0.0.1:<port>/…`
+   browser with `application_id`, a `redirect_uri` of `http://localhost:<port>/…`
    served by a loopback listener in the app, a random `state`, and
-   `expires_at`.
+   `expires_at`. Wargaming's firewall blocks a redirect_uri with a literal IP (checked 2026-11-09), so the loopback listener uses `localhost`.
 2. The listener accepts one request, checks `state`, reads `status`,
    `access_token`, `expires_at`, `account_id`, `nickname`, then shuts down.
 3. **The query values are not trusted.** The token is verified by a POST to
    `account/info/` (form: `access_token`, `account_id`) before anything is
-   stored **(verify)**.
+   stored; the nickname is taken from that answer. The call asks `fields=nickname,private`: `private` is required, and is only returned when the token belongs to that account **(verify)**. Checked 2026-11-09: a loopback
+   `redirect_uri` with a port is accepted for application
+   `953ad65cc3872f5a909dc1921ba5acf7`, and a bad token answers HTTP 200 with
+   `INVALID_ACCESS_TOKEN` (whose `value` echoes the token).
 4. The token and its expiry go to `SecureStorage`. At start the app calls
    `POST auth/prolongate/` when the token expires within 72 h and stores the new
    token at once (the old one is dead immediately). On `INVALID_ACCESS_TOKEN` the
    app asks the player to sign in again.
 5. Sign-out forgets the token locally. `auth/logout` is never called.
 
-### 3.3 Rights from NED.WoT.Clan (created by #11)
-`POST /api/gevechtslog/session` of `JimGeersinga/NED.WoT.Clan` (built in
-`JimGeersinga/NED.WoT.Clan#149`) takes the access token and answers with who the
-player is, their clan and role, and what they may do. The app trusts that answer
-for the screens it shows and never decides rights itself. A refusal shows the
-Geen toegang page. The Excel / Google Apps Script check, and
-`CustomAuthenticationStateProvider`'s use of it, are removed by #11.
+### 3.3 Rights and identity (created by #11)
+Rights stay with the Excel / Google Apps Script check, unchanged. After it allows
+the player, the app needs a Wargaming session (§3.2); without one it shows the
+login screen. The identity (nickname, account id, clan tag and name) comes from
+the session and `GET clans/accountinfo/` (public, no token), and replaces the
+clan and player fields in Settings (#12).
 
 ### 3.4 Public reads (created by #18)
 Under the app's own application id, no token: `account/list` (name → account id),
-`account/info` (`global_rating`), `clans/info` (clan rating) and the WTR source,
+`account/info` (`global_rating`), `clans/list` and `clanratings/clans` (`efficiency.value`, `.rank`); the public API has no WTR (checked 2026-11-09),
 for the Clan battle dialog. Each call names its endpoint, parameters and fields
 in its issue, marked **(verify)** until checked against the live API.
 
@@ -111,10 +113,10 @@ Titles match the GitHub milestones one to one.
 | 00 | Working agreements | #1, #21, #23, #25 | CLAUDE.md, this plan and docs/DESIGN.md; a manual release workflow and a version bump in every PR. |
 | 01 | WoT Gevechtslog look and feel | #2–#9 | The WoT HQ design system on today's screens: theme, logo, app bar, battle table, stats mode, details, dialogs and every state. |
 | 02 | Filter dropdowns | #13–#14 | Clan, Speler, Map and Resultaat dropdowns and the Clangevechten \| Alles switch. |
-| 03 | Sign in with Wargaming | #10–#12 | Wargaming login in the desktop app; rights from NED.WoT.Clan (milestone 14 there). The Excel / Google Apps Script check is removed. |
+| 03 | Sign in with Wargaming | #10–#12 | Wargaming login in the desktop app after the Excel check (which stays); clan and player name from the login replace the Settings fields. |
 | 04 | Replay folders | #15–#16 | Several replay folders in Settings and a folder carousel in the app bar. |
 | 05 | Live battle | #17 | A separate temp-replay path for the live clan lookup. |
-| 06 | Clan battle statistics | #18–#19 | Clan rating, PR and WTR in the Clan battle dialog, from Wargaming's public API. |
+| 06 | Clan battle statistics | #18–#19 | Clan rating and PR in the Clan battle dialog, from Wargaming's public API. |
 | 07 | Speed and memory | #41–#45 | A reload frees the old battle list; replays are read by block and parsed into a typed model; analyzers run as errors. |
 | 08 | Fewer MudBlazor overrides | #54–#60 | Hand-made buttons, icons, chips and menu rows become MudBlazor components; unused and leaking CSS goes; shadows move into the theme. |
 

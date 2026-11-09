@@ -42,6 +42,8 @@ public static class MauiProgram
         builder.Services.AddScoped<BattleReportService>();
         builder.Services.AddScoped<UpdateCheckService>();
         builder.Services.AddSingleton<SettingService>();
+        builder.Services.AddSingleton<HttpClient>();
+        builder.Services.AddSingleton<WargamingAuthService>();
 
         return builder.Build();
     }
