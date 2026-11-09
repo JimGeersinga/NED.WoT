@@ -111,13 +111,13 @@ public sealed class WargamingAuthService : IDisposable
 
         int port = FreePort();
         string state = RandomNumberGenerator.GetHexString(32);
-        string redirect = $"http://127.0.0.1:{port}/callback?state={state}";
+        string redirect = $"http://localhost:{port}/callback?state={state}";
         string loginUrl = $"{AppConfig.WargamingApiBaseUrl}auth/login/?application_id={AppConfig.WargamingApplicationId}"
             + $"&redirect_uri={Uri.EscapeDataString(redirect)}"
             + $"&expires_at={DateTimeOffset.UtcNow.Add(TokenLifetime).ToUnixTimeSeconds()}&nofollow=0";
 
         using var listener = new HttpListener();
-        listener.Prefixes.Add($"http://127.0.0.1:{port}/");
+        listener.Prefixes.Add($"http://localhost:{port}/");
         listener.Start();
         using CancellationTokenRegistration registration = timeout.Token.Register(listener.Close);
 
