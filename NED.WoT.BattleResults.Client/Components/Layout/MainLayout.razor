@@ -6,6 +6,7 @@
 @inject ISnackbar Snackbar
 @inject NavigationManager NavigationManager
 @inject SettingService SettingService
+@inject IdentityService Identity
 @inject UpdateCheckService UpdateCheckService
 
 <MudThemeProvider Theme="WotTheme.Theme" IsDarkMode="true" ObserveSystemDarkModeChange="false" />
@@ -24,24 +25,28 @@
                 <span class="wot-byline">Een initiatief van <b>NED-1</b></span>
             </span>
         </div>
-        @if (!string.IsNullOrEmpty(SettingService.Settings.ClanAbbreviation))
+        @* Not signed in (the Login page): brand only. *@
+        @if (Identity.Current is not null)
         {
-            <span class="wot-vsep"></span>
-            <MudChip T="string" Class="wot-clan-chip"><span class="wot-clan-tag">[@SettingService.Settings.ClanAbbreviation]</span></MudChip>
+            @if (!string.IsNullOrEmpty(SettingService.Settings.ClanAbbreviation))
+            {
+                <span class="wot-vsep"></span>
+                <MudChip T="string" Class="wot-clan-chip"><span class="wot-clan-tag">[@SettingService.Settings.ClanAbbreviation]</span></MudChip>
+            }
+            <MudSpacer />
+            <FolderCarousel OnManage="() => OpenSettings(true)" />
+            <MudSpacer />
+            @if (UpdateCheckService.UpdateAvailable)
+            {
+                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Update" OnClick="ShowUpdateDialog">Update</MudButton>
+            }
+            <MudTooltip Text="Vernieuwen">
+                <MudIconButton Icon="@Icons.Material.Filled.Refresh" Color="Color.Inherit" aria-label="Vernieuwen" OnClick="Refresh" />
+            </MudTooltip>
+            <MudTooltip Text="Instellingen">
+                <MudIconButton Icon="@Icons.Material.Filled.Settings" Color="Color.Inherit" aria-label="Instellingen" OnClick="(e) => OpenSettings(true)" />
+            </MudTooltip>
         }
-        <MudSpacer />
-        <FolderCarousel OnManage="() => OpenSettings(true)" />
-        <MudSpacer />
-        @if (UpdateCheckService.UpdateAvailable)
-        {
-            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Update" OnClick="ShowUpdateDialog">Update</MudButton>
-        }
-        <MudTooltip Text="Vernieuwen">
-            <MudIconButton Icon="@Icons.Material.Filled.Refresh" Color="Color.Inherit" aria-label="Vernieuwen" OnClick="Refresh" />
-        </MudTooltip>
-        <MudTooltip Text="Instellingen">
-            <MudIconButton Icon="@Icons.Material.Filled.Settings" Color="Color.Inherit" aria-label="Instellingen" OnClick="(e) => OpenSettings(true)" />
-        </MudTooltip>
     </MudAppBar>
     <MudMainContent>
         @Body
