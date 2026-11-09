@@ -44,6 +44,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<SettingService>();
         builder.Services.AddSingleton<HttpClient>();
         builder.Services.AddSingleton<WargamingAuthService>();
+        builder.Services.AddSingleton<IdentityService>();
 
         return builder.Build();
     }
