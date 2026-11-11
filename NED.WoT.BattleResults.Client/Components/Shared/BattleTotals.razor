@@ -16,7 +16,7 @@
     <MudChip T="string" Variant="Variant.Text" Size="Size.Small"
              Color="@(band == nameof(Result.Win) ? Color.Success : band == nameof(Result.Lose) ? Color.Error : Color.Warning)"
              Icon="@(band == nameof(Result.Win) ? Icons.Material.Filled.ArrowDropUp : band == nameof(Result.Lose) ? Icons.Material.Filled.ArrowDropDown : Icons.Material.Filled.Remove)">
-        @percentage.ToString("0.#", BattleReport.DutchCulture)% gewonnen
+        @percentage.ToString("0.00", BattleReport.DutchCulture)% gewonnen
     </MudChip>
 }
 
@@ -36,6 +36,6 @@
     {
         Debug.Assert(WinPercentage(3, 1, 1) == 60m, "3 won, 1 draw, 1 lost is 60%");
         Debug.Assert(WinPercentage(0, 0, 0) == 0m, "no decided battles is 0%");
-        Debug.Assert(WinPercentage(1, 0, 2).ToString("0.#", BattleReport.DutchCulture) == "33,3", "33,3 with a decimal comma");
+        Debug.Assert(WinPercentage(1, 0, 2).ToString("0.00", BattleReport.DutchCulture) == "33,33", "two decimals, with a decimal comma");
     }
 }
