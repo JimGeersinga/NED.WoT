@@ -22,6 +22,9 @@ public sealed record ReplayPlayer
 {
     public string? Name { get; init; }
     public string? ClanAbbrev { get; init; }
+
+    /// <summary>Only in results[1]; 0 for a player without a clan.</summary>
+    public long? ClanDbid { get; init; }
     public int? Team { get; init; }
     public string? VehicleType { get; init; }
 }

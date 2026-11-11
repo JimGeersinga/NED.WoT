@@ -56,6 +56,8 @@ public class BattleReportMapper
 
         game.Team1.Abbreviation = GetMostMentionedClanAbbreviation(game.Team1);
         game.Team2.Abbreviation = GetMostMentionedClanAbbreviation(game.Team2);
+        game.Team1.ClanId = game.Team1.Players.FirstOrDefault(x => x.Clan == game.Team1.Abbreviation && x.ClanId > 0)?.ClanId;
+        game.Team2.ClanId = game.Team2.Players.FirstOrDefault(x => x.Clan == game.Team2.Abbreviation && x.ClanId > 0)?.ClanId;
 
         game.Team1.Result = GetResult(game.Team1.IsWinner, game.Team2.IsWinner);
         game.Team2.Result = GetResult(game.Team2.IsWinner, game.Team1.IsWinner);
@@ -151,6 +153,7 @@ public class BattleReportMapper
         {
             Name = playerData?.Name,
             Clan = clan,
+            ClanId = playerData?.ClanDbid,
             Vehicle = TankNameResolver.GetTankName(playerData?.VehicleType),
             IsClanMember = string.Equals(settings.ClanAbbreviation, clan, StringComparison.OrdinalIgnoreCase)
         };

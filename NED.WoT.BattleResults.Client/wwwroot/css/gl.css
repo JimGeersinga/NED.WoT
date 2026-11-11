@@ -158,3 +158,4 @@
 .dots { display: inline-flex; gap: 5px; }
 .dots i { width: 6px; height: 6px; border-radius: 1px; background: var(--wot-car-dot); display: block; }
 .dots i.on { background: var(--mud-palette-primary); }
+.tag { text-decoration: none; }

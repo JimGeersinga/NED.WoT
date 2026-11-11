@@ -84,6 +84,8 @@ public class Team
     public int Number { get; set; }
     public string Base => Number == 1 ? "I" : "II";
     public string? Abbreviation { get; set; }
+    public long? ClanId { get; set; }
+    public string? ClanUrl => ClanId is > 0 ? $"https://eu.wargaming.net/clans/wot/{ClanId}/" : null;
     public int? Health { get; set; }
     public bool? IsWinner { get; set; }
 
@@ -123,6 +125,7 @@ public class Player(Team team)
     public int Number { get; set; }
     public string? Name { get; set; }
     public string? Clan { get; set; }
+    public long? ClanId { get; set; }
     public string DisplayName => !string.IsNullOrEmpty(Clan) ? $"[{Clan}] {Name}" : $"{Name}";
     public string? Vehicle { get; set; }
     public int? MaxHealth { get; set; }
