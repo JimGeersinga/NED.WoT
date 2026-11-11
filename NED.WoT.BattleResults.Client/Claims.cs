@@ -2,6 +2,5 @@
 
 public struct Claims
 {
-    public const string CanUse = "CanUse";
     public const string CanSeeBattleStats = "CanSeeBattleStats";
 }

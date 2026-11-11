@@ -13,7 +13,7 @@ A path marked "created by #N" does not exist yet.
 | Look | The WoT HQ design system, dark only. The canvas "WoT Gevechtslog" (https://claude.ai/artifact/Xi6h8kaLxdDjXZLHoH7Fro) is the look of record; the design system is https://claude.ai/artifact/MnaxNrvDVemYHNzsu5rBQD. |
 | Sign-in | Wargaming OpenID in the system browser with a loopback redirect, under the app's own WG application (Mobile/Standalone). The token is kept in `SecureStorage` and prolonged at start when it expires within 72 h. |
 | Rights | From WoT HQ (`POST /api/gevechtslog/session`, `JimGeersinga/NED.WoT.Clan#149`): the app sends the Wargaming token at every start (and daily while open); HQ verifies it and answers identity, clan, role, `canUse` and `canSeeAdvancedStats`. **HQ down means no access** (owner, 2026-11-09). |
-| Identity | After the access check the player must sign in with Wargaming. Nickname, clan tag, name and emblem and role come from HQ's answer (#75), not from Settings. Until #75, #11 looks the clan up itself with `clans/accountinfo`. |
+| Identity | Sign in with Wargaming (§3.2), then HQ's answer (§3.3) gives nickname, clan tag, name, emblem, role and rights; none of it comes from Settings. |
 | Replay folders | Several folders (title + path) and a carousel in the app bar. Only the selected folder is read, watched and held in memory; switching folders drops the old one's battles and reads the new one from disk. |
 | Live battle | One temp-replay path setting, separate from the folders. |
 | Ratings | PR and clan rating (no WTR: the public API has none) in the Clan battle dialog, for everyone with access, from Wargaming's public API under the app's own application id. |
@@ -31,7 +31,7 @@ is a second project in `NED.WoT.slnx`.
 | `Components/Layout` | `MainLayout.razor` (app bar and page frame) |
 | `Components/Pages` | `Index.razor` (the battle table), `Unauthorized.razor` |
 | `Components/Shared` | `Details.razor` and the dialogs: `SettingsDialog`, `ClanMatchDialog`, `ClanMembersDialog`, `UndefinedNamesDialog`, `UpdateDialog` |
-| `Services` | `BattleReportService`, `BattleReportMapper`, `SettingService`, `CustomAuthenticationStateProvider`, `UpdateCheckService`, `MapNameResolver`, `TankNameResolver`, `ColorHelper` |
+| `Services` | `BattleReportService`, `BattleReportMapper`, `SettingService`, `HqAuthenticationStateProvider`, `UpdateCheckService`, `MapNameResolver`, `TankNameResolver`, `ColorHelper` |
 | `Models` | `Settings`, `AppSettings`, `BattleReport` and its event args |
 | `Attributes` | `DirectoryExistsAttribute` |
 | `Platforms/Windows` | `App.xaml(.cs)`, `Package.appxmanifest`, `app.manifest` |
@@ -70,7 +70,7 @@ from WoT HQ's.
 
 ### 3.3 Rights and identity (created by #75; the login screen by #11)
 The app logs in itself (§3.2) and then sends the verified token to
-`POST {ClanApiBaseUrl}api/gevechtslog/session` (form: `account_id`, `access_token`,
+`POST {HqBaseUrl}api/gevechtslog/session` (form: `account_id`, `access_token`,
 HTTPS only). HQ verifies the token under its own `Gevechtslog:ApplicationId`
 (the app's application id `953ad65cc3872f5a909dc1921ba5acf7`, a separate id from
 HQ's reserves application) and answers `{ accountId, nickname, clanId, clanTag,

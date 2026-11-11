@@ -37,8 +37,14 @@
     private async Task Retry()
     {
         _busy = true;
-        await Identity.RefreshAsync(); // Routes moves on when the answer is Allowed or the session is gone
-        _busy = false;
+        try
+        {
+            await Identity.RefreshAsync(); // Routes moves on when the answer is Allowed or the session is gone
+        }
+        finally
+        {
+            _busy = false;
+        }
     }
 
     private void SignOut() => Identity.SignOut(); // Routes sends the signed-out user to the login screen

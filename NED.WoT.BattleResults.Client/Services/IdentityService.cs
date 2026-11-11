@@ -14,7 +14,7 @@ public sealed class IdentityService(WargamingAuthService auth, GevechtslogSessio
     private Timer? _daily;
 
     /// <summary>HQ's identity; set for <see cref="IdentityStatus.Allowed"/> and <see cref="IdentityStatus.Refused"/>.</summary>
-    public WargamingIdentity? Current { get; private set; }
+    public HqIdentity? Current { get; private set; }
 
     public IdentityStatus Status { get; private set; }
 
@@ -53,7 +53,7 @@ public sealed class IdentityService(WargamingAuthService auth, GevechtslogSessio
         // Development without HQ: Allowed with advanced stats and no clan.
         if (Environment.GetEnvironmentVariable("GEVECHTSLOG_SKIP_HQ") == "1")
         {
-            Set(IdentityStatus.Allowed, new WargamingIdentity(session.AccountId, session.Nickname, null, null, null, null, null, true, true));
+            Set(IdentityStatus.Allowed, new HqIdentity(session.AccountId, session.Nickname, null, null, null, null, null, true));
             return true;
         }
 #endif
@@ -75,7 +75,7 @@ public sealed class IdentityService(WargamingAuthService auth, GevechtslogSessio
         }
     }
 
-    private void Set(IdentityStatus status, WargamingIdentity? identity)
+    private void Set(IdentityStatus status, HqIdentity? identity)
     {
         Status = status;
         Current = identity;

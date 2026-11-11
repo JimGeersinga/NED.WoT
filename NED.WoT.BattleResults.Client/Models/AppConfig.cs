@@ -9,5 +9,5 @@ public static class AppConfig
     public const string WargamingApiBaseUrl = "https://api.worldoftanks.eu/wot/";
 
     /// <summary>WoT HQ production, HTTPS only (docs/PLAN.md §3.3).</summary>
-    public const string ClanApiBaseUrl = "https://wothq.code-breaker.nl/";
+    public const string HqBaseUrl = "https://wothq.code-breaker.nl/";
 }

@@ -10,9 +10,9 @@ namespace NED.WoT.BattleResults.Client.Services;
 /// <summary>What WoT HQ answered (docs/PLAN.md §3.3).</summary>
 public abstract record SessionResult
 {
-    public sealed record Allowed(WargamingIdentity Identity) : SessionResult;
+    public sealed record Allowed(HqIdentity Identity) : SessionResult;
 
-    public sealed record Refused(WargamingIdentity Identity) : SessionResult;
+    public sealed record Refused(HqIdentity Identity) : SessionResult;
 
     /// <summary>HTTP 401: the token is no good, sign in again.</summary>
     public sealed record InvalidToken : SessionResult;
@@ -43,7 +43,7 @@ public sealed class GevechtslogSessionClient(HttpClient http)
                 ["account_id"] = session.AccountId.ToString(CultureInfo.InvariantCulture),
                 ["access_token"] = session.AccessToken,
             });
-            using HttpResponseMessage response = await http.PostAsync(new Uri(AppConfig.ClanApiBaseUrl + "api/gevechtslog/session"), form, timeout.Token);
+            using HttpResponseMessage response = await http.PostAsync(new Uri(AppConfig.HqBaseUrl + "api/gevechtslog/session"), form, timeout.Token);
             switch (response.StatusCode)
             {
                 case HttpStatusCode.Unauthorized:
@@ -64,7 +64,7 @@ public sealed class GevechtslogSessionClient(HttpClient http)
     private static SessionResult Parse(string json, WargamingSession session)
     {
         HqAnswer a = JsonSerializer.Deserialize<HqAnswer>(json, Json) ?? throw new JsonException("Empty answer.");
-        var identity = new WargamingIdentity(session.AccountId, a.Nickname ?? session.Nickname, a.ClanId, a.ClanTag, a.ClanName, a.EmblemUrl, a.Role, a.CanUse, a.CanSeeAdvancedStats);
+        var identity = new HqIdentity(session.AccountId, a.Nickname ?? session.Nickname, a.ClanId, a.ClanTag, a.ClanName, a.EmblemUrl, a.Role, a.CanSeeAdvancedStats);
         return a.CanUse ? new SessionResult.Allowed(identity) : new SessionResult.Refused(identity);
     }
 
@@ -78,6 +78,6 @@ public sealed class GevechtslogSessionClient(HttpClient http)
         string allowed = """{"accountId":501742326,"nickname":"Jim","clanId":500012147,"clanTag":"NED-1","clanName":"N","emblemUrl":null,"role":"commander","canUse":true,"canSeeAdvancedStats":true}""";
         Debug.Assert(Parse(allowed, session) is SessionResult.Allowed { Identity: { ClanTag: "NED-1", Role: "commander", CanSeeAdvancedStats: true } });
         string refused = """{"accountId":501742326,"nickname":"Jim","clanId":null,"clanTag":null,"clanName":null,"emblemUrl":null,"role":null,"canUse":false,"canSeeAdvancedStats":false}""";
-        Debug.Assert(Parse(refused, session) is SessionResult.Refused { Identity: { ClanId: null, CanUse: false } });
+        Debug.Assert(Parse(refused, session) is SessionResult.Refused { Identity: { ClanId: null } });
     }
 }

@@ -36,9 +36,9 @@ public static class MauiProgram
             config.SnackbarConfiguration.WarningIcon = MudBlazor.Icons.Material.Filled.Warning;
             config.SnackbarConfiguration.ErrorIcon = MudBlazor.Icons.Material.Filled.Error;
         });
-        builder.Services.AddAuthorizationCore(o => o.AddPolicy("CanUse", p => p.RequireClaim(Claims.CanUse, bool.TrueString)));
+        builder.Services.AddAuthorizationCore();
         builder.Services.AddCascadingAuthenticationState();
-        builder.Services.AddSingleton<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
+        builder.Services.AddSingleton<AuthenticationStateProvider, HqAuthenticationStateProvider>();
         builder.Services.AddScoped<BattleReportService>();
         builder.Services.AddScoped<UpdateCheckService>();
         builder.Services.AddSingleton<SettingService>();
