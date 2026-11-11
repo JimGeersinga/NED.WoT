@@ -62,7 +62,7 @@
             }
             <MudTh colspan="12" Class="mud-table-cell-custom-group" data-ownteam="@isOwnTeam.ToString()">
                 <div class="wot-team">
-                    <a class="@(team == null ? "tag u" : BattleRow.TagClass(team, isOwnTeam, SettingService.Settings.OnlyHighlistOwnMatches))" href="@team?.ClanUrl" target="_blank">@(team?.Abbreviation ?? "?")</a>
+                    <a class="@(team == null ? "tag u" : BattleRow.TagClass(team, isOwnTeam, SettingService.Settings.OnlyHighlistOwnMatches))" href="@team?.ClanUrl" target="_blank" title="@(team?.ClanUrl is null ? null : "Open de clanpagina")">@(team?.Abbreviation ?? "?")</a>
                     <ResultChip Result="@(team?.Result ?? Result.Unknown)" />
                 </div>
             </MudTh>

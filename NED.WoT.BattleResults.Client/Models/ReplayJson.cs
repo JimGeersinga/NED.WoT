@@ -24,7 +24,17 @@ public sealed record ReplayPlayer
     public string? ClanAbbrev { get; init; }
 
     /// <summary>Only in results[1]; 0 for a player without a clan.</summary>
+    [JsonPropertyName("clanDBID")]
     public long? ClanDbid { get; init; }
+
+    [System.Diagnostics.Conditional("DEBUG")]
+    public static void SelfCheck()
+    {
+        ReplayPlayer? player = JsonSerializer.Deserialize("""{"clanAbbrev":"NED-1","clanDBID":500218790}""", ReplayJsonContext.Default.ReplayPlayer);
+        System.Diagnostics.Debug.Assert(player?.ClanDbid == 500218790, "clanDBID maps to ClanDbid");
+        System.Diagnostics.Debug.Assert(new Team { ClanId = player?.ClanDbid }.ClanUrl == "https://eu.wargaming.net/clans/wot/500218790/", "the clan url");
+        System.Diagnostics.Debug.Assert(new Team { ClanId = 0 }.ClanUrl is null, "id 0 has no url");
+    }
     public int? Team { get; init; }
     public string? VehicleType { get; init; }
 }
@@ -138,6 +148,7 @@ public sealed class ReplayResultsConverter : JsonConverter<ReplayResults>
 
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(ReplayHeader))]
+[JsonSerializable(typeof(ReplayPlayer))]
 [JsonSerializable(typeof(ReplayResults))]
 [JsonSerializable(typeof(ReplayCommon))]
 [JsonSerializable(typeof(Dictionary<string, ReplayVehicleStats[]>))]

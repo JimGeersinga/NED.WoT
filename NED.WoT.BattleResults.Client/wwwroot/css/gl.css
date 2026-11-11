@@ -7,7 +7,7 @@
 .gl > * { white-space: nowrap; flex: none; }
 
 /* Teams and score in the VS cell */
-.tag { font: 600 17px/1 var(--wot-font-display); letter-spacing: .03em; display: inline-flex; align-items: center; gap: 4px; min-width: 52px; }
+.tag { text-decoration: none; font: 600 17px/1 var(--wot-font-display); letter-spacing: .03em; display: inline-flex; align-items: center; gap: 4px; min-width: 52px; }
 .tag.w { color: var(--mud-palette-success); }
 .tag.l { color: var(--mud-palette-error); }
 .tag.d { color: var(--mud-palette-warning); }
@@ -158,4 +158,3 @@
 .dots { display: inline-flex; gap: 5px; }
 .dots i { width: 6px; height: 6px; border-radius: 1px; background: var(--wot-car-dot); display: block; }
 .dots i.on { background: var(--mud-palette-primary); }
-.tag { text-decoration: none; }

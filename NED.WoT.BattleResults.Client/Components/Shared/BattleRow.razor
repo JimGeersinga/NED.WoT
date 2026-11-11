@@ -46,9 +46,9 @@ else
 	<MudTd Class="mapcol"><div class="mapc"><b title="@Report.MapName">@Report.MapName</b><span class="gl-chip">@ownTeam?.Base</span></div></MudTd>
 	<MudTd>
 		<span class="vs">
-			<a class="@TagClass(left, left == ownTeam, onlyOwn)" href="@left.ClanUrl" target="_blank">@left.Abbreviation</a>
+			<a class="@TagClass(left, left == ownTeam, onlyOwn)" href="@left.ClanUrl" target="_blank" title="@(left.ClanUrl is null ? null : "Open de clanpagina")" @onclick:stopPropagation="true">@left.Abbreviation</a>
 			<span class="score">@(left.Result is Result.Win ? (MarkupString)$"<b>{leftKills}</b>" : (MarkupString)$"<span>{leftKills}</span>")–@(right.Result is Result.Win ? (MarkupString)$"<b>{rightKills}</b>" : (MarkupString)$"<span>{rightKills}</span>")</span>
-			<a class="@TagClass(right, right == ownTeam, onlyOwn)" href="@right.ClanUrl" target="_blank">@right.Abbreviation</a>
+			<a class="@TagClass(right, right == ownTeam, onlyOwn)" href="@right.ClanUrl" target="_blank" title="@(right.ClanUrl is null ? null : "Open de clanpagina")" @onclick:stopPropagation="true">@right.Abbreviation</a>
 		</span>
 	</MudTd>
 	@if (ShowBattleStats && Stats != null)
