@@ -19,7 +19,7 @@ brief; CLAUDE.md (already loaded) holds the rules. Read only the
 - Bump `Identity Version` in `Platforms/Windows/Package.appxmanifest` before
   reporting DONE: `type:story` → minor, anything else → patch (CLAUDE.md,
   "Branches, commits, PRs").
-- Before reporting done: `dotnet build NED.WoT.BattleResults.Client/NED.WoT.BattleResults.Client.csproj -f net10.0-windows10.0.19041.0`
+- Before reporting done: `dotnet build NED.WoT.BattleResults.Client/NED.WoT.BattleResults.Client.csproj -f net11.0-windows10.0.19041.0`
   (zero errors), and the screenshots the issue names (1280×800 and 1920×1080,
   not committed). Commit; push only if the prompt says so. Never merge.
 

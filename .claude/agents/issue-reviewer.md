@@ -23,7 +23,7 @@ branches. Bash is for `git`, `gh` (read), `dotnet build`, `grep`. Run `gh` as
    once). Read full files only where the diff lacks context.
 3. Read only the `docs/PLAN.md` and `docs/DESIGN.md` sections the issue cites
    (grep the heading, read that range). CLAUDE.md is already in your context.
-4. `dotnet build NED.WoT.BattleResults.Client/NED.WoT.BattleResults.Client.csproj -f net10.0-windows10.0.19041.0`.
+4. `dotnet build NED.WoT.BattleResults.Client/NED.WoT.BattleResults.Client.csproj -f net11.0-windows10.0.19041.0`.
    Record pass/fail; don't paste full logs.
 5. Review. For **each** decision in the diff and the implementer's report, ask:
    - Does the issue's **Files** section list it? Unlisted type/member → finding.

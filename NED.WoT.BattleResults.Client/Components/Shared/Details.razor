@@ -192,7 +192,14 @@
     {
         if (firstRender)
         {
-            await JSRuntime.InvokeVoidAsync("openOwnTeam", $"[data-report='{Report.FileName}'] td:has(+ [data-ownteam='True']) button");
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("openOwnTeam", $"[data-report='{Report.FileName}'] td:has(+ [data-ownteam='True']) button");
+            }
+            catch (JSException)
+            {
+                // Opening the own team is cosmetic: a missing row must not fail the render.
+            }
         }
     }
 
