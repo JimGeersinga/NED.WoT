@@ -31,7 +31,13 @@
             @if (!string.IsNullOrEmpty(Identity.Current?.ClanTag))
             {
                 <span class="wot-vsep"></span>
-                <MudChip T="string" Class="wot-clan-chip"><span class="wot-clan-tag">[@Identity.Current.ClanTag]</span></MudChip>
+                <MudChip T="string" Class="wot-clan-chip">
+                    @if (!string.IsNullOrEmpty(Identity.Current.EmblemUrl))
+                    {
+                        <img class="wot-emblem" src="@Identity.Current.EmblemUrl" alt="" />
+                    }
+                    <span class="wot-clan-tag">[@Identity.Current.ClanTag]</span>
+                </MudChip>
             }
             <MudSpacer />
             <FolderCarousel OnManage="() => OpenSettings(true)" />

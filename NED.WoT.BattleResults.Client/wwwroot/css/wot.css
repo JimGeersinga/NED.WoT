@@ -135,3 +135,11 @@ body {
     fill: currentColor;
     margin-left: -2px;
 }
+
+/* Account button (square initials avatar + nickname) and the clan emblem (#12). */
+.wot-account-anchor { position: relative; display: inline-flex; }
+.wot-account { display: inline-flex; align-items: center; gap: 8px; padding: 4px 8px; cursor: pointer; border-radius: 4px; background: none; border: 0; color: inherit; font: inherit; }
+.wot-avatar { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; flex: none; border-radius: 2px; border: 1px solid var(--mud-palette-primary); color: var(--mud-palette-primary); font-size: 12px; font-weight: 700; letter-spacing: 0.04em; }
+.wot-account-name { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+.wot-emblem { width: 24px; height: 24px; flex: none; border-radius: 2px; object-fit: contain; margin-right: 6px; }
+.wot-clan-line { display: inline-flex; align-items: center; }

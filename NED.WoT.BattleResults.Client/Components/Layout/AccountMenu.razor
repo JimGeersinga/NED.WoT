@@ -4,8 +4,14 @@
 @* Who you are signed in as (from HQ), and Uitloggen. Plain MudBlazor classes only: the menu renders in the popover provider, outside this component's scope. *@
 @if (Identity.Current is { } who)
 {
-    <MudMenu Label="@who.Nickname" StartIcon="@Icons.Material.Filled.AccountCircle" Variant="Variant.Text" Color="Color.Inherit" AriaLabel="Account"
-             AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+    @* MudMenu's ActivatorContent did not react to clicks here, so this is a button plus a popover anchored to the wrapper. *@
+    <div class="wot-account-anchor">
+        <button type="button" class="wot-account" aria-label="Account" aria-haspopup="menu" aria-expanded="@_open.ToString().ToLowerInvariant()" @onclick="Toggle">
+            <span class="wot-avatar">@Initials(who.Nickname)</span>
+            <span class="wot-account-name">@who.Nickname</span>
+        </button>
+        <MudOverlay Visible="_open" OnClick="Close" DarkBackground="false" ZIndex="1200" />
+        <MudPopover Open="_open" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Style="z-index: 1300;" Class="wot-account-popover">
             <div class="pa-4" style="min-width: 260px;">
                 <MudText Typo="Typo.h6">@who.Nickname</MudText>
                 <MudText Typo="Typo.caption" Class="mud-text-secondary">Ingelogd via Wargaming</MudText>
@@ -13,7 +19,13 @@
                 <MudStack Spacing="2">
                     <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
                         <MudText Typo="Typo.body2" Class="mud-text-secondary">Clan</MudText>
-                        <MudText Typo="Typo.body2">@(who.ClanTag is null ? "Geen clan" : $"[{who.ClanTag}] {who.ClanName}")</MudText>
+                        <span class="wot-clan-line">
+                            @if (!string.IsNullOrEmpty(who.EmblemUrl))
+                            {
+                                <img class="wot-emblem" src="@who.EmblemUrl" alt="" />
+                            }
+                            <MudText Typo="Typo.body2">@(who.ClanTag is null ? "Geen clan" : $"[{who.ClanTag}] {who.ClanName}")</MudText>
+                        </span>
                     </MudStack>
                     @if (who.Role is not null)
                     {
@@ -36,17 +48,27 @@
                 </MudStack>
             </div>
             <MudDivider />
-            <MudMenuItem Icon="@Icons.Material.Filled.Logout" OnClick="SignOut">Uitloggen</MudMenuItem>
-    </MudMenu>
+            <MudButton Variant="Variant.Text" Color="Color.Inherit" FullWidth="true" StartIcon="@Icons.Material.Filled.Logout" OnClick="SignOut" Class="justify-start">Uitloggen</MudButton>
+        </MudPopover>
+    </div>
 }
 
 @code {
+    private bool _open;
+
+    private void Toggle() => _open = !_open;
+
+    private void Close() => _open = false;
+
+    private static string Initials(string nickname) => nickname[..Math.Min(2, nickname.Length)].ToUpperInvariant();
+
     // Wargaming's spelling "combat_officer" -> WoT's English name "Combat Officer".
     private static string RoleName(string role) => string.Join(' ', role.Split('_').Select(w => char.ToUpperInvariant(w[0]) + w[1..]));
 
     // Forgets the token locally only (docs/PLAN.md §3.2); Routes shows the login.
     private void SignOut()
     {
+        _open = false;
         Identity.SignOut();
         NavigationManager.NavigateTo("login");
     }
