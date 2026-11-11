@@ -54,8 +54,33 @@
 </MudLayout>
 
 @code {
+    private bool _promptedForFolder;
+
     protected override async Task OnInitializedAsync()
     {
+        Identity.Changed += OnIdentityChanged;
+        await PromptForFolderAsync();
+
+        UpdateCheckService.Changed += OnUpdateChanged;
+        UpdateCheckService.Start();
+    }
+
+    // The layout also wraps /login and /unauthorized and outlives the sign-in, so it listens for the identity.
+    private void OnIdentityChanged() => _ = InvokeAsync(async () =>
+    {
+        await PromptForFolderAsync();
+        StateHasChanged();
+    });
+
+    /// <summary>Only for an allowed account, and once.</summary>
+    private async Task PromptForFolderAsync()
+    {
+        if (_promptedForFolder || Identity.Status != IdentityStatus.Allowed)
+        {
+            return;
+        }
+
+        _promptedForFolder = true;
         var first = SettingService.Settings.ReplayFolders.FirstOrDefault();
         if (first is null || !Directory.Exists(first.Path))
         {
@@ -65,15 +90,16 @@
 
             await OpenSettings(false);
         }
-
-        UpdateCheckService.Changed += OnUpdateChanged;
-        UpdateCheckService.Start();
     }
 
     private void OnUpdateChanged() => _ = InvokeAsync(StateHasChanged);
 
     /// <summary>A reload disposes the layout and its scope; a disposed layout must not be rendered again.</summary>
-    public void Dispose() => UpdateCheckService.Changed -= OnUpdateChanged;
+    public void Dispose()
+    {
+        Identity.Changed -= OnIdentityChanged;
+        UpdateCheckService.Changed -= OnUpdateChanged;
+    }
 
     private void Refresh()
     {
