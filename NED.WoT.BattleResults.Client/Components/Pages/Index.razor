@@ -641,7 +641,14 @@
 		report.ShowDetails = !report.ShowDetails;
 		if (report.ShowDetails)
 		{
-			await JSRuntime.InvokeVoidAsync("scrollIntoView", $"Timestamp_{report.MatchStart.Ticks + report.MatchDuration.GetValueOrDefault()}_anchor");
+			try
+			{
+				await JSRuntime.InvokeVoidAsync("scrollIntoView", $"Timestamp_{report.MatchStart.Ticks + report.MatchDuration.GetValueOrDefault()}_anchor");
+			}
+			catch (JSException)
+			{
+				// Scrolling is cosmetic: a missing anchor must not fail the toggle.
+			}
 		}
 	}
 

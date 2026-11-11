@@ -186,11 +186,11 @@
         _editContext.NotifyFieldChanged(new FieldIdentifier(modal, nameof(Settings.LiveReplayPath)));
     }
 
-    private void OnSubmit(EditContext context)
+    private async Task OnSubmit(EditContext context)
     {
-        // Validate() only reaches the Settings object, not the folders in its list: every row field is validated by hand,
+        // ValidateAsync() only reaches the Settings object, not the folders in its list: every row field is validated by hand,
         // which makes the DataAnnotationsValidator put each row's message on that field.
-        bool valid = context.Validate();
+        bool valid = await context.ValidateAsync();
         foreach (var folder in modal.ReplayFolders)
         {
             context.NotifyFieldChanged(new FieldIdentifier(folder, nameof(ReplayFolder.Title)));
