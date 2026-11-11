@@ -1,5 +1,5 @@
 ﻿@page "/"
-@attribute [Authorize]
+@attribute [Authorize(Policy = "CanUse")]
 
 @using System.Collections.ObjectModel;
 @using System.Collections.Specialized;

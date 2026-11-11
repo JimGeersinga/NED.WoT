@@ -1,47 +1,45 @@
-﻿@page "/unauthorized"
-@using Microsoft.AspNetCore.Components.Authorization
+@page "/unauthorized"
+@implements IDisposable
 @inject NavigationManager NavigationManager
+@inject Services.IdentityService Identity
 
-@if (_isNotAuthenticated)
-{
-    @* A centred card on the background-gray well (its rules are `.gl-unauth` in gl.css). *@
-    <div class="gl-unauth">
-        <MudPaper Outlined="true" Elevation="0" Class="gl-unauth-card">
-            <MudImage Src="img/gevechtslog-mark.svg" Alt="" Class="gl-unauth-mark" />
+@* A centred card on the background-gray well (its rules are `.gl-unauth` in gl.css). Two variants: HQ refused, or HQ gave no answer. *@
+<div class="gl-unauth">
+    <MudPaper Outlined="true" Elevation="0" Class="gl-unauth-card">
+        <MudImage Src="img/gevechtslog-mark.svg" Alt="" Class="gl-unauth-mark" />
+        @if (Identity.Status == Services.IdentityStatus.Refused && Identity.Current is { } who)
+        {
             <MudText Typo="Typo.h3" HtmlTag="h1">Geen toegang</MudText>
-            <MudText Typo="Typo.body1">Vraag toegang aan op de <MudLink Href="https://discord.gg/rtXGYxC" Color="Color.Secondary">[NED] Discord-server</MudLink> in het <MudLink Href="https://discord.com/channels/308001487668248576/396281391383314433" Color="Color.Secondary">#wot_chat</MudLink>-kanaal.</MudText>
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Reload">Opnieuw proberen</MudButton>
-        </MudPaper>
-    </div>
-}
+            <MudText Typo="Typo.body1">Ingelogd als <b>@who.Nickname</b>@(who.ClanTag is null ? "" : $" [{who.ClanTag}]"). Vraag toegang aan op de <MudLink Href="https://discord.gg/rtXGYxC" Color="Color.Secondary">[NED] Discord-server</MudLink> in het <MudLink Href="https://discord.com/channels/308001487668248576/396281391383314433" Color="Color.Secondary">#wot_chat</MudLink>-kanaal.</MudText>
+            <MudStack Row="true" Spacing="2" Justify="Justify.Center">
+                <MudButton Variant="Variant.Outlined" OnClick="SignOut">Uitloggen</MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Retry" Disabled="_busy">Opnieuw proberen</MudButton>
+            </MudStack>
+        }
+        else
+        {
+            <MudText Typo="Typo.h3" HtmlTag="h1">Geen verbinding</MudText>
+            <MudText Typo="Typo.body1">Geen verbinding met WoT HQ. Probeer het opnieuw.</MudText>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Retry" Disabled="_busy">Opnieuw proberen</MudButton>
+        }
+    </MudPaper>
+</div>
 
 @code {
-    [CascadingParameter]
-    private Task<AuthenticationState>? authenticationState { get; set; }
+    private bool _busy;
 
-    private bool _isNotAuthenticated = false;
+    protected override void OnInitialized() => Identity.Changed += OnChanged;
 
-    protected override async Task OnInitializedAsync()
+    private void OnChanged() => _ = InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Identity.Changed -= OnChanged;
+
+    private async Task Retry()
     {
-        _isNotAuthenticated = false;
-
-        if (authenticationState is not null)
-        {
-            var authState = await authenticationState;
-            if (authState?.User.Identity?.IsAuthenticated == true)
-            {
-                NavigationManager.NavigateTo("/");
-            }
-            else
-            {
-                _isNotAuthenticated = true;
-            }
-        }
+        _busy = true;
+        await Identity.RefreshAsync(); // Routes moves on when the answer is Allowed or the session is gone
+        _busy = false;
     }
 
-    private void Reload()
-    {
-        CustomAuthenticationStateProvider.ResetAuthenticationState();
-        NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
-    }
+    private void SignOut() => Identity.SignOut(); // Routes sends the signed-out user to the login screen
 }

@@ -1,105 +1,38 @@
-﻿using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.Authorization;
 
 using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Security.Principal;
-using System.Text;
-using System.Text.Json;
 
 namespace NED.WoT.BattleResults.Client.Services;
 
-public class CustomAuthenticationStateProvider() : AuthenticationStateProvider
+/// <summary>The principal follows <see cref="IdentityService"/>, i.e. what WoT HQ answered. Not signed in or HQ unreachable: anonymous.</summary>
+public sealed class CustomAuthenticationStateProvider : AuthenticationStateProvider
 {
-    private static readonly HttpClient _httpClient = new();
-    private readonly JsonSerializerOptions _jsonSerializerOptions = new()
-    {
-        PropertyNameCaseInsensitive = true
-    };
-    private static AuthenticationState? _authenticationState;
+    private readonly IdentityService _identity;
 
-    public static void ResetAuthenticationState()
+    public CustomAuthenticationStateProvider(IdentityService identity)
     {
-        _authenticationState = null;
+        _identity = identity;
+        identity.Changed += () => NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
     }
 
-    public override async Task<AuthenticationState> GetAuthenticationStateAsync()
+    public override Task<AuthenticationState> GetAuthenticationStateAsync()
     {
-#if DEBUG
-        ClaimsIdentity debugIdentity = new ClaimsIdentity([
-                new Claim(ClaimTypes.Name, Environment.UserName),
-            ], "custom");
-        debugIdentity.AddClaim(new Claim(Claims.CanSeeBattleStats, bool.TrueString));
-
-        _authenticationState = new AuthenticationState(new ClaimsPrincipal(debugIdentity));
-        return _authenticationState;
-
-#else
-        DateTime lastAuthCheck = Preferences.Default.Get("LastAuthCheck", DateTime.MinValue);
-        if (lastAuthCheck.Date < DateTime.Now.Date)
+        var principal = new ClaimsPrincipal(new ClaimsIdentity());
+        if (_identity.Status is IdentityStatus.Allowed or IdentityStatus.Refused && _identity.Current is { } who)
         {
-            Preferences.Default.Set("LastAuthCheck", DateTime.Now);
-            _authenticationState = null;
+            var id = new ClaimsIdentity([new Claim(ClaimTypes.Name, who.Nickname)], "hq");
+            if (who.CanUse)
+            {
+                id.AddClaim(new Claim(Claims.CanUse, bool.TrueString));
+                if (who.CanSeeAdvancedStats)
+                {
+                    id.AddClaim(new Claim(Claims.CanSeeBattleStats, bool.TrueString));
+                }
+            }
+
+            principal = new ClaimsPrincipal(id);
         }
 
-        if (_authenticationState is not null)
-        {
-            return _authenticationState;
-        }
-
-        AuthResult? authResult = await CheckAuthenticationAsync();
-        ClaimsIdentity identity = authResult is null || !authResult.CanLogin
-            ? new ClaimsIdentity()
-            : new ClaimsIdentity([
-                new Claim(ClaimTypes.Name, Environment.UserName),
-            ], "custom");
-
-        if (authResult?.CanSeeBattleStats == true)
-        {
-            identity.AddClaim(new Claim(Claims.CanSeeBattleStats, bool.TrueString));
-        }
-
-        _authenticationState = new AuthenticationState(new ClaimsPrincipal(identity));
-        return _authenticationState;
-#endif
+        return Task.FromResult(new AuthenticationState(principal));
     }
-
-    public async Task<AuthResult?> CheckAuthenticationAsync()
-    {
-        string user = Environment.UserName;
-        string machine = Environment.MachineName;
-        string machineVersion = DeviceInfo.Current.VersionString;
-        string machineKey = Hash(WindowsIdentity.GetCurrent().User?.Value);
-        if (string.IsNullOrWhiteSpace(machineKey))
-        {
-            return null;
-        }
-
-        string? apiUrl = "https://script.google.com/macros/s/AKfycbwi2lOBlb6G6X313FOKSirjJu5TCUXeNPsMwp7cKPHOOqLDmIpD3LTGfOlyEJHLofR1sQ/exec";
-        string apiKey = "efb10f4a-04a0-450e-ad64-a46d326bac15";
-
-        string url = $"{apiUrl}?apiKey={apiKey}&user={user}&machine={machine}&machineVersion={machineVersion}&machineKey={machineKey}";
-        string response = await _httpClient.GetStringAsync(url);
-        try
-        {
-            return JsonSerializer.Deserialize<AuthResult>(response, _jsonSerializerOptions);
-        }
-        catch (Exception)
-        {
-            return null;
-        }
-    }
-
-    private static string Hash(string? value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return string.Empty;
-        }
-
-        byte[] valueBytes = Encoding.UTF8.GetBytes(value);
-        byte[] hashBytes = SHA256.HashData(valueBytes);
-        return Convert.ToBase64String(hashBytes);
-    }
-
-    public record AuthResult(bool CanLogin, bool CanSeeBattleStats);
 }

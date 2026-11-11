@@ -1,89 +1,84 @@
-using System.Globalization;
-using System.Text.Json;
-
 using NED.WoT.BattleResults.Client.Models;
 
 namespace NED.WoT.BattleResults.Client.Services;
 
-/// <summary>
-/// Who the signed-in Wargaming player is: nickname from the session, clan from the public Clan API (no token, GET).
-/// A failed clan lookup keeps the session and leaves the clan empty. Wargaming answers HTTP 200 on errors, so the
-/// envelope's <c>status</c> decides and the error's <c>value</c> is never read.
-/// </summary>
-public sealed class IdentityService(WargamingAuthService auth, HttpClient http)
-{
-    private static readonly TimeSpan ClanLookupTimeout = TimeSpan.FromSeconds(5);
+public enum IdentityStatus { SignedOut, Allowed, Refused, Unavailable }
 
+/// <summary>
+/// Who the signed-in Wargaming player is, and whether WoT HQ lets them in (docs/PLAN.md §3.3). HQ is the only authority:
+/// no answer means no access, and nothing of the last answer is kept. Asked at every start and once a day while running.
+/// </summary>
+public sealed class IdentityService(WargamingAuthService auth, GevechtslogSessionClient hq) : IDisposable
+{
+    private static readonly TimeSpan DailyCheck = TimeSpan.FromDays(1);
+    private Timer? _daily;
+
+    /// <summary>HQ's identity; set for <see cref="IdentityStatus.Allowed"/> and <see cref="IdentityStatus.Refused"/>.</summary>
     public WargamingIdentity? Current { get; private set; }
+
+    public IdentityStatus Status { get; private set; }
 
     public event Action? Changed;
 
-    /// <summary>Loads the stored session and the clan. False when there is no session.</summary>
-    public async Task<bool> InitializeAsync() => await ApplyAsync(await auth.GetSessionAsync());
+    /// <summary>Loads the stored session and asks HQ. False when there is no session.</summary>
+    public async Task<bool> InitializeAsync()
+    {
+        _daily ??= new Timer(_ => _ = RefreshAsync(), null, DailyCheck, DailyCheck);
+        return await ApplyAsync(await auth.GetSessionAsync());
+    }
 
-    /// <summary>Browser sign-in. False when refused, timed out or cancelled.</summary>
+    /// <summary>Browser sign-in, then asks HQ. False when refused, timed out or cancelled, or when HQ calls the token invalid.</summary>
     public async Task<bool> SignInAsync(CancellationToken cancellationToken) => await ApplyAsync(await auth.SignInAsync(cancellationToken));
+
+    /// <summary>Asks HQ again (the daily check, "Opnieuw proberen").</summary>
+    public async Task RefreshAsync() => await ApplyAsync(await auth.GetSessionAsync());
 
     public void SignOut()
     {
         WargamingAuthService.SignOut();
-        Current = null;
-        Changed?.Invoke();
+        Set(IdentityStatus.SignedOut, null);
     }
+
+    public void Dispose() => _daily?.Dispose();
 
     private async Task<bool> ApplyAsync(WargamingSession? session)
     {
         if (session is null)
         {
+            Set(IdentityStatus.SignedOut, null);
             return false;
         }
 
-        long? clanId = null;
-        string? tag = null, name = null, emblem = null;
-        using var timeout = new CancellationTokenSource(ClanLookupTimeout);
-        try
+#if DEBUG
+        // Development without HQ: Allowed with advanced stats and no clan.
+        if (Environment.GetEnvironmentVariable("GEVECHTSLOG_SKIP_HQ") == "1")
         {
-            string id = session.AccountId.ToString(CultureInfo.InvariantCulture);
-            JsonElement? clan = await GetDataAsync($"clans/accountinfo/?application_id={AppConfig.WargamingApplicationId}&account_id={id}&fields=clan.clan_id,clan.tag,clan.name", id, timeout.Token);
-            if (clan is { ValueKind: JsonValueKind.Object } info
-                && info.TryGetProperty("clan", out JsonElement c) && c.ValueKind == JsonValueKind.Object)
-            {
-                clanId = c.GetProperty("clan_id").GetInt64();
-                tag = c.GetProperty("tag").GetString();
-                name = c.GetProperty("name").GetString();
-
-                string cid = clanId.Value.ToString(CultureInfo.InvariantCulture);
-                JsonElement? emblems = await GetDataAsync($"clans/info/?application_id={AppConfig.WargamingApplicationId}&clan_id={cid}&fields=emblems.x64", cid, timeout.Token);
-                if (emblems is { ValueKind: JsonValueKind.Object } e
-                    && e.TryGetProperty("emblems", out JsonElement em) && em.TryGetProperty("x64", out JsonElement x64)
-                    && x64.TryGetProperty("portal", out JsonElement portal))
-                {
-                    emblem = portal.GetString();
-                }
-            }
+            Set(IdentityStatus.Allowed, new WargamingIdentity(session.AccountId, session.Nickname, null, null, null, null, null, true, true));
+            return true;
         }
-        catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException or JsonException or KeyNotFoundException or InvalidOperationException)
+#endif
+
+        switch (await hq.StartAsync(session, CancellationToken.None))
         {
-            // Wargaming unreachable or an odd answer: the session stays, the clan stays empty.
+            case SessionResult.Allowed a:
+                Set(IdentityStatus.Allowed, a.Identity);
+                return true;
+            case SessionResult.Refused r:
+                Set(IdentityStatus.Refused, r.Identity);
+                return true;
+            case SessionResult.InvalidToken:
+                SignOut();
+                return false;
+            default:
+                Set(IdentityStatus.Unavailable, null);
+                return true;
         }
-
-        Current = new WargamingIdentity(session.AccountId, session.Nickname, clanId, tag, name, emblem);
-        Changed?.Invoke();
-        return true;
     }
 
-    // data[key] of an ok envelope; null for an error status or a null entry.
-    private async Task<JsonElement?> GetDataAsync(string relativeUrl, string key, CancellationToken ct)
+    private void Set(IdentityStatus status, WargamingIdentity? identity)
     {
-        using HttpResponseMessage response = await http.GetAsync(new Uri(AppConfig.WargamingApiBaseUrl + relativeUrl), ct);
-        using JsonDocument doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
-        JsonElement root = doc.RootElement;
-        if (root.GetProperty("status").GetString() != "ok"
-            || !root.GetProperty("data").TryGetProperty(key, out JsonElement entry))
-        {
-            return null;
-        }
-
-        return entry.Clone();
+        Status = status;
+        Current = identity;
+        Changed?.Invoke();
     }
 }
