@@ -1,38 +1,38 @@
-﻿@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using NED.WoT.BattleResults.Client.Services
+@implements IDisposable
 @inject NavigationManager NavigationManager
-@inject Services.IdentityService Identity
+@inject IdentityService Identity
 
 <CascadingAuthenticationState>
     <Router AppAssembly="@typeof(MauiProgram).Assembly">
         <Found Context="routeData">
             <CascadingValue Value="@routeData">
-                <AuthorizeView Context="AppAuthState">
-                    <Authorized>
-                        @if (!_identityLoaded)
-                        {
-                            <Splash />
-                        }
-                        else if (Identity.Current is null && routeData.PageType != typeof(Pages.Login))
-                        {
-                            @* Excel lets the user in, but there is no Wargaming session yet. *@
-                            NavigationManager.NavigateTo("login");
-                        }
-                        else
-                        {
-                            <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)" />
-                        }
-                    </Authorized>
-                    <NotAuthorized>
-                        <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)">
-                            <NotAuthorized>
-                                @{ NavigationManager.NavigateTo($"unauthorized"); }
-                            </NotAuthorized>
-                        </AuthorizeRouteView>
-                    </NotAuthorized>
-                    <Authorizing>
-                        <Splash />
-                    </Authorizing>
-                </AuthorizeView>
+                @* HQ decides (docs/PLAN.md §3.3): no session -> login; refused or no answer -> unauthorized; allowed -> the page. *@
+                @if (!_identityLoaded)
+                {
+                    <Splash />
+                }
+                else if (Identity.Status == IdentityStatus.SignedOut && routeData.PageType != typeof(Pages.Login))
+                {
+                    NavigationManager.NavigateTo("login");
+                }
+                else if (Identity.Status is IdentityStatus.Refused or IdentityStatus.Unavailable && routeData.PageType != typeof(Pages.Unauthorized))
+                {
+                    NavigationManager.NavigateTo("unauthorized");
+                }
+                else if (Identity.Status == IdentityStatus.Allowed && routeData.PageType == typeof(Pages.Unauthorized))
+                {
+                    NavigationManager.NavigateTo("/"); // e.g. HQ came back after "Opnieuw proberen"
+                }
+                else
+                {
+                    <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)">
+                        <NotAuthorized>
+                            @{ NavigationManager.NavigateTo("unauthorized"); }
+                        </NotAuthorized>
+                    </AuthorizeRouteView>
+                }
             </CascadingValue>
         </Found>
         <NotFound>
@@ -46,10 +46,15 @@
 @code {
     private bool _identityLoaded;
 
-    // Stored session (prolonged when due) and clan, once at start. A failed clan lookup keeps the session.
+    // Stored session (prolonged when due), then HQ's answer, once at start.
     protected override async Task OnInitializedAsync()
     {
+        Identity.Changed += OnIdentityChanged;
         await Identity.InitializeAsync();
         _identityLoaded = true;
     }
+
+    private void OnIdentityChanged() => _ = InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Identity.Changed -= OnIdentityChanged;
 }
