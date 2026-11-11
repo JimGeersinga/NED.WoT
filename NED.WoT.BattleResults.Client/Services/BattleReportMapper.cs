@@ -152,7 +152,7 @@ public class BattleReportMapper
             Name = playerData?.Name,
             Clan = clan,
             Vehicle = TankNameResolver.GetTankName(playerData?.VehicleType),
-            IsClanMember = string.Equals(settings.ClanAbbreviation, clan, StringComparison.OrdinalIgnoreCase)
+            IsClanMember = settings.ClanAbbreviation is not null && string.Equals(settings.ClanAbbreviation, clan, StringComparison.OrdinalIgnoreCase)
         };
 
         if (vehicleData != null)

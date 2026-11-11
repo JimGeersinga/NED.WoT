@@ -11,27 +11,34 @@ public class SettingService
 
     public Settings Settings { get; set; }
 
-    public SettingService()
+    public SettingService(IdentityService identity)
     {
         SelfCheck();
         Settings = new Settings
         {
             ReplayFolders = ParseFolders(Preferences.Default.Get(nameof(Settings.ReplayFolders), string.Empty), Preferences.Default.Get(LegacyReplayDirectoryKey, string.Empty)),
-            ClanAbbreviation = Preferences.Default.Get(nameof(Settings.ClanAbbreviation), "NED-1"),
-            PlayerName = Preferences.Default.Get(nameof(Settings.PlayerName), string.Empty),
             SingleBattleResultOpenedOnly = Preferences.Default.Get(nameof(Settings.SingleBattleResultOpenedOnly), false),
             OnlyHighlistOwnMatches = Preferences.Default.Get(nameof(Settings.OnlyHighlistOwnMatches), false),
             UpdateScreeenWhileLoading = Preferences.Default.Get(nameof(Settings.UpdateScreeenWhileLoading), true),
             AutoClanLookup = Preferences.Default.Get(nameof(Settings.AutoClanLookup), false),
             LiveReplayPath = Preferences.Default.Get(nameof(Settings.LiveReplayPath), string.Empty)
         };
+
+        // The clan tag and player name come from the login (HQ), not from Preferences.
+        identity.Changed += () => SetIdentity(identity.Current);
+        SetIdentity(identity.Current);
+    }
+
+    /// <summary>Your team is found by clan tag or by name. Without a clan only the name matches. Not stored.</summary>
+    private void SetIdentity(HqIdentity? who)
+    {
+        Settings.ClanAbbreviation = who?.ClanTag;
+        Settings.PlayerName = who?.Nickname;
     }
 
     public void Save()
     {
         Preferences.Default.Set(nameof(Settings.ReplayFolders), JsonSerializer.Serialize(Settings.ReplayFolders));
-        Preferences.Default.Set(nameof(Settings.ClanAbbreviation), Settings.ClanAbbreviation);
-        Preferences.Default.Set(nameof(Settings.PlayerName), Settings.PlayerName);
         Preferences.Default.Set(nameof(Settings.SingleBattleResultOpenedOnly), Settings.SingleBattleResultOpenedOnly);
         Preferences.Default.Set(nameof(Settings.OnlyHighlistOwnMatches), Settings.OnlyHighlistOwnMatches);
         Preferences.Default.Set(nameof(Settings.UpdateScreeenWhileLoading), Settings.UpdateScreeenWhileLoading);
