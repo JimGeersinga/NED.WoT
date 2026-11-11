@@ -74,7 +74,7 @@ Issue skeleton:
 ## Decisions taken
 ## Acceptance criteria   /   ## Done when
 ## Verify
-dotnet build NED.WoT.BattleResults.Client/NED.WoT.BattleResults.Client.csproj -f net10.0-windows10.0.19041.0
+dotnet build NED.WoT.BattleResults.Client/NED.WoT.BattleResults.Client.csproj -f net11.0-windows10.0.19041.0
 
 ## Enables              (enablers only)
 Depends on: #N
@@ -177,7 +177,7 @@ PR as a screenshot, at **1280×800 and 1920×1080** (desktop only, no phone).
   1. Work in the current checkout; don't create another checkout, clone or
      worktree elsewhere. Long paths can break the deep `_framework` files of
      the package: if that happens, stop and ask the owner before moving.
-  2. Build, then fill the loose layout `bin\Debug\net10.0-windows10.0.19041.0\win-x64\AppX`:
+  2. Build, then fill the loose layout `bin\Debug\net11.0-windows10.0.19041.0\win-x64\AppX`:
      copy every `AppxPackagedFile` of `…\win-x64\*.build.appxrecipe` from its
      `Include` path to `AppX\<PackagePath>` (this populates `wwwroot`), then
      `Add-AppxPackage -Register AppX\AppxManifest.xml`.
@@ -215,10 +215,10 @@ self-check is enough.
 ## Commands
 
 ```bash
-dotnet build NED.WoT.BattleResults.Client/NED.WoT.BattleResults.Client.csproj -f net10.0-windows10.0.19041.0
-dotnet run --project NED.WoT.BattleResults.Client -f net10.0-windows10.0.19041.0     # Debug build, for screenshots
+dotnet build NED.WoT.BattleResults.Client/NED.WoT.BattleResults.Client.csproj -f net11.0-windows10.0.19041.0
+dotnet run --project NED.WoT.BattleResults.Client -f net11.0-windows10.0.19041.0     # Debug build, for screenshots
 ```
 
 The release workflow publishes with
-`dotnet publish NED.WoT.BattleResults.Client\NED.WoT.BattleResults.Client.csproj -c Release -f:net10.0-windows10.0.19041.0 …`
+`dotnet publish NED.WoT.BattleResults.Client\NED.WoT.BattleResults.Client.csproj -c Release -f:net11.0-windows10.0.19041.0 …`
 (`.github/workflows/release.yml`). CI (`ci.yml`) only builds.

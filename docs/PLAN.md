@@ -18,12 +18,12 @@ A path marked "created by #N" does not exist yet.
 | Live battle | One temp-replay path setting, separate from the folders. |
 | Ratings | PR and clan rating (no WTR: the public API has none) in the Clan battle dialog, for everyone with access, from Wargaming's public API under the app's own application id. |
 | Tests | No test project. Acceptance is checked by hand and with screenshots (CLAUDE.md, "Screenshots instead of UI tests"). |
-| Build | The .NET recommended analyzers run (`AnalysisLevel` `latest-recommended`) and any warning fails the build (`TreatWarningsAsErrors`); decided by the owner on 2026-11-07. The other Recur build rules stay out (CLAUDE.md). The SDK is pinned to 10.0.x by `global.json`, the same band CI uses. |
+| Build | The .NET recommended analyzers run (`AnalysisLevel` `latest-recommended`) and any warning fails the build (`TreatWarningsAsErrors`); decided by the owner on 2026-11-07. The other Recur build rules stay out (CLAUDE.md). The SDK is pinned to 11.0.x by `global.json`, the same band CI uses. |
 
 ## 2. Project layout (as it is)
 
 One MAUI Blazor Hybrid project, `NED.WoT.BattleResults.Client/` (target
-`net10.0-windows10.0.19041.0`, MSIX, UI in MudBlazor). `NED.WoT.BattleResults.Core/`
+`net11.0-windows10.0.19041.0`, MSIX, UI in MudBlazor). `NED.WoT.BattleResults.Core/`
 is a second project in `NED.WoT.slnx`.
 
 | Folder | Holds |

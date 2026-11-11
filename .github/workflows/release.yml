@@ -7,7 +7,7 @@ concurrency: release
 
 env:
   AZURE_WEBAPP_NAME: ned-wot
-  DOTNET_VERSION: 10.0.x
+  DOTNET_VERSION: 11.0.x
 
 jobs:
   release:
@@ -22,7 +22,7 @@ jobs:
         fetch-depth: 0
 
     - name: Install .NET Core
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
@@ -38,7 +38,7 @@ jobs:
       run: certutil -user -p ${{ secrets.WINDOWS_PFX_PASSWORD }} -Silent -importpfx cert.pfx NoRoot
 
     - name: Build
-      run: dotnet publish NED.WoT.BattleResults.Client\NED.WoT.BattleResults.Client.csproj -c Release -f:net10.0-windows10.0.19041.0 /p:GenerateAppxPackageOnBuild=true /p:AppxPackageSigningEnabled=true /p:PackageCertificateThumbprint=${{ secrets.WINDOWS_PFX_THUMBPRINT }}
+      run: dotnet publish NED.WoT.BattleResults.Client\NED.WoT.BattleResults.Client.csproj -c Release -f:net11.0-windows10.0.19041.0 /p:GenerateAppxPackageOnBuild=true /p:AppxPackageSigningEnabled=true /p:PackageCertificateThumbprint=${{ secrets.WINDOWS_PFX_THUMBPRINT }}
 
     - name: Update .appinstaller file
       run: |
