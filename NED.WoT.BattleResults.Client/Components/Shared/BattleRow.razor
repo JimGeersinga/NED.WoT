@@ -18,7 +18,15 @@ else
 	var rightKills = left.Players.Count(x => x.DeathReason.HasValue && x.DeathReason != -1);
 	var onlyOwn = SettingService.Settings.OnlyHighlistOwnMatches;
 
-	<MudTd Class="p4">
+	<MudTd Class="p4" @oncontextmenu="OpenFileMenu">
+		@* Right-click menu of the row: the replay's file name, and a button to copy it. Opened from the cells at the cursor; the activator is only an anchor. *@
+		<MudMenu @ref="_fileMenu" PositionAtCursor="true" ActivationEvent="MouseEvent.RightClick" PopoverClass="wot-ctx-pop" Dense="true">
+			<ActivatorContent><span class="gl-ctx-anchor"></span></ActivatorContent>
+			<ChildContent>
+				<div class="wot-ctx-file"><span>Replaybestand</span><code>@Report.FileName</code></div>
+				<MudMenuItem Icon="@Icons.Material.Filled.ContentCopy" OnClick="() => OnCopyFileName.InvokeAsync(Report)">Kopieer bestandsnaam</MudMenuItem>
+			</ChildContent>
+		</MudMenu>
 		<a id="@($"Timestamp_{Report.MatchStart.Ticks + Report.MatchDuration.GetValueOrDefault()}_anchor")" class="gl-anchor"></a>
 		<button type="button" class="gl-ibtn" aria-label="@(Report.ShowDetails ? "Details inklappen" : "Details uitklappen")" aria-expanded="@(Report.ShowDetails ? "true" : "false")">
 			<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)(Report.ShowDetails ? Icons.Material.Filled.KeyboardArrowDown : Icons.Material.Filled.KeyboardArrowRight))</svg>
@@ -44,18 +52,16 @@ else
 		</MudTooltip>
 	</MudTd>
 	<MudTd Class="mapcol"><div class="mapc"><b title="@Report.MapName">@Report.MapName</b><span class="gl-chip">@ownTeam?.Base</span></div></MudTd>
-	<MudTd @oncontextmenu="OpenMenu">
+	<MudTd @oncontextmenu="OpenMatchMenu">
 		<span class="vs">
 			<a class="@TagClass(left, left == ownTeam, onlyOwn)" href="@left.ClanUrl" target="_blank" title="@(left.ClanUrl is null ? null : "Open de clanpagina")" @onclick:stopPropagation="true">@left.Abbreviation</a>
 			<span class="score">@(left.Result is Result.Win ? (MarkupString)$"<b>{leftKills}</b>" : (MarkupString)$"<span>{leftKills}</span>")–@(right.Result is Result.Win ? (MarkupString)$"<b>{rightKills}</b>" : (MarkupString)$"<span>{rightKills}</span>")</span>
 			<a class="@TagClass(right, right == ownTeam, onlyOwn)" href="@right.ClanUrl" target="_blank" title="@(right.ClanUrl is null ? null : "Open de clanpagina")" @onclick:stopPropagation="true">@right.Abbreviation</a>
 		</span>
-		@* Right-click menu of the row: the replay's file name, a button to copy it and the clan battle. Opened from the teams cell at the cursor; the activator is only an anchor. *@
-		<MudMenu @ref="_menu" PositionAtCursor="true" ActivationEvent="MouseEvent.RightClick" PopoverClass="wot-ctx-pop" Dense="true">
+		@* Right-click menu of the teams cell: the clan battle of the two tags. Out of flow, so the .vs span keeps its place. *@
+		<MudMenu @ref="_matchMenu" Style="position:absolute" PositionAtCursor="true" ActivationEvent="MouseEvent.RightClick" PopoverClass="wot-ctx-pop" Dense="true">
 			<ActivatorContent><span class="gl-ctx-anchor"></span></ActivatorContent>
 			<ChildContent>
-				<div class="wot-ctx-file"><span>Replaybestand</span><code>@Report.FileName</code></div>
-				<MudMenuItem Icon="@Icons.Material.Filled.ContentCopy" OnClick="() => OnCopyFileName.InvokeAsync(Report)">Kopieer bestandsnaam</MudMenuItem>
 				<MudMenuItem Icon="@Icons.Material.Filled.SportsEsports" Disabled="@(string.IsNullOrEmpty(Report.Team1.Abbreviation) || string.IsNullOrEmpty(Report.Team2.Abbreviation))" OnClick="() => OnOpenClanMatch.InvokeAsync((Report.Team1.Abbreviation!, Report.Team2.Abbreviation!))">Open clan gevecht</MudMenuItem>
 			</ChildContent>
 		</MudMenu>
@@ -102,9 +108,12 @@ else
 	[Parameter]
 	public EventCallback<(string, string)> OnOpenClanMatch { get; set; }
 
-	private MudMenu? _menu;
+	private MudMenu? _fileMenu;
+	private MudMenu? _matchMenu;
 
-	private Task OpenMenu(MouseEventArgs e) => _menu?.OpenMenuAsync(e) ?? Task.CompletedTask;
+	private Task OpenFileMenu(MouseEventArgs e) => _fileMenu?.OpenMenuAsync(e) ?? Task.CompletedTask;
+
+	private Task OpenMatchMenu(MouseEventArgs e) => _matchMenu?.OpenMenuAsync(e) ?? Task.CompletedTask;
 
 	/// <summary>A team tag in the VS cell (Team 1 left, Team 2 right): coloured by the team's result, and with the clan-chip edge when it is the own team. With "Alleen eigen gevechten uitlichten" only the own tag is coloured.</summary>
 	public static string TagClass(Team team, bool own, bool onlyOwn)
