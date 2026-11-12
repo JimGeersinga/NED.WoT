@@ -18,15 +18,7 @@ else
 	var rightKills = left.Players.Count(x => x.DeathReason.HasValue && x.DeathReason != -1);
 	var onlyOwn = SettingService.Settings.OnlyHighlistOwnMatches;
 
-	<MudTd Class="p4" @oncontextmenu="OpenFileMenu">
-		@* Right-click menu of the row: the replay's file name, and a button to copy it. Opened from the cells at the cursor; the activator is only an anchor. *@
-		<MudMenu @ref="_fileMenu" PositionAtCursor="true" ActivationEvent="MouseEvent.RightClick" PopoverClass="wot-ctx-pop" Dense="true">
-			<ActivatorContent><span class="gl-ctx-anchor"></span></ActivatorContent>
-			<ChildContent>
-				<div class="wot-ctx-file"><span>Replaybestand</span><code>@Report.FileName</code></div>
-				<MudMenuItem Icon="@Icons.Material.Filled.ContentCopy" OnClick="() => OnCopyFileName.InvokeAsync(Report)">Kopieer bestandsnaam</MudMenuItem>
-			</ChildContent>
-		</MudMenu>
+	<MudTd Class="p4">
 		<a id="@($"Timestamp_{Report.MatchStart.Ticks + Report.MatchDuration.GetValueOrDefault()}_anchor")" class="gl-anchor"></a>
 		<button type="button" class="gl-ibtn" aria-label="@(Report.ShowDetails ? "Details inklappen" : "Details uitklappen")" aria-expanded="@(Report.ShowDetails ? "true" : "false")">
 			<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)(Report.ShowDetails ? Icons.Material.Filled.KeyboardArrowDown : Icons.Material.Filled.KeyboardArrowRight))</svg>
@@ -71,7 +63,15 @@ else
 		@Stats(new[] { Report })
 	}
 	<MudTd Class="res"><ResultChip Result="Report.Result" IconRight="true" /></MudTd>
-	<MudTd Class="p4">
+	<MudTd Class="p4" @oncontextmenu="OpenFileMenu">
+		@* Right-click menu of the row: the replay's file name, and a button to copy it. Opened from the cells at the cursor; the activator is only an anchor. *@
+		<MudMenu @ref="_fileMenu" PositionAtCursor="true" ActivationEvent="MouseEvent.RightClick" PopoverClass="wot-ctx-pop" Dense="true">
+			<ActivatorContent><span class="gl-ctx-anchor"></span></ActivatorContent>
+			<ChildContent>
+				<div class="wot-ctx-file"><span>Replaybestand</span><code>@Report.FileName</code></div>
+				<MudMenuItem Icon="@Icons.Material.Filled.ContentCopy" OnClick="() => OnCopyFileName.InvokeAsync(Report)">Kopieer bestandsnaam</MudMenuItem>
+			</ChildContent>
+		</MudMenu>
 		<button type="button" class="gl-ibtn out" aria-label="Kopieer opstelling" title="Kopieer opstelling" disabled="@(ownTeam == null)" @onclick="() => OnCopy.InvokeAsync(Report)" @onclick:stopPropagation="true">
 			<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Filled.ContentCopy)</svg>
 		</button>
