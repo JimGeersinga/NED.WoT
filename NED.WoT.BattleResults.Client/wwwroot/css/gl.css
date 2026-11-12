@@ -117,6 +117,7 @@
 .gl-rec { display: flex; justify-content: flex-end; gap: 6px; white-space: nowrap; color: var(--mud-palette-text-secondary); font: 500 13px/1 var(--wot-font-text); font-variant-numeric: tabular-nums; }
 .gl-rec > span { display: inline-flex; align-items: center; gap: 4px; }
 .gl-rec > span + span::before { content: "·"; margin-right: 2px; }
+.gl-rec .n { min-width: 2ch; text-align: right; }
 .gl-rec svg { width: 16px; height: 16px; fill: currentColor; }
 /* The icons carry the result colours of the chips; the words stay secondary. */
 .gl-rec .w svg { fill: var(--mud-palette-success); }

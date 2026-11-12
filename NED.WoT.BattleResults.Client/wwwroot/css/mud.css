@@ -49,6 +49,15 @@
     color: var(--wot-skipped);
 }
 
+/* ResultChip with IconRight (the battle row): the icon after the word; Mud's icon margins are mirrored to match. */
+.mud-chip.wot-chip-icon-right {
+    flex-direction: row-reverse;
+}
+
+.mud-chip.wot-chip-icon-right .mud-chip-icon {
+    margin-inline: 4px -4px;
+}
+
 /* ==== MudToggleGroup ==== */
 /* A view toggle (design .tg): 36px items, the selected one on the soft Primary tint instead of a solid fill. */
 .mud-toggle-group.wot-view-toggle {
