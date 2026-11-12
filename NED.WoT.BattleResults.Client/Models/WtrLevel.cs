@@ -17,14 +17,14 @@ public static class WtrLevel
     /// <summary>"Brons I" … "Legende III".</summary>
     public static string Name(int index) => $"{Names[index / 3]} {Numerals[index % 3]}";
 
-    /// <summary>The icon, relative to wwwroot: <c>img/wtr/NN.png</c>.</summary>
-    public static string IconPath(int index) => $"img/wtr/{index:00}.png";
+    /// <summary>The icon, relative to wwwroot: <c>img/wtr/brons-i.png</c> … <c>legende-iii.png</c>, named after the level.</summary>
+    public static string IconPath(int index) => $"img/wtr/{Name(index).ToLowerInvariant().Replace(' ', '-')}.png";
 
     [Conditional("DEBUG")]
     private static void SelfCheck()
     {
         Debug.Assert(Index(0) == 0 && Index(399) == 0 && Index(400) == 1 && Index(9899) == 13 && Index(9900) == 14 && Index(20000) == 14, "level boundaries");
         Debug.Assert(Name(Index(6180)) == "Aas I" && Name(Index(7340)) == "Aas III" && Name(Index(399)) == "Brons I" && Name(Index(9900)) == "Legende III", "level names");
-        Debug.Assert(IconPath(3) == "img/wtr/03.png", "icon path");
+        Debug.Assert(IconPath(Index(6180)) == "img/wtr/aas-i.png" && IconPath(Index(9900)) == "img/wtr/legende-iii.png", "icon path");
     }
 }
