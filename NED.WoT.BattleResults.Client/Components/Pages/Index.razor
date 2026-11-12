@@ -476,7 +476,6 @@
 	{
 		SelfCheck();
 
-		long timestamp = 0;
 
 		AuthenticationState authResult = await AuthenticationState;
 		_canToggleBattleStats = authResult.User.HasClaim(Claims.CanSeeBattleStats, bool.TrueString);
@@ -485,8 +484,6 @@
 		{
 			await InvokeAsync(async () =>
 			{
-				timestamp = Stopwatch.GetTimestamp();
-
 				// Battles added by the file watcher: keep the table as it is, so the new rows can show up in place.
 				if (_loadedOnce)
 				{
@@ -564,7 +561,7 @@
 				if (!_loadedOnce)
 				{
 					// The load time goes behind the version in the window title.
-					App.SetTitle($" · geladen in {Stopwatch.GetElapsedTime(timestamp).TotalSeconds.ToString("0.0", BattleReport.DutchCulture)} s");
+					App.SetTitle($" · geladen in {BattleResultService.LastLoadDuration.TotalSeconds.ToString("0.0", BattleReport.DutchCulture)} s");
 				}
 
 				_loadedOnce = true;
