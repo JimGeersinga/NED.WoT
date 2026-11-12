@@ -103,8 +103,8 @@
 			<MudTh Style="text-align: right; width: 112px" title="World of Tanks Rating">WTR</MudTh>
 		</HeaderContent>
 		<RowTemplate>
-			<MudTd DataLabel="Gevechten" Style="text-align: right; vertical-align: text-top;">@context.Count()</MudTd>
-			<MudTd DataLabel="Speler" Style="vertical-align: text-top;">@context.Key</MudTd>
+			<MudTd DataLabel="Gevechten" Style="text-align: right; vertical-align: top;">@context.Count()</MudTd>
+			<MudTd DataLabel="Speler" Style="vertical-align: top;">@context.Key</MudTd>
 			<MudTd DataLabel="Tanks">
 				@foreach (var vehicle in context.GroupBy(x => x.Vehicle).OrderByDescending(x => x.Count()))
 				{
@@ -114,8 +114,8 @@
 					</div>
 				}
 			</MudTd>
-			<MudTd DataLabel="PR" Style="text-align: right; vertical-align: text-top; font-variant-numeric: tabular-nums;">@PlayerRatingCell(context.Key)</MudTd>
-			<MudTd DataLabel="WTR" Style="text-align: right; vertical-align: text-top;">@WtrCell(context.Key)</MudTd>
+			<MudTd DataLabel="PR" Style="text-align: right; vertical-align: top; font-variant-numeric: tabular-nums;">@PlayerRatingCell(context.Key)</MudTd>
+			<MudTd DataLabel="WTR" Style="text-align: right; vertical-align: top;">@WtrCell(context.Key)</MudTd>
 		</RowTemplate>
 	</MudTable>;
 
