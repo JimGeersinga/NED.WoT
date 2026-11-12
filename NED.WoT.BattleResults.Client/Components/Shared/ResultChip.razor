@@ -1,6 +1,10 @@
-<MudChip T="string" Variant="Variant.Text" Size="Size.Small" Color="@Colour" Icon="@Icon" Class="@(Result is Result.Unknown ? "wot-result-skipped" : null)">@Word(Result)</MudChip>
+<MudChip T="string" Variant="Variant.Text" Size="Size.Small" Color="@Colour" Icon="@Icon" Class="@(Result is Result.Unknown ? "wot-result-skipped" + (IconRight ? " wot-chip-icon-right" : null) : IconRight ? "wot-chip-icon-right" : null)">@Word(Result)</MudChip>
 
 @code {
+    /// <summary>Shows the icon after the word instead of before it (the battle row).</summary>
+    [Parameter]
+    public bool IconRight { get; set; }
+
     /// <summary>The result of the battle, as shown in the chip: the colour, the icon and the word (docs/DESIGN.md, "Result chip").</summary>
     [Parameter, EditorRequired]
     public Result Result { get; set; }

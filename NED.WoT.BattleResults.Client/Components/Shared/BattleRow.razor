@@ -55,7 +55,7 @@ else
 	{
 		@Stats(new[] { Report })
 	}
-	<MudTd Class="res"><ResultChip Result="Report.Result" /></MudTd>
+	<MudTd Class="res"><ResultChip Result="Report.Result" IconRight="true" /></MudTd>
 	<MudTd Class="p4" @oncontextmenu="OpenMenu">
 		@* Right-click menu of the row: the replay's file name, and a button to copy it. Opened from the cells at the cursor; the activator is only an anchor. *@
 		<MudMenu @ref="_menu" PositionAtCursor="true" ActivationEvent="MouseEvent.RightClick" PopoverClass="wot-ctx-pop" Dense="true">
