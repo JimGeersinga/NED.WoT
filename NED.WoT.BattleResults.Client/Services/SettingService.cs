@@ -11,7 +11,7 @@ public class SettingService
 
     public Settings Settings { get; set; }
 
-    public SettingService(IdentityService identity)
+    public SettingService()
     {
         SelfCheck();
         Settings = new Settings
@@ -23,17 +23,6 @@ public class SettingService
             AutoClanLookup = Preferences.Default.Get(nameof(Settings.AutoClanLookup), false),
             LiveReplayPath = Preferences.Default.Get(nameof(Settings.LiveReplayPath), string.Empty)
         };
-
-        // The clan tag and player name come from the login (HQ), not from Preferences.
-        identity.Changed += () => SetIdentity(identity.Current);
-        SetIdentity(identity.Current);
-    }
-
-    /// <summary>Your team is found by clan tag or by name. Without a clan only the name matches. Not stored.</summary>
-    private void SetIdentity(HqIdentity? who)
-    {
-        Settings.ClanAbbreviation = who?.ClanTag;
-        Settings.PlayerName = who?.Nickname;
     }
 
     public void Save()

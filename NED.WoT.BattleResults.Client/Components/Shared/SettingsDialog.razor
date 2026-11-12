@@ -115,8 +115,6 @@
         modal = new Settings
             {
                 ReplayFolders = [.. SettingService.Settings.ReplayFolders.Select(f => new ReplayFolder { Title = f.Title, Path = f.Path })],
-                ClanAbbreviation = SettingService.Settings.ClanAbbreviation,
-                PlayerName = SettingService.Settings.PlayerName,
                 SingleBattleResultOpenedOnly = SettingService.Settings.SingleBattleResultOpenedOnly,
                 OnlyHighlistOwnMatches = SettingService.Settings.OnlyHighlistOwnMatches,
                 UpdateScreeenWhileLoading = SettingService.Settings.UpdateScreeenWhileLoading,
