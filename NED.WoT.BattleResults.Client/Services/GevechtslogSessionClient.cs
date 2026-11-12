@@ -60,11 +60,15 @@ public sealed class GevechtslogSessionClient(HttpClient http)
         }
     }
 
+    // Wargaming's spelling ("combat_officer") to the role; Unknown for null or a role we don't know.
+    private static ClanRole ParseRole(string? role) =>
+        role is not null && Enum.TryParse(role.Replace("_", ""), ignoreCase: true, out ClanRole parsed) && Enum.IsDefined(parsed) ? parsed : ClanRole.Unknown;
+
     // The clan fields are null for a player without a clan. HQ's nickname wins; the session's is the fallback.
     private static SessionResult Parse(string json, WargamingSession session)
     {
         HqAnswer a = JsonSerializer.Deserialize<HqAnswer>(json, Json) ?? throw new JsonException("Empty answer.");
-        var identity = new HqIdentity(session.AccountId, a.Nickname ?? session.Nickname, a.ClanId, a.ClanTag, a.ClanName, a.EmblemUrl, ClanRoles.Parse(a.Role), a.CanSeeAdvancedStats);
+        var identity = new HqIdentity(session.AccountId, a.Nickname ?? session.Nickname, a.ClanId, a.ClanTag, a.ClanName, a.EmblemUrl, ParseRole(a.Role), a.CanSeeAdvancedStats);
         return a.CanUse ? new SessionResult.Allowed(identity) : new SessionResult.Refused(identity);
     }
 
