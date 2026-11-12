@@ -50,13 +50,6 @@ else
 			<span class="score">@(left.Result is Result.Win ? (MarkupString)$"<b>{leftKills}</b>" : (MarkupString)$"<span>{leftKills}</span>")–@(right.Result is Result.Win ? (MarkupString)$"<b>{rightKills}</b>" : (MarkupString)$"<span>{rightKills}</span>")</span>
 			<a class="@TagClass(right, right == ownTeam, onlyOwn)" href="@right.ClanUrl" target="_blank" title="@(right.ClanUrl is null ? null : "Open de clanpagina")" @onclick:stopPropagation="true">@right.Abbreviation</a>
 		</span>
-		@* Right-click menu of the teams cell: the clan battle of the two tags. Out of flow, so the .vs span keeps its place. *@
-		<MudMenu @ref="_matchMenu" Style="position:absolute" PositionAtCursor="true" ActivationEvent="MouseEvent.RightClick" PopoverClass="wot-ctx-pop" Dense="true">
-			<ActivatorContent><span class="gl-ctx-anchor"></span></ActivatorContent>
-			<ChildContent>
-				<MudMenuItem Icon="@Icons.Material.Filled.SportsEsports" Disabled="@(string.IsNullOrEmpty(Report.Team1.Abbreviation) || string.IsNullOrEmpty(Report.Team2.Abbreviation))" OnClick="() => OnOpenClanMatch.InvokeAsync((Report.Team1.Abbreviation!, Report.Team2.Abbreviation!))">Open clan gevecht</MudMenuItem>
-			</ChildContent>
-		</MudMenu>
 	</MudTd>
 	@if (ShowBattleStats && Stats != null)
 	{
@@ -70,6 +63,13 @@ else
 			<ChildContent>
 				<div class="wot-ctx-file"><span>Replaybestand</span><code>@Report.FileName</code></div>
 				<MudMenuItem Icon="@Icons.Material.Filled.ContentCopy" OnClick="() => OnCopyFileName.InvokeAsync(Report)">Kopieer bestandsnaam</MudMenuItem>
+			</ChildContent>
+		</MudMenu>
+		@* Right-click menu of the teams cell: the clan battle of the two tags. It lives here, next to the file menu, so the teams cell stays as on master; OpenMatchMenu opens it at the cursor. *@
+		<MudMenu @ref="_matchMenu" PositionAtCursor="true" ActivationEvent="MouseEvent.RightClick" PopoverClass="wot-ctx-pop" Dense="true">
+			<ActivatorContent><span class="gl-ctx-anchor"></span></ActivatorContent>
+			<ChildContent>
+				<MudMenuItem Icon="@Icons.Material.Filled.SportsEsports" Disabled="@(string.IsNullOrEmpty(Report.Team1.Abbreviation) || string.IsNullOrEmpty(Report.Team2.Abbreviation))" OnClick="() => OnOpenClanMatch.InvokeAsync((Report.Team1.Abbreviation!, Report.Team2.Abbreviation!))">Open clan gevecht</MudMenuItem>
 			</ChildContent>
 		</MudMenu>
 		<button type="button" class="gl-ibtn out" aria-label="Kopieer opstelling" title="Kopieer opstelling" disabled="@(ownTeam == null)" @onclick="() => OnCopy.InvokeAsync(Report)" @onclick:stopPropagation="true">
