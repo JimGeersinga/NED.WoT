@@ -92,7 +92,7 @@
 
 	private RenderFragment Opponents => @<MudTable Items="@_enemyPlayers" Class="clan-match-table" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Elevation="0">
 		<HeaderContent>
-			<MudTh Style="text-align: right; width: 110px" title="Gevechten" aria-label="Gevechten">
+			<MudTh Style="text-align: right; width: 1%; white-space: nowrap" title="Gevechten" aria-label="Gevechten">
 				<MudTableSortLabel InitialDirection="SortDirection.Descending" SortBy="new Func<IGrouping<string?, Player>, object>(x => x.Count())">#</MudTableSortLabel>
 			</MudTh>
 			<MudTh>
@@ -183,7 +183,7 @@
 			<MudTh>
 				<MudTableSortLabel SortBy="new Func<BattleReport, object>(x => x.MapName ?? string.Empty)">Map</MudTableSortLabel>
 			</MudTh>
-			<MudTh Style="text-align: right">Winnaar</MudTh>
+			<MudTh Style="text-align: right">Resultaat</MudTh>
 		</HeaderContent>
 		<RowTemplate>
 			@{
@@ -192,14 +192,15 @@
 			<MudTd DataLabel="Datum">@context.MatchTimeDisplay</MudTd>
 			<MudTd DataLabel="Duur" Style="text-align: right" Class="mud-text-secondary">@context.MatchDurationDisplay</MudTd>
 			<MudTd DataLabel="Map"><b>@context.MapName</b> @ownTeam?.Base</MudTd>
-			<MudTd DataLabel="Winnaar" Style="text-align: right">
-				<MudStack Row Justify="Justify.FlexEnd" AlignItems="AlignItems.Center" Spacing="2">
-					<span class="@ownTeam?.Result.ToString()">@(context.Team1.IsWinner == true ? context.Team1.Abbreviation : context.Team2.Abbreviation)</span>
-					@if (ownTeam is not null)
-					{
-						<ResultChip Result="ownTeam.Result" IconRight="true" />
-					}
-				</MudStack>
+			<MudTd DataLabel="Resultaat" Style="text-align: right">
+				@if (ownTeam is not null)
+				{
+					<ResultChip Result="ownTeam.Result" IconRight="true" />
+				}
+				else
+				{
+					@(context.Team1.IsWinner == true ? context.Team1.Abbreviation : context.Team2.Abbreviation)
+				}
 			</MudTd>
 		</RowTemplate>
 	</MudTable>;
