@@ -176,7 +176,8 @@
 						   Number="dayByLabel[context.Group].Number(context)"
 						   ShowBattleStats="_showBattleStats"
 						   Stats="StatCells"
-						   OnCopy="@(report => CopyResultAsync(report, report.OwnTeam))" />
+						   OnCopy="@(report => CopyResultAsync(report, report.OwnTeam))"
+						   OnOpenClanMatch="@(m => OpenClanMatchDialog(m))" />
 			}
 		</RowTemplate>
 		<ChildRowContent>

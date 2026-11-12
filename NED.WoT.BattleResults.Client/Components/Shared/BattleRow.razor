@@ -63,6 +63,7 @@ else
 			<ChildContent>
 				<div class="wot-ctx-file"><span>Replaybestand</span><code>@Report.FileName</code></div>
 				<MudMenuItem Icon="@Icons.Material.Filled.ContentCopy" OnClick="() => OnCopyFileName.InvokeAsync(Report)">Kopieer bestandsnaam</MudMenuItem>
+				<MudMenuItem Icon="@Icons.Material.Filled.SportsEsports" Disabled="@(string.IsNullOrEmpty(Report.Team1.Abbreviation) || string.IsNullOrEmpty(Report.Team2.Abbreviation))" OnClick="() => OnOpenClanMatch.InvokeAsync((Report.Team1.Abbreviation!, Report.Team2.Abbreviation!))">Open clan gevecht</MudMenuItem>
 			</ChildContent>
 		</MudMenu>
 		<button type="button" class="gl-ibtn out" aria-label="Kopieer opstelling" title="Kopieer opstelling" disabled="@(ownTeam == null)" @onclick="() => OnCopy.InvokeAsync(Report)" @onclick:stopPropagation="true">
@@ -96,6 +97,10 @@ else
 	/// <summary>The "Kopieer bestandsnaam" item of the right-click menu.</summary>
 	[Parameter]
 	public EventCallback<BattleReport> OnCopyFileName { get; set; }
+
+	/// <summary>The "Open clan gevecht" item of the right-click menu: the two clan tags of this battle.</summary>
+	[Parameter]
+	public EventCallback<(string, string)> OnOpenClanMatch { get; set; }
 
 	private MudMenu? _menu;
 
