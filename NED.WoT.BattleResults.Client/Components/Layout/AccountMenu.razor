@@ -10,10 +10,7 @@
                 <MudAvatar Class="wot-avatar">@Badge(who)</MudAvatar>
                 <span class="wot-ubtn-text">
                     <span class="wot-ubtn-name">@who.Nickname</span>
-                    @if (who.Role != ClanRole.Unknown)
-                    {
-                        <span class="wot-ubtn-role">@who.Role.DisplayName()</span>
-                    }
+                    <span class="wot-ubtn-role">@RoleName(who)</span>
                 </span>
                 <MudIcon Icon="@Icons.Material.Outlined.ExpandMore" Class="wot-ubtn-chevron" />
             </MudButton>
@@ -24,16 +21,10 @@
                 <div class="wot-menu-head-text">
                     <span class="wot-ubtn-name">@who.Nickname</span>
                     <span class="wot-ubtn-role">
-                        @if (who.Role != ClanRole.Unknown)
-                        {
-                            @who.Role.DisplayName()
-                        }
+                        @RoleName(who)
                         @if (who.ClanTag is { Length: > 0 })
                         {
-                            @if (who.Role != ClanRole.Unknown)
-                            {
-                                <span>&middot;</span>
-                            }
+                            <span>&middot;</span>
                             @if (!string.IsNullOrEmpty(who.EmblemUrl))
                             {
                                 <img class="wot-emblem" src="@who.EmblemUrl" alt="" />
@@ -79,6 +70,9 @@
     private static RenderFragment Badge(Models.HqIdentity who) => who.Role != Models.ClanRole.Unknown
         ? @<img class="wot-rank-icon" src="img/ranks/@(who.Role).png" alt="" />
         : @<text>@Initials(who.Nickname)</text>;
+
+    // Empty without a clan, so the span stays and the layout doesn't shift.
+    private static string RoleName(Models.HqIdentity who) => who.Role == ClanRole.Unknown ? string.Empty : who.Role.DisplayName();
 
     // Forgets the token locally only (docs/PLAN.md section 3.2); Routes shows the login.
     private void SignOut()
