@@ -7,7 +7,7 @@
     <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" PopoverClass="wot-menu">
         <ActivatorContent Context="menu">
             <MudButton Variant="Variant.Text" Color="Color.Inherit" Class="wot-ubtn" aria-label="Account" OnClick="@menu.ToggleAsync">
-                <MudAvatar Class="wot-avatar">@Initials(who.Nickname)</MudAvatar>
+                <MudAvatar Class="wot-avatar">@Badge(who)</MudAvatar>
                 <span class="wot-ubtn-text">
                     <span class="wot-ubtn-name">@who.Nickname</span>
                     <span class="wot-ubtn-role">@RoleName(who)</span>
@@ -17,7 +17,7 @@
         </ActivatorContent>
         <ChildContent>
             <div class="wot-menu-head">
-                <MudAvatar Class="wot-avatar wot-avatar-lg">@Initials(who.Nickname)</MudAvatar>
+                <MudAvatar Class="wot-avatar wot-avatar-lg">@Badge(who)</MudAvatar>
                 <div class="wot-menu-head-text">
                     <span class="wot-ubtn-name">@who.Nickname</span>
                     <span class="wot-ubtn-role">
@@ -65,6 +65,14 @@
         };
         return initials.ToUpperInvariant();
     }
+
+    // Wargaming's role spellings in rank order: the position + 1 is the file name in img/ranks.
+    private static readonly string[] Ranks = ["commander", "executive_officer", "personnel_officer", "combat_officer", "intelligence_officer", "quartermaster", "recruitment_officer", "junior_officer", "private", "recruit", "reservist"];
+
+    // The rank icon; the initials when there is no clan or the role is one we have no icon for.
+    private static RenderFragment Badge(Models.HqIdentity who) => Array.IndexOf(Ranks, who.Role) is >= 0 and var i
+        ? @<img class="wot-rank-icon" src="img/ranks/@(i + 1).png" alt="" />
+        : @<text>@Initials(who.Nickname)</text>;
 
     // Wargaming's spelling "combat_officer" -> WoT's English name "Combat Officer"; without a role (no clan) "Geen clan".
     private static string RoleName(Models.HqIdentity who) =>
