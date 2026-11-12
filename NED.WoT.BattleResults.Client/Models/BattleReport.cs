@@ -125,7 +125,6 @@ public class Player(Team team)
     public int Number { get; set; }
     public string? Name { get; set; }
     public string? Clan { get; set; }
-    public long? ClanId { get; set; }
     public string DisplayName => !string.IsNullOrEmpty(Clan) ? $"[{Clan}] {Name}" : $"{Name}";
     public string? Vehicle { get; set; }
     public int? MaxHealth { get; set; }

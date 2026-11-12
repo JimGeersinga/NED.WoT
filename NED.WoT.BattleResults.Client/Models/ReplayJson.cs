@@ -23,7 +23,7 @@ public sealed record ReplayPlayer
     public string? Name { get; init; }
     public string? ClanAbbrev { get; init; }
 
-    /// <summary>Only in results[1]; 0 for a player without a clan.</summary>
+    /// <summary>Only in results[0].players; 0 for a player without a clan.</summary>
     [JsonPropertyName("clanDBID")]
     public long? ClanDbid { get; init; }
     public int? Team { get; init; }
@@ -41,6 +41,9 @@ public sealed record ReplayResults
 
     /// <summary>The players by vehicle id (results[1]).</summary>
     public Dictionary<string, ReplayPlayer>? Players { get; init; }
+
+    /// <summary>The players by account id (results[0].players): the only place with the clan id.</summary>
+    public Dictionary<string, ReplayPlayer>? AccountPlayers { get; init; }
 }
 
 public sealed record ReplayCommon
@@ -96,6 +99,7 @@ public sealed class ReplayResultsConverter : JsonConverter<ReplayResults>
         ReplayCommon? common = null;
         Dictionary<string, ReplayVehicleStats[]>? vehicles = null;
         Dictionary<string, ReplayPlayer>? players = null;
+        Dictionary<string, ReplayPlayer>? accountPlayers = null;
 
         for (int index = 0; reader.Read() && reader.TokenType != JsonTokenType.EndArray; index++)
         {
@@ -107,6 +111,11 @@ public sealed class ReplayResultsConverter : JsonConverter<ReplayResults>
                     {
                         reader.Read();
                         common = JsonSerializer.Deserialize(ref reader, ReplayJsonContext.Default.ReplayCommon);
+                    }
+                    else if (reader.ValueTextEquals("players"u8))
+                    {
+                        reader.Read();
+                        accountPlayers = JsonSerializer.Deserialize(ref reader, ReplayJsonContext.Default.DictionaryStringReplayPlayer);
                     }
                     else if (reader.ValueTextEquals("vehicles"u8))
                     {
@@ -130,7 +139,7 @@ public sealed class ReplayResultsConverter : JsonConverter<ReplayResults>
             }
         }
 
-        return new ReplayResults { Common = common, Vehicles = vehicles, Players = players };
+        return new ReplayResults { Common = common, Vehicles = vehicles, Players = players, AccountPlayers = accountPlayers };
     }
 
     public override void Write(Utf8JsonWriter writer, ReplayResults value, JsonSerializerOptions options) =>
