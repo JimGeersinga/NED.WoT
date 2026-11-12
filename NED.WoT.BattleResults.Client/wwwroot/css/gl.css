@@ -13,6 +13,11 @@
 .tag.d { color: var(--mud-palette-warning); }
 .tag.u { color: var(--mud-palette-text-secondary); }
 .tag.own { padding: 3px 6px; border: 1px solid var(--wot-bronze-edge); border-radius: 2px; background: color-mix(in srgb, var(--mud-palette-tertiary) 8%, transparent); min-width: 0; }
+/* Hover on a clan link: an outline takes no space, so nothing moves. Not while keyboard-focused: gl.css is unlayered and would replace the 2px focus ring (wot.css, @layer mud). The own tag already has a border, so only its colour changes. */
+.tag { transition: border-color .12s, outline-color .12s; }
+a.tag[href]:hover:not(:focus-visible) { outline: 1px solid var(--mud-palette-primary); outline-offset: 2px; border-radius: 2px; }
+a.tag.own[href]:hover { outline: 0; border-color: var(--mud-palette-primary); }
+@media (prefers-reduced-motion: reduce) { .tag { transition: none; } }
 .vs { display: flex; align-items: center; gap: 10px; }
 .vs > * { flex: none; }
 .vs > .tag:first-child { justify-content: flex-end; }
