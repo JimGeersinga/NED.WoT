@@ -7,10 +7,7 @@
     <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" PopoverClass="wot-menu">
         <ActivatorContent Context="menu">
             <MudButton Variant="Variant.Text" Color="Color.Inherit" Class="wot-ubtn" aria-label="Account" OnClick="@menu.ToggleAsync">
-                @if (who.Role != ClanRole.Unknown)
-                {
-                    <MudAvatar Class="wot-avatar"><img class="wot-rank-icon" src="img/ranks/@(who.Role).png" alt="" /></MudAvatar>
-                }
+                <MudAvatar Class="wot-avatar">@Badge(who)</MudAvatar>
                 <span class="wot-ubtn-text">
                     <span class="wot-ubtn-name">@who.Nickname</span>
                     @if (who.Role != ClanRole.Unknown)
@@ -23,10 +20,7 @@
         </ActivatorContent>
         <ChildContent>
             <div class="wot-menu-head">
-                @if (who.Role != ClanRole.Unknown)
-                {
-                    <MudAvatar Class="wot-avatar wot-avatar-lg"><img class="wot-rank-icon" src="img/ranks/@(who.Role).png" alt="" /></MudAvatar>
-                }
+                <MudAvatar Class="wot-avatar wot-avatar-lg">@Badge(who)</MudAvatar>
                 <div class="wot-menu-head-text">
                     <span class="wot-ubtn-name">@who.Nickname</span>
                     <span class="wot-ubtn-role">
@@ -68,6 +62,24 @@
 }
 
 @code {
+    /// <summary>First letters of the first two words (Tankmaster_NL is TN); a single word gives its first two letters.</summary>
+    private static string Initials(string nickname)
+    {
+        string[] parts = nickname.Split(['_', ' ', '-'], StringSplitOptions.RemoveEmptyEntries);
+        string initials = parts.Length switch
+        {
+            0 => string.Empty,
+            1 => parts[0][..Math.Min(2, parts[0].Length)],
+            _ => string.Concat(parts[0][0], parts[1][0]),
+        };
+        return initials.ToUpperInvariant();
+    }
+
+    // The rank icon; the initials when there is no clan or the role is one we have no icon for.
+    private static RenderFragment Badge(Models.HqIdentity who) => who.Role != Models.ClanRole.Unknown
+        ? @<img class="wot-rank-icon" src="img/ranks/@(who.Role).png" alt="" />
+        : @<text>@Initials(who.Nickname)</text>;
+
     // Forgets the token locally only (docs/PLAN.md section 3.2); Routes shows the login.
     private void SignOut()
     {
