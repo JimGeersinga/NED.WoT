@@ -80,10 +80,20 @@ answer and never decides rights itself. Nothing is kept on the HQ side. HQ down,
 or any other failure to get an answer, shows "Geen verbinding met WoT HQ".
 
 ### 3.4 Public reads (created by #18)
-Under the app's own application id, no token: `account/list` (name → account id),
-`account/info` (`global_rating`), `clans/list` and `clanratings/clans` (`efficiency.value`, `.rank`); the public API has no WTR (checked 2026-11-09),
-for the Clan battle dialog. Each call names its endpoint, parameters and fields
-in its issue, marked **(verify)** until checked against the live API.
+`Services/WargamingApiClient.cs`: GET, no token, under the app's own application id, for the Clan battle dialog.
+Failures (Wargaming error, timeout, no network) are a failed result, never an exception; 10 s timeout, one retry
+after 1 s on `REQUEST_LIMIT_EXCEEDED`. Checked against the live EU API on 2026-11-12:
+
+- `account/list/?search=<n1,n2,...>&type=exact&limit=100` gives `data[].account_id`, `.nickname`. A comma-separated
+  exact search of 86 names (a whole clan) returned all 86; unknown names are simply absent. Matching is case-insensitive.
+- `account/info/?account_id=<ids>&fields=global_rating` gives `data[id].global_rating` (the PR). An unknown id gives
+  `data[id] = null`. Hidden stats are assumed to give the same `null` (the client maps `null` to `StatsHidden`), but this is
+  **not verified**: none of the 86 NED-1 members hides their stats and no hidden account was found.
+- `clans/list/?search=<tag>&fields=clan_id,tag,name,emblems.x64` is a prefix search: the client picks the entry whose `tag`
+  equals the tag. NED-1 gives 500012147, "Noobs Elite Divisie", `emblems.x64.portal`. No match gives `data: []`.
+- `clanratings/clans/?clan_id=<id>&fields=efficiency` gives `data[id].efficiency.value` and `.rank` (NED-1: 7261, rank 643).
+  An unrated or unknown clan gives `data[id] = null`. Other keys are not used.
+- The public API has no WTR (checked 2026-11-09), so there is no WTR column.
 
 ## 4. Settings
 
