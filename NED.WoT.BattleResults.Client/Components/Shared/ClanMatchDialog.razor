@@ -183,7 +183,7 @@
 			<MudTh>
 				<MudTableSortLabel SortBy="new Func<BattleReport, object>(x => x.MapName ?? string.Empty)">Map</MudTableSortLabel>
 			</MudTh>
-			<MudTh>Winnaar</MudTh>
+			<MudTh Style="text-align: right">Winnaar</MudTh>
 		</HeaderContent>
 		<RowTemplate>
 			@{
@@ -192,12 +192,12 @@
 			<MudTd DataLabel="Datum">@context.MatchTimeDisplay</MudTd>
 			<MudTd DataLabel="Duur" Style="text-align: right" Class="mud-text-secondary">@context.MatchDurationDisplay</MudTd>
 			<MudTd DataLabel="Map"><b>@context.MapName</b> @ownTeam?.Base</MudTd>
-			<MudTd DataLabel="Winnaar">
-				<MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+			<MudTd DataLabel="Winnaar" Style="text-align: right">
+				<MudStack Row Justify="Justify.FlexEnd" AlignItems="AlignItems.Center" Spacing="2">
 					<span class="@ownTeam?.Result.ToString()">@(context.Team1.IsWinner == true ? context.Team1.Abbreviation : context.Team2.Abbreviation)</span>
 					@if (ownTeam is not null)
 					{
-						<ResultChip Result="ownTeam.Result" />
+						<ResultChip Result="ownTeam.Result" IconRight="true" />
 					}
 				</MudStack>
 			</MudTd>
