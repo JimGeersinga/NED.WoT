@@ -127,7 +127,7 @@
 		else if (_state is RatingState.Ok && name is not null && _players.TryGetValue(name, out PlayerRating? rating) && rating.Wtr is { } wtr)
 		{
 			string level = WtrLevel.Name(WtrLevel.Index(wtr));
-			<span class="d-inline-flex align-center gap-2" style="font-weight: 600; white-space: nowrap;">
+			<span class="gl-wtr">
 				<img src="@WtrLevel.IconPath(WtrLevel.Index(wtr))" alt="@level" title="@level" width="24" height="24" style="flex: none;" />
 				@NumberFormat.Fmt(wtr)
 			</span>

@@ -1,4 +1,4 @@
-﻿# WoT Gevechtslog — plan of record
+# WoT Gevechtslog — plan of record
 
 The desktop app that reads World of Tanks `.wotreplay` files and lists the
 battles in a table. It is a sibling of WoT HQ (`JimGeersinga/NED.WoT.Clan`).
@@ -100,7 +100,7 @@ The error's `value` is never deserialized. Checked against the live EU API on 20
   An unrated or unknown clan gives `data[id] = null`. **(verify)** that `efficiency.value` can be null: not seen; the client
   gives a null rating, rank and emblem when `efficiency`, its `value` or `rank`, or `emblems.x64` is missing or null.
   Other keys are not used.
-- WTR exists in the public API (found 2026-11-12; the 2026-11-09 check was wrong): `GET account/wtr/?account_id=<up to 100 ids>` → `data[id] = { rating, account_id }`, or `null` for an unknown id (101 ids → `ACCOUNT_ID_LIST_LIMIT_EXCEEDED`). Shown next to PR, with a level icon: limits `[0, 400, 1000, 1400, 1900, 2700, 3200, 3900, 4800, 5400, 6200, 7300, 8000, 8800, 9900]` = Brons I–III, Zilver I–III, Goud I–III, Aas I–III, Legende I–III. **(verify)** what a player who hides their stats returns (expected `null`).
+- WTR exists in the public API (found 2026-11-12; the 2026-11-09 check was wrong): `GET account/wtr/?account_id=<up to 100 ids>` → `data[id] = { rating, account_id }`, or `null` for an unknown id **or an account without a WTR** (live 2026-11-12: real accounts with battles, e.g. one with 3020 battles, also return `null`; ids 1 and 2 are `null`; no key was ever missing) (101 ids → `ACCOUNT_ID_LIST_LIMIT_EXCEEDED`). Shown next to PR, with a level icon: limits `[0, 400, 1000, 1400, 1900, 2700, 3200, 3900, 4800, 5400, 6200, 7300, 8000, 8800, 9900]` = Brons I–III, Zilver I–III, Goud I–III, Aas I–III, Legende I–III. **(verify)** what `account/info` returns for a player who hides their stats (not seen yet; expected `null`, which the app shows as hidden). WTR is optional: a failed `account/wtr` call, or a missing entry, only leaves WTR empty, and PR still shows; `account/list` and `account/info` failures fail the whole result.
 
 ## 4. Settings
 

@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -74,12 +74,7 @@ public sealed partial class WargamingApiClient(HttpClient http, ILogger<Wargamin
                         return new(false, []);
                     }
 
-                    endpoint = "account/wtr";
-                    wtr = await GetAsync<Dictionary<string, AccountWtr?>>(endpoint, $"account_id={string.Join(',', accounts.Select(a => a.AccountId))}", ct);
-                    if (wtr is null)
-                    {
-                        return new(false, []);
-                    }
+                    wtr = await GetWtrAsync(accounts, ct);
                 }
 
                 result.AddRange(MapPlayers(chunk, accounts, info, wtr));
@@ -125,6 +120,22 @@ public sealed partial class WargamingApiClient(HttpClient http, ILogger<Wargamin
             string type = ex.GetType().Name;
             LogFailed(endpoint, type);
             return new(false, null);
+        }
+    }
+
+    // WTR is a bonus: any failure of this call (Wargaming error, bad JSON, network) is logged and gives no WTR for the chunk, while PR
+    // still comes back. Caller cancellation and the 10 s budget are not swallowed: they still end the whole call as a failed result.
+    private async Task<Dictionary<string, AccountWtr?>> GetWtrAsync(List<Account> accounts, CancellationToken ct)
+    {
+        try
+        {
+            return await GetAsync<Dictionary<string, AccountWtr?>>("account/wtr", $"account_id={string.Join(',', accounts.Select(a => a.AccountId))}", ct) ?? [];
+        }
+        catch (Exception ex) when (ex is HttpRequestException or JsonException)
+        {
+            string type = ex.GetType().Name;
+            LogFailed("account/wtr", type);
+            return [];
         }
     }
 
@@ -185,13 +196,8 @@ public sealed partial class WargamingApiClient(HttpClient http, ILogger<Wargamin
                 throw new JsonException("account/info lacks an account");
             }
 
-            // Same rule for account/wtr: a missing key or an object without a numeric rating fails the call; a null entry is no WTR.
-            if (!wtr.TryGetValue(id.ToString(CultureInfo.InvariantCulture), out AccountWtr? w))
-            {
-                throw new JsonException("account/wtr lacks an account");
-            }
-
-            int? wtrRating = w is null ? null : w.Rating ?? throw new JsonException("account/wtr entry lacks rating");
+            // WTR is tolerant: a null entry, a missing key or an object without a rating all mean no WTR.
+            int? wtrRating = wtr.TryGetValue(id.ToString(CultureInfo.InvariantCulture), out AccountWtr? w) ? w?.Rating : null;
             rows.Add(entry is null
                 ? new(name, null, true, wtrRating)
                 : new(name, entry.GlobalRating ?? throw new JsonException("account/info entry lacks global_rating"), false, wtrRating));
@@ -237,17 +243,8 @@ public sealed partial class WargamingApiClient(HttpClient http, ILogger<Wargamin
 
         Debug.Assert(failed, "an object without global_rating fails the call");
 
-        failed = false;
-        try
-        {
-            MapPlayers(["barryone"], accounts, info, Parse<Dictionary<string, AccountWtr?>>("""{"status":"ok","data":{"1":{}}}""").Data!);
-        }
-        catch (JsonException)
-        {
-            failed = true;
-        }
-
-        Debug.Assert(failed, "an object without a WTR rating fails the call");
+        Debug.Assert(MapPlayers(["barryone"], accounts, info, Parse<Dictionary<string, AccountWtr?>>("""{"status":"ok","data":{"1":{}}}""").Data!)[0].Wtr is null, "an object without a WTR rating is no WTR");
+        Debug.Assert(MapPlayers(["barryone"], accounts, info, [])[0] == new PlayerRating("barryone", 4930, false), "a missing WTR key (or a failed WTR call) is no WTR, PR stays");
 
         var clans = Parse<List<Clan>>("""{"status":"ok","data":[{"clan_id":9,"tag":"NED-10","name":"Other"},{"clan_id":5,"tag":"NED-1","name":"Noobs","emblems":{"x64":{"portal":"u"}}}]}""").Data!;
         Clan clan = PickClan(clans, "ned-1")!;
