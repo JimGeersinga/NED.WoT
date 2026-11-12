@@ -28,9 +28,12 @@ is a second project in `NED.WoT.slnx`.
 
 | Folder | Holds |
 |---|---|
-| `Components/Layout` | `MainLayout.razor` (app bar and page frame) |
+| `Components/Layout` | `MainLayout.razor` (app bar and page frame), `Splash`, `UpdateDialog` |
 | `Components/Pages` | `Index.razor` (the battle table), `Unauthorized.razor` |
-| `Components/Shared` | `Details.razor` and the dialogs: `SettingsDialog`, `ClanMatchDialog`, `ClanMembersDialog`, `UndefinedNamesDialog`, `UpdateDialog` |
+| `Components/Battles` | the battle table and what it shows: `BattleFilterBar`, `BattleRow`, `BattleGroupHeader`, `BattleTotals`, `BattleRecord`, `Details`, `ResultChip`, `RatioCell`, `EmptyState`, `UndefinedNamesDialog`, `NumberFormat` |
+| `Components/Clan` | `ClanMatchDialog`, `ClanMembersDialog` |
+| `Components/Settings` | `SettingsDialog` |
+| `Components/Shared` | `WotDialogTitle`, used by dialogs of several features |
 | `Services` | `BattleReportService`, `BattleReportMapper`, `SettingService`, `HqAuthenticationStateProvider`, `UpdateCheckService`, `MapNameResolver`, `TankNameResolver`, `ColorHelper` |
 | `Models` | `Settings`, `AppSettings`, `BattleReport` and its event args |
 | `Attributes` | `DirectoryExistsAttribute` |
@@ -140,6 +143,7 @@ Titles match the GitHub milestones one to one.
 | 06 | Clan battle statistics | #18–#19 | Clan rating and PR in the Clan battle dialog, from Wargaming's public API. |
 | 07 | Speed and memory | #41–#45 | A reload frees the old battle list; replays are read by block and parsed into a typed model; analyzers run as errors. |
 | 08 | Fewer MudBlazor overrides | #54–#60 | Hand-made buttons, icons, chips and menu rows become MudBlazor components; unused and leaking CSS goes; shadows move into the theme. |
+| 11 | Component structure | #108–#114 | Components in feature folders; `Index`, the Clan battle dialog, the filter bar and `Details` split so each has one job. |
 
 Order inside and across milestones follows each issue's `Depends on:` line
 (CLAUDE.md), not the table.
