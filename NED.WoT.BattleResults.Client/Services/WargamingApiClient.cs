@@ -1,6 +1,9 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Text.Json;
+using System.Text.Json.Serialization;
+
+using Microsoft.Extensions.Logging;
 
 using NED.WoT.BattleResults.Client.Models;
 
@@ -14,66 +17,71 @@ public sealed record ClanRatingResult(bool Ok, ClanRating? Clan);
 
 /// <summary>
 /// Wargaming public reads (docs/PLAN.md §3.4): GET, no token, under the app's own application id. Wargaming answers HTTP 200
-/// on errors, so the envelope's <c>status</c> decides and the error's <c>value</c> is never read. Nothing here throws: a
-/// failure is a result with <c>Ok = false</c>.
+/// on errors, so the envelope's <c>status</c> decides. <see cref="WgError"/> has no <c>Value</c> member, so the error's
+/// <c>value</c> is never materialised. Nothing here throws except caller cancellation: a failure is a result with <c>Ok = false</c>.
 /// </summary>
-public sealed class WargamingApiClient(HttpClient http)
+public sealed partial class WargamingApiClient(HttpClient http, ILogger<WargamingApiClient> logger)
 {
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(10);
+    private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web) { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower };
     private const int ListLimit = 100; // account/list: max 100 per call
 
     static WargamingApiClient() => SelfCheck();
 
-    /// <summary>Personal rating per nickname (exact, case-insensitive match). Unknown nicknames come back with a null rating.</summary>
+    private sealed record Envelope(string? Status, WgError? Error, JsonElement Data);
+    private sealed record WgError(string? Message);
+    private sealed record Account(long AccountId, string Nickname);
+    private sealed record AccountInfo(int? GlobalRating);
+    private sealed record Clan(long ClanId, string Tag, string Name, Emblems? Emblems);
+    private sealed record Emblems([property: JsonPropertyName("x64")] EmblemSet? X64);
+    private sealed record EmblemSet(string? Portal);
+    private sealed record ClanEntry(Efficiency? Efficiency);
+    private sealed record Efficiency(int? Value, int? Rank);
+
+    /// <summary>
+    /// Personal rating per nickname: one row per distinct nickname (trimmed, case-insensitive; blanks dropped), in input order.
+    /// A nickname Wargaming does not know has a null rating and StatsHidden false; a known one whose <c>data[id]</c> is null
+    /// has StatsHidden true.
+    /// </summary>
     public async Task<RatingsResult> GetPlayerRatingsAsync(IReadOnlyCollection<string> nicknames, CancellationToken cancellationToken)
     {
-        // One 10 s budget for the whole call, retry delay included.
+        // One 10 s budget for the whole call, retries included.
         using var budget = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         budget.CancelAfter(Timeout);
         CancellationToken ct = budget.Token;
+        string endpoint = "account/list";
         try
         {
             var result = new List<PlayerRating>();
-            foreach (string[] chunk in nicknames.Where(n => !string.IsNullOrWhiteSpace(n)).Distinct(StringComparer.OrdinalIgnoreCase).Chunk(ListLimit))
+            IEnumerable<string> names = nicknames.Where(n => !string.IsNullOrWhiteSpace(n)).Select(n => n.Trim()).Distinct(StringComparer.OrdinalIgnoreCase);
+            foreach (string[] chunk in names.Chunk(ListLimit))
             {
-                using JsonDocument? list = await GetAsync("account/list/", $"search={Uri.EscapeDataString(string.Join(',', chunk))}&type=exact&limit={ListLimit}", ct);
-                if (list is null)
+                List<Account>? accounts = await GetAsync<List<Account>>(endpoint, $"search={Uri.EscapeDataString(string.Join(',', chunk))}&type=exact&limit={ListLimit}", ct);
+                if (accounts is null)
                 {
                     return new(false, []);
                 }
 
-                var ids = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
-                foreach (JsonElement a in list.RootElement.GetProperty("data").EnumerateArray())
+                Dictionary<string, AccountInfo?>? info = [];
+                if (accounts.Count > 0)
                 {
-                    ids[a.GetProperty("nickname").GetString()!] = a.GetProperty("account_id").GetInt64();
-                }
-
-                using JsonDocument? info = ids.Count == 0 ? null : await GetAsync("account/info/", $"account_id={string.Join(',', ids.Values)}&fields=global_rating", ct);
-                if (ids.Count > 0 && info is null)
-                {
-                    return new(false, []);
-                }
-
-                foreach (string name in chunk)
-                {
-                    if (!ids.TryGetValue(name, out long id))
+                    endpoint = "account/info";
+                    info = await GetAsync<Dictionary<string, AccountInfo?>>(endpoint, $"account_id={string.Join(',', accounts.Select(a => a.AccountId))}&fields=global_rating", ct);
+                    if (info is null)
                     {
-                        result.Add(new(name, null, false));
-                        continue;
+                        return new(false, []);
                     }
-
-                    // data[id] is null when the player hides their stats.
-                    JsonElement entry = info!.RootElement.GetProperty("data").GetProperty(id.ToString(CultureInfo.InvariantCulture));
-                    // Tolerant: any entry without a numeric global_rating counts as hidden instead of failing the batch.
-                    int? pr = entry.ValueKind == JsonValueKind.Object && entry.TryGetProperty("global_rating", out JsonElement gr) && gr.ValueKind == JsonValueKind.Number ? gr.GetInt32() : null;
-                    result.Add(new(name, pr, pr is null));
                 }
+
+                result.AddRange(MapPlayers(chunk, accounts, info));
             }
 
             return new(true, result);
         }
-        catch (Exception) when (!cancellationToken.IsCancellationRequested)
+        catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException or JsonException && !cancellationToken.IsCancellationRequested)
         {
+            string type = ex.GetType().Name;
+            LogFailed(endpoint, type);
             return new(false, []);
         }
     }
@@ -84,72 +92,49 @@ public sealed class WargamingApiClient(HttpClient http)
         using var budget = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         budget.CancelAfter(Timeout);
         CancellationToken ct = budget.Token;
+        string endpoint = "clans/list";
         try
         {
-            using JsonDocument? list = await GetAsync("clans/list/", $"search={Uri.EscapeDataString(tag)}&fields=clan_id,tag,name,emblems.x64", ct);
-            if (list is null)
+            // ponytail: one page of 100 prefix matches; an exact tag could fall off it for a very short, common tag. Page on if that bites.
+            List<Clan>? clans = await GetAsync<List<Clan>>(endpoint, $"search={Uri.EscapeDataString(tag)}&limit=100&fields=clan_id,tag,name,emblems.x64", ct);
+            if (clans is null)
             {
                 return new(false, null);
             }
 
-            JsonElement? clan = null;
-            foreach (JsonElement c in list.RootElement.GetProperty("data").EnumerateArray())
-            {
-                if (string.Equals(c.GetProperty("tag").GetString(), tag, StringComparison.OrdinalIgnoreCase))
-                {
-                    clan = c;
-                    break;
-                }
-            }
-
-            if (clan is not { } found)
+            if (PickClan(clans, tag) is not { } clan)
             {
                 return new(true, null);
             }
 
-            long id = found.GetProperty("clan_id").GetInt64();
-            using JsonDocument? rating = await GetAsync("clanratings/clans/", $"clan_id={id}&fields=efficiency", ct);
-            if (rating is null)
-            {
-                return new(false, null);
-            }
-
-            int? value = null, rank = null;
-            JsonElement entry = rating.RootElement.GetProperty("data").GetProperty(id.ToString(CultureInfo.InvariantCulture));
-            if (entry.ValueKind == JsonValueKind.Object && entry.GetProperty("efficiency") is { ValueKind: JsonValueKind.Object } eff)
-            {
-                value = eff.GetProperty("value").GetInt32();
-                rank = eff.GetProperty("rank").ValueKind == JsonValueKind.Null ? null : eff.GetProperty("rank").GetInt32();
-            }
-
-            string? emblem = found.TryGetProperty("emblems", out JsonElement e) && e.ValueKind == JsonValueKind.Object
-                ? e.GetProperty("x64").GetProperty("portal").GetString()
-                : null;
-            return new(true, new ClanRating(found.GetProperty("tag").GetString()!, found.GetProperty("name").GetString()!, emblem, value, rank));
+            endpoint = "clanratings/clans";
+            Dictionary<string, ClanEntry?>? ratings = await GetAsync<Dictionary<string, ClanEntry?>>(endpoint, $"clan_id={clan.ClanId}&fields=efficiency", ct);
+            return ratings is null ? new(false, null) : new(true, MapClan(clan, ratings));
         }
-        catch (Exception) when (!cancellationToken.IsCancellationRequested)
+        catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException or JsonException && !cancellationToken.IsCancellationRequested)
         {
+            string type = ex.GetType().Name;
+            LogFailed(endpoint, type);
             return new(false, null);
         }
     }
 
-    // One retry after 1 s on REQUEST_LIMIT_EXCEEDED. Null on any Wargaming error; the caller owns the document.
-    private async Task<JsonDocument?> GetAsync(string endpoint, string query, CancellationToken ct)
+    // Null on a Wargaming error (logged). One retry after 1 s on REQUEST_LIMIT_EXCEEDED, inside the caller's budget.
+    private async Task<T?> GetAsync<T>(string endpoint, string query, CancellationToken ct)
+        where T : class
     {
         for (int attempt = 0; ; attempt++)
         {
-            using HttpResponseMessage response = await http.GetAsync(new Uri($"{AppConfig.WargamingApiBaseUrl}{endpoint}?application_id={AppConfig.WargamingApplicationId}&{query}"), ct);
-            JsonDocument doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
-            JsonElement root = doc.RootElement;
-            if (root.GetProperty("status").GetString() == "ok")
+            using HttpResponseMessage response = await http.GetAsync(new Uri($"{AppConfig.WargamingApiBaseUrl}{endpoint}/?application_id={AppConfig.WargamingApplicationId}&{query}"), ct);
+            (T? data, string? error) = Parse<T>(await response.Content.ReadAsStringAsync(ct));
+            if (error is null)
             {
-                return doc;
+                return data;
             }
 
-            string? message = root.GetProperty("error").GetProperty("message").GetString(); // never error.value
-            doc.Dispose();
-            if (message != "REQUEST_LIMIT_EXCEEDED" || attempt > 0)
+            if (error != "REQUEST_LIMIT_EXCEEDED" || attempt > 0)
             {
+                LogFailed(endpoint, "WargamingError");
                 return null;
             }
 
@@ -157,18 +142,104 @@ public sealed class WargamingApiClient(HttpClient http)
         }
     }
 
+    // Two steps: the envelope first, so a failed call never touches data. Error is null on status ok (then Data is the payload,
+    // null when the payload is JSON null); else the error message, or "unknown".
+    private static (T? Data, string? Error) Parse<T>(string json)
+        where T : class
+    {
+        Envelope env = JsonSerializer.Deserialize<Envelope>(json, Json) ?? throw new JsonException("empty envelope");
+        return env.Status == "ok"
+            ? (env.Data.Deserialize<T>(Json), null)
+            : (null, env.Error?.Message ?? "unknown");
+    }
+
+    private static List<PlayerRating> MapPlayers(string[] names, List<Account> accounts, Dictionary<string, AccountInfo?> info)
+    {
+        var ids = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+        foreach (Account a in accounts)
+        {
+            ids[a.Nickname] = a.AccountId;
+        }
+
+        var rows = new List<PlayerRating>();
+        foreach (string name in names)
+        {
+            if (!ids.TryGetValue(name, out long id))
+            {
+                rows.Add(new(name, null, false)); // unknown
+                continue;
+            }
+
+            // A missing key, or an object without global_rating, is an odd answer: fail the call. Only a null entry is hidden.
+            if (!info.TryGetValue(id.ToString(CultureInfo.InvariantCulture), out AccountInfo? entry))
+            {
+                throw new JsonException("account/info lacks an account");
+            }
+
+            rows.Add(entry is null
+                ? new(name, null, true)
+                : new(name, entry.GlobalRating ?? throw new JsonException("account/info entry lacks global_rating"), false));
+        }
+
+        return rows;
+    }
+
+    private static Clan? PickClan(List<Clan> clans, string tag) =>
+        clans.FirstOrDefault(c => string.Equals(c.Tag, tag, StringComparison.OrdinalIgnoreCase));
+
+    // Tolerant: an unrated clan, or a missing efficiency, value, rank or emblem, gives nulls.
+    private static ClanRating MapClan(Clan clan, Dictionary<string, ClanEntry?> ratings)
+    {
+        ratings.TryGetValue(clan.ClanId.ToString(CultureInfo.InvariantCulture), out ClanEntry? entry);
+        return new(clan.Tag, clan.Name, clan.Emblems?.X64?.Portal, entry?.Efficiency?.Value, entry?.Efficiency?.Rank);
+    }
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Wargaming public read failed: {Endpoint}: {Type}")]
+    private partial void LogFailed(string endpoint, string type);
+
     [Conditional("DEBUG")]
     private static void SelfCheck()
     {
-        // Offline: an unreachable proxy must give failed results, not exceptions, well inside 10 s.
-        _ = Task.Run(async () =>
+        // Pure, on canned JSON: no network.
+        var accounts = Parse<List<Account>>("""{"status":"ok","data":[{"nickname":"BarryOne","account_id":1},{"nickname":"Hidey","account_id":2}]}""").Data!;
+        var info = Parse<Dictionary<string, AccountInfo?>>("""{"status":"ok","data":{"1":{"global_rating":4930},"2":null}}""").Data!;
+        List<PlayerRating> rows = MapPlayers(["barryone", "Hidey", "Nobody"], accounts, info);
+        Debug.Assert(rows[0] == new PlayerRating("barryone", 4930, false), "case-insensitive match");
+        Debug.Assert(rows[1] == new PlayerRating("Hidey", null, true), "null data[id] is hidden");
+        Debug.Assert(rows[2] == new PlayerRating("Nobody", null, false), "unknown is not hidden");
+
+        bool failed = false;
+        try
         {
-            using var offline = new HttpClient(new HttpClientHandler { Proxy = new System.Net.WebProxy("http://127.0.0.1:9"), UseProxy = true });
-            var client = new WargamingApiClient(offline);
-            var sw = Stopwatch.StartNew();
-            RatingsResult r = await client.GetPlayerRatingsAsync(["barryone"], CancellationToken.None);
-            ClanRatingResult c = await client.GetClanRatingAsync("NED-1", CancellationToken.None);
-            Debug.Assert(!r.Ok && !c.Ok && sw.Elapsed < TimeSpan.FromSeconds(11));
-        });
+            MapPlayers(["barryone"], accounts, Parse<Dictionary<string, AccountInfo?>>("""{"status":"ok","data":{"1":{}}}""").Data!);
+        }
+        catch (JsonException)
+        {
+            failed = true;
+        }
+
+        Debug.Assert(failed, "an object without global_rating fails the call");
+
+        var clans = Parse<List<Clan>>("""{"status":"ok","data":[{"clan_id":9,"tag":"NED-10","name":"Other"},{"clan_id":5,"tag":"NED-1","name":"Noobs","emblems":{"x64":{"portal":"u"}}}]}""").Data!;
+        Clan clan = PickClan(clans, "ned-1")!;
+        Debug.Assert(clan.ClanId == 5 && PickClan(clans, "NED") is null, "exact tag on a prefix result");
+        Debug.Assert(MapClan(clan, Parse<Dictionary<string, ClanEntry?>>("""{"status":"ok","data":{"5":{"efficiency":{"value":7261,"rank":643}}}}""").Data!) == new ClanRating("NED-1", "Noobs", "u", 7261, 643));
+        string[] odd =
+        [
+            """{"status":"ok","data":{"5":null}}""",
+            """{"status":"ok","data":{"5":{}}}""",
+            """{"status":"ok","data":{"5":{"efficiency":null}}}""",
+            """{"status":"ok","data":{"5":{"efficiency":{"value":null,"rank":null}}}}""",
+        ];
+        foreach (string json in odd)
+        {
+            Debug.Assert(MapClan(clan, Parse<Dictionary<string, ClanEntry?>>(json).Data!) == new ClanRating("NED-1", "Noobs", "u", null, null), json);
+        }
+
+        Debug.Assert(MapClan(new(5, "T", "N", new(null)), []) == new ClanRating("T", "N", null, null, null), "no emblem, no entry");
+
+        (List<Account>? data, string? error) = Parse<List<Account>>("""{"status":"error","error":{"code":407,"message":"REQUEST_LIMIT_EXCEEDED","field":null,"value":"SECRET"}}""");
+        Debug.Assert(data is null && error == "REQUEST_LIMIT_EXCEEDED", "error envelope gives the message");
+        Debug.Assert(typeof(WgError).GetProperty("Value") is null, "error.value is never materialised");
     }
 }

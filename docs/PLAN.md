@@ -81,18 +81,25 @@ or any other failure to get an answer, shows "Geen verbinding met WoT HQ".
 
 ### 3.4 Public reads (created by #18)
 `Services/WargamingApiClient.cs`: GET, no token, under the app's own application id, for the Clan battle dialog.
-Failures (Wargaming error, timeout, no network) are a failed result, never an exception; 10 s timeout, one retry
-after 1 s on `REQUEST_LIMIT_EXCEEDED`. Checked against the live EU API on 2026-11-12:
+Failures (Wargaming error, timeout, no network) are a failed result, never an exception (caller cancellation is the
+one exception, rethrown). 10 s per method call, retries included; one retry after 1 s on `REQUEST_LIMIT_EXCEEDED`.
+The error's `value` is never deserialized. Checked against the live EU API on 2026-11-12:
 
 - `account/list/?search=<n1,n2,...>&type=exact&limit=100` gives `data[].account_id`, `.nickname`. A comma-separated
   exact search of 86 names (a whole clan) returned all 86; unknown names are simply absent. Matching is case-insensitive.
 - `account/info/?account_id=<ids>&fields=global_rating` gives `data[id].global_rating` (the PR). An unknown id gives
-  `data[id] = null`. Hidden stats are assumed to give the same `null` (the client maps `null`, or any entry without a numeric `global_rating`, to `StatsHidden`), but this is
-  **not verified**: none of the 86 NED-1 members hides their stats and no hidden account was found.
-- `clans/list/?search=<tag>&fields=clan_id,tag,name,emblems.x64` is a prefix search: the client picks the entry whose `tag`
-  equals the tag. NED-1 gives 500012147, "Noobs Elite Divisie", `emblems.x64.portal`. No match gives `data: []`.
+  `data[id] = null`. Hidden stats are assumed to give the same `null`, which the client maps to `StatsHidden`, but this is
+  **not verified**: none of the 86 NED-1 members hides their stats and no hidden account was found. Only a `null` entry
+  counts as hidden; an object without `global_rating` fails the call.
+- `clans/list/?search=<tag>&limit=100&fields=clan_id,tag,name,emblems.x64` is a prefix search: the client picks the entry
+  whose `tag` equals the tag. NED-1 gives 500012147, "Noobs Elite Divisie", `emblems.x64.portal`. No match gives `data: []`.
+  Short tags: `NED` (295 prefix matches), `ABC` (519) and `AA` (13348) each return 100 entries on page 1, with the exact tag
+  first in all three. The default limit is already 100. For a very short, common tag the exact one could still fall off the
+  first page; the client does not page on.
 - `clanratings/clans/?clan_id=<id>&fields=efficiency` gives `data[id].efficiency.value` and `.rank` (NED-1: 7261, rank 643).
-  An unrated or unknown clan gives `data[id] = null`. Other keys are not used.
+  An unrated or unknown clan gives `data[id] = null`. **(verify)** that `efficiency.value` can be null: not seen; the client
+  gives a null rating, rank and emblem when `efficiency`, its `value` or `rank`, or `emblems.x64` is missing or null.
+  Other keys are not used.
 - The public API has no WTR (checked 2026-11-09), so there is no WTR column.
 
 ## 4. Settings
