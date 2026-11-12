@@ -25,7 +25,7 @@
 .gl-bar .wot-vsep { height: 32px; }
 .gl-tools { display: flex; align-items: center; gap: 8px; margin-left: auto; flex: none; }
 
-.gl-sorted { display: flex; align-items: center; gap: 2px; color: inherit; }
+.gl-sorted { display: flex; align-items: center; gap: 2px; color: inherit; font: inherit; padding: 0; border: 0; background: none; cursor: pointer; }
 .gl-sorted svg { width: 16px; height: 16px; fill: currentColor; }
 .gl-dim { color: var(--mud-palette-text-secondary); }
 .gl-err svg { width: 20px; height: 20px; fill: currentColor; }
