@@ -75,7 +75,7 @@
                 bool teamKiller = context.IsTeamKiller.GetValueOrDefault();
                 BattleStats stats = BattleStats.Of([context]);
                 // The tooltip carries the full name too: the name cell cuts a long name off with an ellipsis.
-                string tooltip = $"{context.DisplayName}{'\n'}" + string.Join(" · ", new[] { context.MaxHealth.HasValue ? $"Pantser {Fmt(context.Health)} / {Fmt(context.MaxHealth)} HP" : null, $"Leefde {Duration(context.LifeTime)}" }.OfType<string>());
+                string tooltip = $"{context.DisplayName}{'\n'}" + string.Join(" · ", new[] { context.MaxHealth.HasValue ? $"Pantser {NumberFormat.Fmt(context.Health)} / {NumberFormat.Fmt(context.MaxHealth)} HP" : null, $"Leefde {Duration(context.LifeTime)}" }.OfType<string>());
             }
             <MudTd DataLabel="Number" Class="sticky-left num">
                 @if (own)
@@ -101,36 +101,36 @@
             </MudTd>
             <MudTd DataLabel="Vehicle" Class="sticky-left vehicle" title="@context.Vehicle">@context.Vehicle</MudTd>
             <MudTd DataLabel="LifeTime" Class="sticky-left lifetime r">@Duration(context.LifeTime)</MudTd>
-            <MudTd DataLabel="ExperienceEarned" Class="r">@Fmt(context.ExperienceEarned)</MudTd>
-            <MudTd DataLabel="Kills" Class="r">@Fmt(context.Kills)</MudTd>
-            <MudTd DataLabel="DamageDealt" Class="r">@Fmt(context.DamageDealt)</MudTd>
+            <MudTd DataLabel="ExperienceEarned" Class="r">@NumberFormat.Fmt(context.ExperienceEarned)</MudTd>
+            <MudTd DataLabel="Kills" Class="r">@NumberFormat.Fmt(context.Kills)</MudTd>
+            <MudTd DataLabel="DamageDealt" Class="r">@NumberFormat.Fmt(context.DamageDealt)</MudTd>
             <MudTd DataLabel="DamageBlocked" Class="r">
                 @if (context.DamageBlocked.HasValue)
                 {
                     @if (ShowBattleStats)
                     {
                         <div class="wot-pair">
-                            <span>@Fmt(context.DamageBlocked)</span>
-                            <RatioCell Count="@($"{Fmt(context.ShotsBlocked)} / {Fmt(context.ShotsReceived)}")" Ratio="stats.BlockRatio" Level="stats.BlockRatio.GetBlockLevel()" />
+                            <span>@NumberFormat.Fmt(context.DamageBlocked)</span>
+                            <RatioCell Count="@($"{NumberFormat.Fmt(context.ShotsBlocked)} / {NumberFormat.Fmt(context.ShotsReceived)}")" Ratio="stats.BlockRatio" Level="stats.BlockRatio.GetBlockLevel()" />
                         </div>
                     }
                     else
                     {
-                        <span>@Fmt(context.DamageBlocked) <span class="mud-text-secondary">(@Fmt(context.ShotsBlocked))</span></span>
+                        <span>@NumberFormat.Fmt(context.DamageBlocked) <span class="mud-text-secondary">(@NumberFormat.Fmt(context.ShotsBlocked))</span></span>
                     }
                 }
             </MudTd>
-            <MudTd DataLabel="DamageReceived" Class="r">@Fmt(context.DamageReceived)</MudTd>
+            <MudTd DataLabel="DamageReceived" Class="r">@NumberFormat.Fmt(context.DamageReceived)</MudTd>
             <MudTd DataLabel="Shots" Class="r">
                 @if (context.Shots.HasValue)
                 {
                     @if (ShowBattleStats)
                     {
-                        <RatioCell Count="@Fmt(context.Shots)" Detail="@($"{stats.ShotsPerMinute.ToString("0.0", BattleReport.DutchCulture)} p/m")" />
+                        <RatioCell Count="@NumberFormat.Fmt(context.Shots)" Detail="@($"{stats.ShotsPerMinute.ToString("0.0", BattleReport.DutchCulture)} p/m")" />
                     }
                     else
                     {
-                        <span>@Fmt(context.Shots)</span>
+                        <span>@NumberFormat.Fmt(context.Shots)</span>
                     }
                 }
             </MudTd>
@@ -139,11 +139,11 @@
                 {
                     @if (ShowBattleStats)
                     {
-                        <RatioCell Count="@Fmt(context.DirectHits)" Ratio="stats.HitRatio" Level="stats.HitRatio.GetHitLevel()" />
+                        <RatioCell Count="@NumberFormat.Fmt(context.DirectHits)" Ratio="stats.HitRatio" Level="stats.HitRatio.GetHitLevel()" />
                     }
                     else
                     {
-                        <span>@Fmt(context.DirectHits)</span>
+                        <span>@NumberFormat.Fmt(context.DirectHits)</span>
                     }
                 }
             </MudTd>
@@ -152,11 +152,11 @@
                 {
                     @if (ShowBattleStats)
                     {
-                        <RatioCell Count="@Fmt(context.Piercings)" Ratio="stats.PenRatio" Level="stats.PenRatio.GetPenLevel()" />
+                        <RatioCell Count="@NumberFormat.Fmt(context.Piercings)" Ratio="stats.PenRatio" Level="stats.PenRatio.GetPenLevel()" />
                     }
                     else
                     {
-                        <span>@Fmt(context.Piercings)</span>
+                        <span>@NumberFormat.Fmt(context.Piercings)</span>
                     }
                 }
             </MudTd>
@@ -172,11 +172,6 @@
     public required bool ShowBattleStats { get; set; }
 
     private IEnumerable<Player> players => Report.Team1.Players.Concat(Report.Team2.Players).OrderBy(x => x.Team?.Number);
-
-    private static readonly NumberFormatInfo ThinSpace = new() { NumberGroupSeparator = " " };
-
-    /// <summary>Whole numbers with a thin space between the thousands ("1 230"); empty for a missing value.</summary>
-    private static string Fmt(int? value) => value.HasValue ? value.Value.ToString("N0", ThinSpace) : string.Empty;
 
     /// <summary>Time alive as "6m 12s"; empty for a missing value.</summary>
     private static string Duration(int? seconds) => seconds.HasValue ? $"{seconds.Value / 60}m {seconds.Value % 60:00}s" : string.Empty;
@@ -226,7 +221,7 @@
         Debug.Assert(HealthPercent(new Player(new Team()) { Health = 340, MaxHealth = 1850 }) == 18, "340 of 1850 HP is 18%");
         Debug.Assert(HealthPercent(new Player(new Team()) { Health = 0, MaxHealth = 1850 }) == 0 && HealthPercent(new Player(new Team())) == 0, "no HP or no maximum is 0%, no division by zero");
         Debug.Assert(IsDead(new Player(new Team()) { DeathReason = 2 }) && !IsDead(new Player(new Team()) { DeathReason = -1 }) && !IsDead(new Player(new Team())), "dead is a death reason other than -1");
-        Debug.Assert(Fmt(1230) == "1 230" && Fmt(null) == string.Empty, "a thin space between the thousands");
+        Debug.Assert(NumberFormat.Fmt(1230) == "1 230" && NumberFormat.Fmt(null) == string.Empty, "a thin space between the thousands");
         Debug.Assert(Duration(372) == "6m 12s" && Duration(65) == "1m 05s", "6m 12s, seconds with two digits");
     }
 }

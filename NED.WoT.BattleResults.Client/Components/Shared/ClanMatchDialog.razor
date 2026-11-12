@@ -1,9 +1,9 @@
-﻿@using System.Globalization
-@implements IBrowserViewportObserver
+﻿@implements IBrowserViewportObserver
 @implements IAsyncDisposable
 @inject BattleReportService BattleReportService
 @inject SettingService SettingService
 @inject WargamingApiClient WargamingApi
+@inject IdentityService Identity
 @inject IBrowserViewportService ViewportService
 
 <MudDialog Class="wot-dialog overflow-hidden" ContentClass="overflow-y-auto" TitleClass="wot-dialog-bar">
@@ -113,7 +113,7 @@
 					</div>
 				}
 			</MudTd>
-			<MudTd DataLabel="PR" Style="text-align: right; vertical-align: text-top; font-variant-numeric: tabular-nums;">@PlayerRatingCell(context.Key)</MudTd>
+			<MudTd DataLabel="PR" Style="text-align: right; vertical-align: text-top;">@PlayerRatingCell(context.Key)</MudTd>
 		</RowTemplate>
 	</MudTable>;
 
@@ -124,12 +124,12 @@
 		}
 		else if (_state is RatingState.Ok && name is not null && _players.TryGetValue(name, out PlayerRating? rating) && rating.PersonalRating is { } pr)
 		{
-			@pr.ToString("N0", Nl)
+			@NumberFormat.Fmt(pr)
 		}
 		else if (_state is RatingState.Ok && name is not null && _players.TryGetValue(name, out PlayerRating? hidden) && hidden.StatsHidden)
 		{
 			<MudTooltip Text="Deze speler verbergt zijn statistieken, dus er is geen rating.">
-				<span class="d-inline-flex align-center gap-1 mud-text-secondary">–<MudIcon Icon="@Icons.Material.Outlined.VisibilityOff" Size="Size.Small" /></span>
+				<span class="d-inline-flex align-center gap-1 mud-text-secondary" aria-label="Deze speler verbergt zijn statistieken, dus er is geen rating.">–<MudIcon Icon="@Icons.Material.Outlined.VisibilityOff" Size="Size.Small" /></span>
 			</MudTooltip>
 		}
 		else
@@ -138,7 +138,7 @@
 		}
 	</text>;
 
-	private RenderFragment ClanCard(string tag, string ownTag) => @<MudPaper Outlined Elevation="0" Class="pa-3" Style="min-width: 300px; flex: 1 1 300px; max-width: 460px;">
+	private RenderFragment ClanCard(string tag, string? ownTag) => @<MudPaper Outlined Elevation="0" Class="pa-3" Style="min-width: 300px; flex: 1 1 300px; max-width: 460px;">
 		<MudStack Row AlignItems="AlignItems.Center" Spacing="3">
 			@if (_clans.TryGetValue(tag, out ClanRating? clan) && clan.EmblemUrl is { } emblem)
 			{
@@ -147,10 +147,10 @@
 			<MudStack Spacing="0" Style="min-width: 0; flex: 1">
 				<MudText Typo="Typo.h6">[@tag]</MudText>
 				<MudText Typo="Typo.body2" Class="mud-text-secondary">
-					@(_clans.TryGetValue(tag, out ClanRating? named) ? named.Name + " · " : null)@(tag.Equals(ownTag, StringComparison.OrdinalIgnoreCase) ? "jouw clan" : "tegenstander")
+					@(_clans.TryGetValue(tag, out ClanRating? named) ? named.Name + " · " : null)@(ownTag is not null && tag.Equals(ownTag, StringComparison.OrdinalIgnoreCase) ? "jouw clan" : "tegenstander")
 				</MudText>
 			</MudStack>
-			<MudStack Spacing="0" Style="text-align: right; font-variant-numeric: tabular-nums;">
+			<MudStack Spacing="0" Style="text-align: right;">
 				<MudText Typo="Typo.caption" Class="mud-text-secondary">Clanrating</MudText>
 				@if (_state is RatingState.Loading)
 				{
@@ -158,8 +158,11 @@
 				}
 				else if (_state is RatingState.Ok && _clans.TryGetValue(tag, out ClanRating? rated) && rated.Rating is { } value)
 				{
-					<MudText Typo="Typo.h6">@value.ToString("N0", Nl)</MudText>
-					<MudText Typo="Typo.caption" Class="mud-text-secondary">Rang @rated.Rank</MudText>
+					<MudText Typo="Typo.h6">@NumberFormat.Fmt(value)</MudText>
+					@if (rated.Rank is { } rank)
+					{
+						<MudText Typo="Typo.caption" Class="mud-text-secondary">Rang @rank</MudText>
+					}
 				}
 				else
 				{
@@ -209,16 +212,13 @@
 
 	private enum RatingState { Loading, Ok, Failed }
 
-	// nl-NL would group with a dot; the issue shows "6 412", so a no-break space.
-	private static readonly NumberFormatInfo Nl = new() { NumberGroupSeparator = " " };
 	private RatingState _state = RatingState.Loading;
 	private DateTime _updated;
 	private Dictionary<string, PlayerRating> _players = new(StringComparer.OrdinalIgnoreCase);
 	private Dictionary<string, ClanRating> _clans = new(StringComparer.OrdinalIgnoreCase);
 	private CancellationTokenSource _cts = new();
 
-	// Our own clan is the tag of our side in the earlier battles; with none, the game's left tag.
-	private string OwnTag => _battles.FirstOrDefault()?.OwnTeam?.Abbreviation ?? Match!.Value.Item1;
+	private string? OwnTag => Identity.Current?.ClanTag;
 
 	private List<BattleReport> _battles = [];
 	private List<IGrouping<string?, Player>> _enemyPlayers = [];
@@ -244,9 +244,6 @@
 				.GroupBy(x => x.Name)
 				.OrderByDescending(x => x.Count())
 				.ToList();
-
-			// The dialog is already showing; the ratings arrive when Wargaming answers (never awaited here).
-			_ = LoadRatings();
 		}
 	}
 
@@ -286,6 +283,10 @@
 		{
 			return; // a newer load (Opnieuw) or the dialog closing took over
 		}
+		catch (Exception)
+		{
+			_state = RatingState.Failed; // never leave the skeleton hanging
+		}
 
 		await InvokeAsync(StateHasChanged);
 	}
@@ -316,6 +317,12 @@
 	{
 		if (firstRender)
 		{
+			// The dialog is already showing; the ratings arrive when Wargaming answers (never awaited here).
+			if (Match.HasValue)
+			{
+				_ = LoadRatings();
+			}
+
 			await ViewportService.SubscribeAsync(this);
 		}
 	}
