@@ -135,3 +135,87 @@ body {
     fill: currentColor;
     margin-left: -2px;
 }
+
+/* The account menu (ported from WoT HQ's UserMenu): the square initials avatar, the name and role, the emblem. */
+.wot-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    border: 1px solid var(--wot-bronze-edge);
+    background: var(--mud-palette-dark);
+    color: var(--mud-palette-tertiary);
+    font: 700 14px/1 var(--wot-font-display);
+    letter-spacing: .04em;
+    flex: none;
+}
+
+.wot-avatar-lg {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+}
+
+.wot-ubtn-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+    text-align: left;
+}
+
+.wot-ubtn-name {
+    font: 600 14px/1.45 var(--wot-font-text);
+    letter-spacing: .005em;
+    color: var(--mud-palette-text-primary);
+}
+
+.wot-ubtn-role {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    font: 400 12px/1.4 var(--wot-font-text);
+    letter-spacing: .01em;
+    color: var(--mud-palette-tertiary);
+}
+
+.wot-menu-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px 12px;
+}
+
+.wot-menu-head-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.wot-menu-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 16px;
+    font: 400 13px/1.4 var(--wot-font-text);
+    color: var(--mud-palette-text-secondary);
+}
+
+.wot-menu-row b {
+    font-weight: 600;
+    color: var(--mud-palette-text-primary);
+}
+
+/* The clan emblem (HQ's answer) before a clan tag. */
+.wot-emblem {
+    width: 20px;
+    height: 20px;
+    flex: none;
+    border-radius: 2px;
+    object-fit: contain;
+}
+
+.wot-clan-chip .wot-emblem {
+    margin-right: 8px;
+}

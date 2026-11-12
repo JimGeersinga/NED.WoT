@@ -17,6 +17,7 @@ public class BattleReportService : IDisposable
 
     private readonly ISnackbar _snackbar;
     private readonly SettingService _settingService;
+    private readonly IdentityService _identity;
     private FileSystemWatcher? _watcher;
     private readonly Timer _timer;
     private (string, string)? _clanMatch;
@@ -67,10 +68,11 @@ public class BattleReportService : IDisposable
     public event EventHandler<BattleReportRemovedEventArgs>? BattleReportRemoved;
     public event EventHandler<(string, string)>? ClanMatchStarted;
 
-    public BattleReportService(ISnackbar snackbar, SettingService settingService)
+    public BattleReportService(ISnackbar snackbar, SettingService settingService, IdentityService identity)
     {
         _snackbar = snackbar;
         _settingService = settingService;
+        _identity = identity;
         _folderCts = CancellationTokenSource.CreateLinkedTokenSource(_disposed.Token);
         _batchTimer = new Timer(async _ => await AddPendingFilesAsync(), null, Timeout.Infinite, Timeout.Infinite);
         SelfCheck();
@@ -312,9 +314,9 @@ public class BattleReportService : IDisposable
             (string, string)? clanMatch = ClanTags(header);
 
             if (!_clanMatch.Equals(clanMatch) && clanMatch.HasValue &&
-                _settingService.Settings.ClanAbbreviation is not null && (
-                _settingService.Settings.ClanAbbreviation.Equals(clanMatch.Value.Item1, StringComparison.OrdinalIgnoreCase) ||
-                _settingService.Settings.ClanAbbreviation.Equals(clanMatch.Value.Item2, StringComparison.OrdinalIgnoreCase)
+                _identity.Current?.ClanTag is { } myClan && (
+                myClan.Equals(clanMatch.Value.Item1, StringComparison.OrdinalIgnoreCase) ||
+                myClan.Equals(clanMatch.Value.Item2, StringComparison.OrdinalIgnoreCase)
                 ))
             {
                 _clanMatch = clanMatch;
@@ -559,7 +561,7 @@ public class BattleReportService : IDisposable
             }
 
             ReplayResults? results = ParseResults(blocks.Results);
-            report = BattleReportMapper.Map(header, results, _settingService.Settings);
+            report = BattleReportMapper.Map(header, results, _identity.Current);
         }
         catch (Exception ex)
         {

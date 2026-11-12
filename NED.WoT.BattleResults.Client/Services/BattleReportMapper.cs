@@ -11,7 +11,8 @@ public class BattleReportMapper
 
     private static CultureInfo CultureInfo => CultureInfo.InvariantCulture;
 
-    public static BattleReport Map(ReplayHeader header, ReplayResults? results, Settings settings)
+    /// <param name="me">The signed-in player (HQ's answer); null when unknown, then no team or player counts as yours.</param>
+    public static BattleReport Map(ReplayHeader header, ReplayResults? results, HqIdentity? me)
     {
         if (!DateTime.TryParseExact(header.DateTime, "dd.MM.yyyy HH:mm:ss", CultureInfo, DateTimeStyles.None, out DateTime matchStart))
         {
@@ -42,7 +43,7 @@ public class BattleReportMapper
                 {
                     ReplayPlayer? player = null;
                     results.Players?.TryGetValue(vehicle.Key, out player);
-                    MapPlayerData(game, player, vehicle.Value is { Length: > 0 } stats ? stats[0] : null, settings);
+                    MapPlayerData(game, player, vehicle.Value is { Length: > 0 } stats ? stats[0] : null, me);
                 }
             }
         }
@@ -50,7 +51,7 @@ public class BattleReportMapper
         {
             foreach (ReplayPlayer? player in header.Vehicles.Values)
             {
-                MapPlayerData(game, player, null, settings);
+                MapPlayerData(game, player, null, me);
             }
         }
 
@@ -62,8 +63,8 @@ public class BattleReportMapper
         game.Team1.Result = GetResult(game.Team1.IsWinner, game.Team2.IsWinner);
         game.Team2.Result = GetResult(game.Team2.IsWinner, game.Team1.IsWinner);
 
-        game.Team1.IsOwnTeam = string.Equals(game.Team1.Abbreviation, settings.ClanAbbreviation, StringComparison.OrdinalIgnoreCase) || game.Team1.Players.Any(x => string.Equals(x.Name, settings.PlayerName, StringComparison.OrdinalIgnoreCase));
-        game.Team2.IsOwnTeam = string.Equals(game.Team2.Abbreviation, settings.ClanAbbreviation, StringComparison.OrdinalIgnoreCase) || game.Team2.Players.Any(x => string.Equals(x.Name, settings.PlayerName, StringComparison.OrdinalIgnoreCase));
+        game.Team1.IsOwnTeam = IsMyTeam(game.Team1, me);
+        game.Team2.IsOwnTeam = IsMyTeam(game.Team2, me);
 
         game.OwnTeam = game.Team1.IsOwnTeam ? game.Team1 : game.Team2.IsOwnTeam ? game.Team2 : null;
 
@@ -90,6 +91,12 @@ public class BattleReportMapper
 
         return game;
     }
+
+    /// <summary>Your team: its clan tag is yours, or one of its players has your name. Without a clan only the name matches.</summary>
+    private static bool IsMyTeam(Team team, HqIdentity? me) =>
+        me is not null
+        && ((me.ClanTag is not null && string.Equals(team.Abbreviation, me.ClanTag, StringComparison.OrdinalIgnoreCase))
+            || team.Players.Any(x => string.Equals(x.Name, me.Nickname, StringComparison.OrdinalIgnoreCase)));
 
     internal static string GetMostMentionedClanAbbreviation(Team team)
     {
@@ -143,7 +150,7 @@ public class BattleReportMapper
     private static int? TeamHealth(ReplayCommon? common, int team) =>
         common?.TeamHealth is { } health && health.TryGetValue(team.ToString(CultureInfo), out int value) ? value : null;
 
-    private static void MapPlayerData(BattleReport game, ReplayPlayer? playerData, ReplayVehicleStats? vehicleData, Settings settings)
+    private static void MapPlayerData(BattleReport game, ReplayPlayer? playerData, ReplayVehicleStats? vehicleData, HqIdentity? me)
     {
         string? clan = playerData?.ClanAbbrev;
 
@@ -155,7 +162,7 @@ public class BattleReportMapper
             Clan = clan,
             ClanId = playerData?.ClanDbid,
             Vehicle = TankNameResolver.GetTankName(playerData?.VehicleType),
-            IsClanMember = string.Equals(settings.ClanAbbreviation, clan, StringComparison.OrdinalIgnoreCase)
+            IsClanMember = me?.ClanTag is not null && string.Equals(me.ClanTag, clan, StringComparison.OrdinalIgnoreCase)
         };
 
         if (vehicleData != null)

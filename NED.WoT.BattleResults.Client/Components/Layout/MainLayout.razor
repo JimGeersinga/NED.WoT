@@ -26,12 +26,18 @@
             </span>
         </div>
         @* Not signed in (the Login page): brand only. *@
-        @if (Identity.Current is not null)
+        @if (Identity.Status == IdentityStatus.Allowed)
         {
-            @if (!string.IsNullOrEmpty(SettingService.Settings.ClanAbbreviation))
+            @if (!string.IsNullOrEmpty(Identity.Current?.ClanTag))
             {
                 <span class="wot-vsep"></span>
-                <MudChip T="string" Class="wot-clan-chip"><span class="wot-clan-tag">[@SettingService.Settings.ClanAbbreviation]</span></MudChip>
+                <MudChip T="string" Class="wot-clan-chip">
+                    @if (!string.IsNullOrEmpty(Identity.Current.EmblemUrl))
+                    {
+                        <img class="wot-emblem" src="@Identity.Current.EmblemUrl" alt="" />
+                    }
+                    <span class="wot-clan-tag">[@Identity.Current.ClanTag]</span>
+                </MudChip>
             }
             <MudSpacer />
             <FolderCarousel OnManage="() => OpenSettings(true)" />
@@ -46,6 +52,7 @@
             <MudTooltip Text="Instellingen">
                 <MudIconButton Icon="@Icons.Material.Filled.Settings" Color="Color.Inherit" aria-label="Instellingen" OnClick="(e) => OpenSettings(true)" />
             </MudTooltip>
+            <AccountMenu />
         }
     </MudAppBar>
     <MudMainContent>
@@ -54,8 +61,33 @@
 </MudLayout>
 
 @code {
+    private bool _promptedForFolder;
+
     protected override async Task OnInitializedAsync()
     {
+        Identity.Changed += OnIdentityChanged;
+        await PromptForFolderAsync();
+
+        UpdateCheckService.Changed += OnUpdateChanged;
+        UpdateCheckService.Start();
+    }
+
+    // The layout also wraps /login and /unauthorized and outlives the sign-in, so it listens for the identity.
+    private void OnIdentityChanged() => _ = InvokeAsync(async () =>
+    {
+        await PromptForFolderAsync();
+        StateHasChanged();
+    });
+
+    /// <summary>Only for an allowed account, and once.</summary>
+    private async Task PromptForFolderAsync()
+    {
+        if (_promptedForFolder || Identity.Status != IdentityStatus.Allowed)
+        {
+            return;
+        }
+
+        _promptedForFolder = true;
         var first = SettingService.Settings.ReplayFolders.FirstOrDefault();
         if (first is null || !Directory.Exists(first.Path))
         {
@@ -65,19 +97,19 @@
 
             await OpenSettings(false);
         }
-
-        UpdateCheckService.Changed += OnUpdateChanged;
-        UpdateCheckService.Start();
     }
 
     private void OnUpdateChanged() => _ = InvokeAsync(StateHasChanged);
 
     /// <summary>A reload disposes the layout and its scope; a disposed layout must not be rendered again.</summary>
-    public void Dispose() => UpdateCheckService.Changed -= OnUpdateChanged;
+    public void Dispose()
+    {
+        Identity.Changed -= OnIdentityChanged;
+        UpdateCheckService.Changed -= OnUpdateChanged;
+    }
 
     private void Refresh()
     {
-        CustomAuthenticationStateProvider.ResetAuthenticationState();
         NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
     }
 

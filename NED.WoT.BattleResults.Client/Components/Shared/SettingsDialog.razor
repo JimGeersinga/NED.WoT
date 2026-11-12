@@ -66,13 +66,6 @@
                 </MudStack>
 
                 <MudDivider />
-                <MudText Typo="Typo.overline" Color="Color.Tertiary">Identiteit</MudText>
-                <MudTextField Label="Clanafkorting" Variant="Variant.Filled"
-                              @bind-Value="@modal.ClanAbbreviation" For="(() => modal.ClanAbbreviation)" />
-                <MudTextField Label="Spelernaam" Variant="Variant.Filled" HelperText="Hiermee herkent de app jouw team"
-                              @bind-Value="@modal.PlayerName" For="(() => modal.PlayerName)" />
-
-                <MudDivider />
                 <MudText Typo="Typo.overline" Color="Color.Tertiary">Gedrag</MudText>
                 <MudStack Spacing="1">
                     <MudSwitch Color="Color.Primary" @bind-Value="@modal.SingleBattleResultOpenedOnly" For="(() => modal.SingleBattleResultOpenedOnly)">
@@ -122,8 +115,6 @@
         modal = new Settings
             {
                 ReplayFolders = [.. SettingService.Settings.ReplayFolders.Select(f => new ReplayFolder { Title = f.Title, Path = f.Path })],
-                ClanAbbreviation = SettingService.Settings.ClanAbbreviation,
-                PlayerName = SettingService.Settings.PlayerName,
                 SingleBattleResultOpenedOnly = SettingService.Settings.SingleBattleResultOpenedOnly,
                 OnlyHighlistOwnMatches = SettingService.Settings.OnlyHighlistOwnMatches,
                 UpdateScreeenWhileLoading = SettingService.Settings.UpdateScreeenWhileLoading,

@@ -7,4 +7,7 @@ public static class AppConfig
 
     /// <summary>EU only (docs/PLAN.md section 3). <c>auth/login</c> is on the same host.</summary>
     public const string WargamingApiBaseUrl = "https://api.worldoftanks.eu/wot/";
+
+    /// <summary>WoT HQ production, HTTPS only (docs/PLAN.md §3.3).</summary>
+    public const string HqBaseUrl = "https://wothq.code-breaker.nl/";
 }

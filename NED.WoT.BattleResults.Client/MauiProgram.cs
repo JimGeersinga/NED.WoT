@@ -38,12 +38,13 @@ public static class MauiProgram
         });
         builder.Services.AddAuthorizationCore();
         builder.Services.AddCascadingAuthenticationState();
-        builder.Services.AddSingleton<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
+        builder.Services.AddSingleton<AuthenticationStateProvider, HqAuthenticationStateProvider>();
         builder.Services.AddScoped<BattleReportService>();
         builder.Services.AddScoped<UpdateCheckService>();
         builder.Services.AddSingleton<SettingService>();
         builder.Services.AddSingleton<HttpClient>();
         builder.Services.AddSingleton<WargamingAuthService>();
+        builder.Services.AddSingleton<GevechtslogSessionClient>();
         builder.Services.AddSingleton<IdentityService>();
 
         return builder.Build();

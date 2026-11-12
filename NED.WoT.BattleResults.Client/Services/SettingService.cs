@@ -17,8 +17,6 @@ public class SettingService
         Settings = new Settings
         {
             ReplayFolders = ParseFolders(Preferences.Default.Get(nameof(Settings.ReplayFolders), string.Empty), Preferences.Default.Get(LegacyReplayDirectoryKey, string.Empty)),
-            ClanAbbreviation = Preferences.Default.Get(nameof(Settings.ClanAbbreviation), "NED-1"),
-            PlayerName = Preferences.Default.Get(nameof(Settings.PlayerName), string.Empty),
             SingleBattleResultOpenedOnly = Preferences.Default.Get(nameof(Settings.SingleBattleResultOpenedOnly), false),
             OnlyHighlistOwnMatches = Preferences.Default.Get(nameof(Settings.OnlyHighlistOwnMatches), false),
             UpdateScreeenWhileLoading = Preferences.Default.Get(nameof(Settings.UpdateScreeenWhileLoading), true),
@@ -30,8 +28,6 @@ public class SettingService
     public void Save()
     {
         Preferences.Default.Set(nameof(Settings.ReplayFolders), JsonSerializer.Serialize(Settings.ReplayFolders));
-        Preferences.Default.Set(nameof(Settings.ClanAbbreviation), Settings.ClanAbbreviation);
-        Preferences.Default.Set(nameof(Settings.PlayerName), Settings.PlayerName);
         Preferences.Default.Set(nameof(Settings.SingleBattleResultOpenedOnly), Settings.SingleBattleResultOpenedOnly);
         Preferences.Default.Set(nameof(Settings.OnlyHighlistOwnMatches), Settings.OnlyHighlistOwnMatches);
         Preferences.Default.Set(nameof(Settings.UpdateScreeenWhileLoading), Settings.UpdateScreeenWhileLoading);

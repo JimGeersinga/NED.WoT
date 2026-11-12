@@ -564,3 +564,65 @@
 .wot-ctx-pop .wot-ctx-file span { font: 600 11px/1.4 var(--wot-font-display); letter-spacing: .12em; text-transform: uppercase; color: var(--mud-palette-tertiary); }
 .wot-ctx-pop .wot-ctx-file code { font: 400 12px/1.4 ui-monospace, Consolas, monospace; color: var(--mud-palette-text-primary); overflow-wrap: anywhere; }
 .gl-ctx-anchor { display: block; width: 0; height: 0; }
+
+/* ==== MudButton (the user button) and MudMenu / MudPopover (the account menu), ported from WoT HQ ==== */
+.mud-button-root.wot-ubtn {
+    height: 44px;
+    min-width: 0;
+    padding: 0 6px 0 4px;
+    border-radius: 4px;
+    text-transform: none;
+    text-align: left;
+    letter-spacing: 0;
+    font: inherit;
+    flex: none;
+}
+
+.wot-ubtn .mud-button-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.mud-icon-root.wot-ubtn-chevron {
+    width: 20px;
+    height: 20px;
+    margin: 0;
+    color: var(--mud-palette-text-secondary);
+}
+
+/* The popover renders outside AccountMenu, through MudPopoverProvider. Pinned under the app bar, 16px from the right, 260px wide. */
+.mud-popover.wot-menu {
+    position: fixed;
+    top: 52px !important; /* beats the inline top MudBlazor computes from the anchor */
+    left: auto !important; /* beats the inline left MudBlazor computes from the anchor */
+    right: 16px;
+    width: 260px;
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: 6px;
+    box-shadow: var(--wot-shadow-menu);
+    padding: 6px 0;
+}
+
+.wot-menu .mud-divider { margin: 0 0 6px; }
+
+.wot-menu .mud-list { padding: 0; }
+
+.wot-menu .mud-menu-item {
+    gap: 12px;
+    min-height: 40px;
+    padding: 0 16px;
+    font: 400 15px/1.55 var(--wot-font-text);
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--mud-palette-text-primary);
+}
+
+.wot-menu .mud-menu-item .mud-icon-root {
+    width: 20px;
+    height: 20px;
+    margin: 0;
+    color: var(--mud-palette-text-secondary);
+}
+
+.wot-menu .mud-menu-item > p { margin: 0; }
