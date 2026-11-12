@@ -67,13 +67,11 @@
     }
 
     // The rank icon; the initials when there is no clan or the role is one we have no icon for.
-    private static RenderFragment Badge(Models.HqIdentity who) => Models.ClanRoles.Parse(who.Role) is var role and not Models.ClanRole.Unknown
-        ? @<img class="wot-rank-icon" src="img/ranks/@(role).png" alt="" />
+    private static RenderFragment Badge(Models.HqIdentity who) => who.Role != Models.ClanRole.Unknown
+        ? @<img class="wot-rank-icon" src="img/ranks/@(who.Role).png" alt="" />
         : @<text>@Initials(who.Nickname)</text>;
 
-    // Wargaming's spelling "combat_officer" -> WoT's English name "Combat Officer"; without a role (no clan) "Geen clan".
-    private static string RoleName(Models.HqIdentity who) =>
-        who.Role is null ? "Geen clan" : string.Join(' ', who.Role.Split('_').Select(w => char.ToUpperInvariant(w[0]) + w[1..]));
+    private static string RoleName(Models.HqIdentity who) => Models.ClanRoles.DisplayName(who.Role);
 
     // Forgets the token locally only (docs/PLAN.md section 3.2); Routes shows the login.
     private void SignOut()

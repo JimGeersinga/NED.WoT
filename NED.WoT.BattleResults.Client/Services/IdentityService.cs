@@ -53,7 +53,7 @@ public sealed class IdentityService(WargamingAuthService auth, GevechtslogSessio
         // Development without HQ: Allowed with advanced stats and no clan.
         if (Environment.GetEnvironmentVariable("GEVECHTSLOG_SKIP_HQ") == "1")
         {
-            Set(IdentityStatus.Allowed, new HqIdentity(session.AccountId, session.Nickname, null, null, null, null, null, true));
+            Set(IdentityStatus.Allowed, new HqIdentity(session.AccountId, session.Nickname, null, null, null, null, ClanRole.Unknown, true));
             return true;
         }
 #endif

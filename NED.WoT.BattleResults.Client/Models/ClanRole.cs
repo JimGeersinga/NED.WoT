@@ -24,4 +24,8 @@ public static class ClanRoles
         wargamingRole is not null && Enum.TryParse(wargamingRole.Replace("_", ""), ignoreCase: true, out ClanRole role) && Enum.IsDefined(role)
             ? role
             : ClanRole.Unknown;
+
+    /// <summary>WoT's English name: "Combat Officer"; "Geen clan" for <see cref="ClanRole.Unknown"/>.</summary>
+    public static string DisplayName(this ClanRole role) =>
+        role == ClanRole.Unknown ? "Geen clan" : string.Concat(role.ToString().Select((c, i) => i > 0 && char.IsUpper(c) ? $" {c}" : c.ToString()));
 }
