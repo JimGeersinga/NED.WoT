@@ -58,7 +58,7 @@
 				{
 					<MudTabs Class="wot-tabs" Elevation="0" TabPanelsClass="pt-4">
 						<MudTabPanel Text="@OpponentsTitle">@Opponents</MudTabPanel>
-						<MudTabPanel Text="@PastTitle">@Past</MudTabPanel>
+						<MudTabPanel Text="@PastTitle">@PastHeading@Past</MudTabPanel>
 					</MudTabs>
 				}
 				else
@@ -72,7 +72,7 @@
 						</MudItem>
 						<MudItem xs="5">
 							<MudPaper Outlined Elevation="0" Class="overflow-hidden">
-								<MudText Typo="Typo.h6" Class="px-4 py-3">@PastTitle</MudText>
+								@PastHeading
 								@Past
 							</MudPaper>
 						</MudItem>
@@ -89,6 +89,14 @@
 @code {
 	private string OpponentsTitle => $"Tegenstanders · {_enemyPlayers.Count}";
 	private string PastTitle => $"Eerdere gevechten · {_battles.Count}";
+
+	private RenderFragment PastHeading => @<MudStack Row AlignItems="AlignItems.Center" Spacing="3" Class="px-4 py-3">
+		<MudText Typo="Typo.h6">@PastTitle@(_selected.Count > 0 ? $" · {_selected.Count} geselecteerd" : null)</MudText>
+		@if (_selected.Count > 0)
+		{
+			<MudButton Size="Size.Small" Variant="Variant.Text" OnClick="ClearSelection">Wis selectie</MudButton>
+		}
+	</MudStack>;
 
 	private RenderFragment Opponents => @<MudTable Items="@_enemyPlayers" Class="clan-match-table" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Elevation="0">
 		<HeaderContent>
@@ -211,7 +219,10 @@
 	</MudPaper>
 	</a>;
 
-	private RenderFragment Past => @<MudTable Items="@_battles" Class="clan-match-table" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Elevation="0">
+	private RenderFragment Past => @<MudTable Items="@_battles" Class="clan-match-table" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Elevation="0"
+			  RowClassFunc="@((BattleReport x, int _) => IsSelected(x) ? "wot-row-active" : "")"
+			  RowStyleFunc="@((BattleReport x, int _) => IsSelected(x) ? SelectedRowStyle : "cursor: pointer;")"
+			  OnRowClick="@((TableRowClickEventArgs<BattleReport> e) => Toggle(e.Item!))">
 		<HeaderContent>
 			<MudTh>
 				<MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<BattleReport, object>(x => x.MatchStart)">Datum</MudTableSortLabel>
@@ -228,7 +239,10 @@
 			@{
 				Team? ownTeam = context.OwnTeam;
 			}
-			<MudTd DataLabel="Datum">@context.MatchTimeDisplay</MudTd>
+			<MudTd DataLabel="Datum">
+				@* MudTable cannot put attributes on its rows, so the keyboard target is this native button (Enter/Space click bubbles to OnRowClick). *@
+				<button type="button" aria-pressed="@(IsSelected(context) ? "true" : "false")" style="all: unset; cursor: pointer;">@context.MatchTimeDisplay</button>
+			</MudTd>
 			<MudTd DataLabel="Duur" Style="text-align: right" Class="mud-text-secondary">@context.MatchDurationDisplay</MudTd>
 			<MudTd DataLabel="Map"><b>@context.MapName</b> @ownTeam?.Base</MudTd>
 			<MudTd DataLabel="Resultaat" Style="text-align: right">
@@ -265,6 +279,41 @@
 
 	private List<BattleReport> _battles = [];
 	private List<IGrouping<string?, Player>> _enemyPlayers = [];
+	private string[] _allOpponentNames = [];
+	private readonly HashSet<string> _selected = new(StringComparer.Ordinal); // BattleReport.FileName of the selected battles (union filter)
+
+	// Same ground as .wot-row-active in mud.css (Primary at 14% over Surface); that rule is scoped to other tables, and this issue may only touch the .razor.
+	private const string SelectedRowStyle = "cursor: pointer; background: color-mix(in srgb, var(--mud-palette-primary) 14%, var(--mud-palette-surface));";
+
+	private static string KeyOf(BattleReport x) => x.FileName ?? string.Empty;
+
+	private bool IsSelected(BattleReport x) => _selected.Contains(KeyOf(x));
+
+	private void Toggle(BattleReport x)
+	{
+		if (!_selected.Remove(KeyOf(x)))
+		{
+			_selected.Add(KeyOf(x));
+		}
+
+		BuildOpponents();
+	}
+
+	private void ClearSelection()
+	{
+		_selected.Clear();
+		BuildOpponents();
+	}
+
+	// No selection = all battles. Ratings are not touched: they were fetched once for _allOpponentNames.
+	private void BuildOpponents() => _enemyPlayers = OpponentsOf(_selected.Count == 0 ? _battles : _battles.Where(IsSelected));
+
+	private static List<IGrouping<string?, Player>> OpponentsOf(IEnumerable<BattleReport> battles) => battles
+		.Select(x => x.OwnTeam == x.Team1 ? x.Team2 : x.Team1)
+		.SelectMany(x => x.Players)
+		.GroupBy(x => x.Name)
+		.OrderByDescending(x => x.Count())
+		.ToList();
 
 	protected override void OnParametersSet()
 	{
@@ -281,12 +330,9 @@
 				.Select(x => x.Value)
 				.ToList();
 
-			_enemyPlayers = _battles
-				.Select(x => x.OwnTeam == x.Team1 ? x.Team2 : x.Team1)
-				.SelectMany(x => x.Players)
-				.GroupBy(x => x.Name)
-				.OrderByDescending(x => x.Count())
-				.ToList();
+			_selected.Clear();
+			_allOpponentNames = OpponentsOf(_battles).Where(x => x.Key is not null).Select(x => x.Key!).ToArray();
+			BuildOpponents();
 		}
 	}
 
@@ -301,7 +347,7 @@
 		try
 		{
 			string[] tags = [Match!.Value.Item1, Match.Value.Item2];
-			string[] names = _enemyPlayers.Where(x => x.Key is not null).Select(x => x.Key!).ToArray();
+			string[] names = _allOpponentNames;
 			Task<ClanRatingResult>[] clanTasks = tags.Select(t => WargamingApi.GetClanRatingAsync(t, ct)).ToArray();
 			RatingsResult players = await WargamingApi.GetPlayerRatingsAsync(names, ct);
 			ClanRatingResult[] clans = await Task.WhenAll(clanTasks);
