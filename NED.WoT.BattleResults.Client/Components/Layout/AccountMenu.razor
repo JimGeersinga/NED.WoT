@@ -71,10 +71,7 @@
         ? @<img class="wot-rank-icon" src="img/ranks/@(who.Role).png" alt="" />
         : @<text>@Initials(who.Nickname)</text>;
 
-    // "CombatOfficer" -> WoT's English name "Combat Officer"; without a clan "Geen clan".
-    private static string RoleName(Models.HqIdentity who) => who.Role == Models.ClanRole.Unknown
-        ? "Geen clan"
-        : string.Concat(who.Role.ToString().Select((c, i) => i > 0 && char.IsUpper(c) ? $" {c}" : c.ToString()));
+    private static string RoleName(Models.HqIdentity who) => who.Role == Models.ClanRole.Unknown ? "Geen clan" : who.Role.DisplayName();
 
     // Forgets the token locally only (docs/PLAN.md section 3.2); Routes shows the login.
     private void SignOut()
