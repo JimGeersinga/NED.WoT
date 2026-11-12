@@ -27,12 +27,16 @@ public sealed class WargamingApiClient(HttpClient http)
     /// <summary>Personal rating per nickname (exact, case-insensitive match). Unknown nicknames come back with a null rating.</summary>
     public async Task<RatingsResult> GetPlayerRatingsAsync(IReadOnlyCollection<string> nicknames, CancellationToken cancellationToken)
     {
+        // One 10 s budget for the whole call, retry delay included.
+        using var budget = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        budget.CancelAfter(Timeout);
+        CancellationToken ct = budget.Token;
         try
         {
             var result = new List<PlayerRating>();
-            foreach (string[] chunk in nicknames.Distinct(StringComparer.OrdinalIgnoreCase).Chunk(ListLimit))
+            foreach (string[] chunk in nicknames.Where(n => !string.IsNullOrWhiteSpace(n)).Distinct(StringComparer.OrdinalIgnoreCase).Chunk(ListLimit))
             {
-                using JsonDocument? list = await GetAsync("account/list/", $"search={Uri.EscapeDataString(string.Join(',', chunk))}&type=exact&limit={ListLimit}", cancellationToken);
+                using JsonDocument? list = await GetAsync("account/list/", $"search={Uri.EscapeDataString(string.Join(',', chunk))}&type=exact&limit={ListLimit}", ct);
                 if (list is null)
                 {
                     return new(false, []);
@@ -44,7 +48,7 @@ public sealed class WargamingApiClient(HttpClient http)
                     ids[a.GetProperty("nickname").GetString()!] = a.GetProperty("account_id").GetInt64();
                 }
 
-                using JsonDocument? info = ids.Count == 0 ? null : await GetAsync("account/info/", $"account_id={string.Join(',', ids.Values)}&fields=global_rating", cancellationToken);
+                using JsonDocument? info = ids.Count == 0 ? null : await GetAsync("account/info/", $"account_id={string.Join(',', ids.Values)}&fields=global_rating", ct);
                 if (ids.Count > 0 && info is null)
                 {
                     return new(false, []);
@@ -60,14 +64,15 @@ public sealed class WargamingApiClient(HttpClient http)
 
                     // data[id] is null when the player hides their stats.
                     JsonElement entry = info!.RootElement.GetProperty("data").GetProperty(id.ToString(CultureInfo.InvariantCulture));
-                    int? pr = entry.ValueKind == JsonValueKind.Object ? entry.GetProperty("global_rating").GetInt32() : null;
+                    // Tolerant: any entry without a numeric global_rating counts as hidden instead of failing the batch.
+                    int? pr = entry.ValueKind == JsonValueKind.Object && entry.TryGetProperty("global_rating", out JsonElement gr) && gr.ValueKind == JsonValueKind.Number ? gr.GetInt32() : null;
                     result.Add(new(name, pr, pr is null));
                 }
             }
 
             return new(true, result);
         }
-        catch (Exception ex) when (IsFailure(ex, cancellationToken))
+        catch (Exception) when (!cancellationToken.IsCancellationRequested)
         {
             return new(false, []);
         }
@@ -76,9 +81,12 @@ public sealed class WargamingApiClient(HttpClient http)
     /// <summary>The clan with exactly this tag (clans/list is a prefix search) and its efficiency rating and rank.</summary>
     public async Task<ClanRatingResult> GetClanRatingAsync(string tag, CancellationToken cancellationToken)
     {
+        using var budget = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        budget.CancelAfter(Timeout);
+        CancellationToken ct = budget.Token;
         try
         {
-            using JsonDocument? list = await GetAsync("clans/list/", $"search={Uri.EscapeDataString(tag)}&fields=clan_id,tag,name,emblems.x64", cancellationToken);
+            using JsonDocument? list = await GetAsync("clans/list/", $"search={Uri.EscapeDataString(tag)}&fields=clan_id,tag,name,emblems.x64", ct);
             if (list is null)
             {
                 return new(false, null);
@@ -100,7 +108,7 @@ public sealed class WargamingApiClient(HttpClient http)
             }
 
             long id = found.GetProperty("clan_id").GetInt64();
-            using JsonDocument? rating = await GetAsync("clanratings/clans/", $"clan_id={id}&fields=efficiency", cancellationToken);
+            using JsonDocument? rating = await GetAsync("clanratings/clans/", $"clan_id={id}&fields=efficiency", ct);
             if (rating is null)
             {
                 return new(false, null);
@@ -119,21 +127,19 @@ public sealed class WargamingApiClient(HttpClient http)
                 : null;
             return new(true, new ClanRating(found.GetProperty("tag").GetString()!, found.GetProperty("name").GetString()!, emblem, value, rank));
         }
-        catch (Exception ex) when (IsFailure(ex, cancellationToken))
+        catch (Exception) when (!cancellationToken.IsCancellationRequested)
         {
             return new(false, null);
         }
     }
 
-    // 10 s timeout and one retry after 1 s on REQUEST_LIMIT_EXCEEDED. Null on any Wargaming error; the caller owns the document.
+    // One retry after 1 s on REQUEST_LIMIT_EXCEEDED. Null on any Wargaming error; the caller owns the document.
     private async Task<JsonDocument?> GetAsync(string endpoint, string query, CancellationToken ct)
     {
         for (int attempt = 0; ; attempt++)
         {
-            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            timeout.CancelAfter(Timeout);
-            using HttpResponseMessage response = await http.GetAsync(new Uri($"{AppConfig.WargamingApiBaseUrl}{endpoint}?application_id={AppConfig.WargamingApplicationId}&{query}"), timeout.Token);
-            JsonDocument doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(timeout.Token), cancellationToken: timeout.Token);
+            using HttpResponseMessage response = await http.GetAsync(new Uri($"{AppConfig.WargamingApiBaseUrl}{endpoint}?application_id={AppConfig.WargamingApplicationId}&{query}"), ct);
+            JsonDocument doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
             JsonElement root = doc.RootElement;
             if (root.GetProperty("status").GetString() == "ok")
             {
@@ -150,11 +156,6 @@ public sealed class WargamingApiClient(HttpClient http)
             await Task.Delay(TimeSpan.FromSeconds(1), ct);
         }
     }
-
-    // Caller cancellation is not swallowed.
-    private static bool IsFailure(Exception ex, CancellationToken ct) =>
-        ex is HttpRequestException or JsonException or KeyNotFoundException or InvalidOperationException or FormatException
-        || (ex is OperationCanceledException && !ct.IsCancellationRequested);
 
     [Conditional("DEBUG")]
     private static void SelfCheck()
