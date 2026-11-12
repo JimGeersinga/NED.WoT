@@ -147,7 +147,7 @@
 			? url
 			: _battles.SelectMany(x => new[] { x.Team1, x.Team2 }).FirstOrDefault(x => x.ClanUrl is not null && string.Equals(x.Abbreviation, tag, StringComparison.OrdinalIgnoreCase))?.ClanUrl;
 
-	private RenderFragment ClanCard(string tag, string? ownTag) => @<a href="@ClanPageUrl(tag)" target="_blank" rel="noopener" title="@(ClanPageUrl(tag) is null ? null : "Open de clanpagina")" class="d-block" style="min-width: 300px; flex: 1 1 300px; max-width: 460px; color: inherit; text-decoration: none;">
+	private RenderFragment ClanCard(string tag, string? ownTag) => @<a href="@ClanPageUrl(tag)" target="_blank" rel="noopener" title="@(ClanPageUrl(tag) is null ? null : "Open de clanpagina")" class="d-block wot-clan-card" style="min-width: 300px; flex: 1 1 300px; max-width: 460px; color: inherit; text-decoration: none;">
 	<MudPaper Outlined Elevation="0" Class="pa-3">
 		<MudStack Row AlignItems="AlignItems.Center" Spacing="3">
 			@if (_clans.TryGetValue(tag, out ClanRating? clan) && clan.EmblemUrl is { } emblem)

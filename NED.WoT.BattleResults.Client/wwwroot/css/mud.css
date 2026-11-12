@@ -389,6 +389,11 @@
 }
 
 /* ==== MudTable (the two tables of the Clan battle dialog: .clan-match-table) ==== */
+/* The clan cards of the rating band are links (a.wot-clan-card): only a card that has an href reacts, with the border colour alone (the width stays, so nothing jumps). Specificity (0,4,1) beats .mud-paper-outlined (0,1,0). The focus ring of wot.css stays on the anchor. */
+a.wot-clan-card > .mud-paper { transition: border-color .12s; }
+a.wot-clan-card[href]:hover > .mud-paper,
+a.wot-clan-card[href]:focus-visible > .mud-paper { border-color: var(--mud-palette-primary); }
+@media (prefers-reduced-motion: reduce) { a.wot-clan-card > .mud-paper { transition: none; } }
 .mud-table.clan-match-table .mud-table-cell { padding: 6px; }
 
 /* ==== MudTable (the battle table: .wot-battle-table; the rows, the day headers and the footer of the Gevechtslog) ==== */
