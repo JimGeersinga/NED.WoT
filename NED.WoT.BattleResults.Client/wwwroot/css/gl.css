@@ -7,7 +7,7 @@
 .gl > * { white-space: nowrap; flex: none; }
 
 /* Teams and score in the VS cell */
-.tag { font: 600 17px/1 var(--wot-font-display); letter-spacing: .03em; display: inline-flex; align-items: center; gap: 4px; min-width: 52px; }
+.tag { text-decoration: none; font: 600 17px/1 var(--wot-font-display); letter-spacing: .03em; display: inline-flex; align-items: center; gap: 4px; min-width: 52px; }
 .tag.w { color: var(--mud-palette-success); }
 .tag.l { color: var(--mud-palette-error); }
 .tag.d { color: var(--mud-palette-warning); }

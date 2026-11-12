@@ -57,6 +57,8 @@ public class BattleReportMapper
 
         game.Team1.Abbreviation = GetMostMentionedClanAbbreviation(game.Team1);
         game.Team2.Abbreviation = GetMostMentionedClanAbbreviation(game.Team2);
+        game.Team1.ClanId = ClanId(results, game.Team1);
+        game.Team2.ClanId = ClanId(results, game.Team2);
 
         game.Team1.Result = GetResult(game.Team1.IsWinner, game.Team2.IsWinner);
         game.Team2.Result = GetResult(game.Team2.IsWinner, game.Team1.IsWinner);
@@ -95,6 +97,9 @@ public class BattleReportMapper
         me is not null
         && ((me.ClanTag is not null && string.Equals(team.Abbreviation, me.ClanTag, StringComparison.OrdinalIgnoreCase))
             || team.Players.Any(x => string.Equals(x.Name, me.Nickname, StringComparison.OrdinalIgnoreCase)));
+
+    private static long? ClanId(ReplayResults? results, Team team) =>
+        results?.AccountPlayers?.Values.FirstOrDefault(x => x.ClanDbid > 0 && x.Team == team.Number && x.ClanAbbrev == team.Abbreviation)?.ClanDbid;
 
     internal static string GetMostMentionedClanAbbreviation(Team team)
     {
