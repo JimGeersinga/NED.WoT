@@ -29,7 +29,8 @@
 	_filters.Refresh(readable, _battlesVersion, Identity.Current?.ClanTag);
 	var days = BuildDays(filtered, unreadable);
 	var dayByLabel = days.ToDictionary(d => d.Label);
-	var visible = battles.Concat(unreadable).OrderByDescending(x => x.MatchStart).ToList();
+	var all = battles.Concat(unreadable);
+	var visible = (_oldestFirst ? all.OrderBy(x => x.MatchStart) : all.OrderByDescending(x => x.MatchStart)).ToList();
 	var lastVisible = visible.LastOrDefault();
 	var emptyCause = _loading || battles.Count > 0 ? EmptyCause.None : EmptyCauseOf(Directory.Exists(SettingService.Settings.ReplayFolders.ElementAtOrDefault(BattleResultService.CurrentFolder)?.Path), _reports.Count);
 	var filesToLoad = BattleResultService.FilesToLoad;
@@ -135,7 +136,7 @@
 				</button>
 			</MudTh>
 			<MudTh Class="c">#</MudTh>
-			<MudTh><span class="gl-sorted">Tijd · Duur<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Filled.ArrowDownward)</svg></span></MudTh>
+			<MudTh><button type="button" class="gl-sorted" title="@(_oldestFirst ? "Oudste eerst" : "Nieuwste eerst")" @onclick="@(() => _oldestFirst = !_oldestFirst)">Tijd · Duur<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)(_oldestFirst ? Icons.Material.Filled.ArrowUpward : Icons.Material.Filled.ArrowDownward))</svg></button></MudTh>
 			<MudTh Class="mapcol"><div class="mapc"><span>Map</span><span></span></div></MudTh>
 			<MudTh>Teams</MudTh>
 			@if (_showBattleStats)
@@ -230,6 +231,7 @@
 
 	private bool _loading = true;
 	private bool _loadedOnce;
+	private bool _oldestFirst;
 	private HashSet<string?> _addedFiles = [];
 	private BattleFilters? _filters;
 	private int _battlesVersion;
