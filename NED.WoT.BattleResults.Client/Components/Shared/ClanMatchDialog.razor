@@ -241,7 +241,7 @@
 			}
 			<MudTd DataLabel="Datum">
 				@* MudTable cannot put attributes on its rows, so the keyboard target is this native button (Enter/Space click bubbles to OnRowClick). *@
-				<button type="button" aria-pressed="@(IsSelected(context) ? "true" : "false")" style="all: unset; cursor: pointer;">@context.MatchTimeDisplay</button>
+				<button type="button" aria-pressed="@(IsSelected(context) ? "true" : "false")" style="all: unset;">@context.MatchTimeDisplay</button>
 			</MudTd>
 			<MudTd DataLabel="Duur" Style="text-align: right" Class="mud-text-secondary">@context.MatchDurationDisplay</MudTd>
 			<MudTd DataLabel="Map"><b>@context.MapName</b> @ownTeam?.Base</MudTd>
