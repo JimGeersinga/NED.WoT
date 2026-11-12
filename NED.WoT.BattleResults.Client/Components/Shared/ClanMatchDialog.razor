@@ -58,7 +58,7 @@
 				{
 					<MudTabs Class="wot-tabs" Elevation="0" TabPanelsClass="pt-4">
 						<MudTabPanel Text="@OpponentsTitle">@Opponents</MudTabPanel>
-						<MudTabPanel Text="@PastTitle">@PastHeading@Past</MudTabPanel>
+						<MudTabPanel Text="@PastTitle">@if (_selected.Count > 0) { @PastHeading }@Past</MudTabPanel>
 					</MudTabs>
 				}
 				else
@@ -219,9 +219,8 @@
 	</MudPaper>
 	</a>;
 
-	private RenderFragment Past => @<MudTable Items="@_battles" Class="clan-match-table" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Elevation="0"
+	private RenderFragment Past => @<MudTable Items="@_battles" Class="clan-match-table wot-clickable-rows" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Elevation="0"
 			  RowClassFunc="@((BattleReport x, int _) => IsSelected(x) ? "wot-row-active" : "")"
-			  RowStyleFunc="@((BattleReport x, int _) => IsSelected(x) ? SelectedRowStyle : "cursor: pointer;")"
 			  OnRowClick="@((TableRowClickEventArgs<BattleReport> e) => Toggle(e.Item!))">
 		<HeaderContent>
 			<MudTh>
@@ -241,7 +240,7 @@
 			}
 			<MudTd DataLabel="Datum">
 				@* MudTable cannot put attributes on its rows, so the keyboard target is this native button (Enter/Space click bubbles to OnRowClick). *@
-				<button type="button" aria-pressed="@(IsSelected(context) ? "true" : "false")" style="all: unset;">@context.MatchTimeDisplay</button>
+				<button type="button" aria-pressed="@(IsSelected(context) ? "true" : "false")" class="wot-row-btn">@context.MatchTimeDisplay</button>
 			</MudTd>
 			<MudTd DataLabel="Duur" Style="text-align: right" Class="mud-text-secondary">@context.MatchDurationDisplay</MudTd>
 			<MudTd DataLabel="Map"><b>@context.MapName</b> @ownTeam?.Base</MudTd>
@@ -281,9 +280,6 @@
 	private List<IGrouping<string?, Player>> _enemyPlayers = [];
 	private string[] _allOpponentNames = [];
 	private readonly HashSet<string> _selected = new(StringComparer.Ordinal); // BattleReport.FileName of the selected battles (union filter)
-
-	// Same ground as .wot-row-active in mud.css (Primary at 14% over Surface); that rule is scoped to other tables, and this issue may only touch the .razor.
-	private const string SelectedRowStyle = "cursor: pointer; background: color-mix(in srgb, var(--mud-palette-primary) 14%, var(--mud-palette-surface));";
 
 	private static string KeyOf(BattleReport x) => x.FileName ?? string.Empty;
 
@@ -330,7 +326,6 @@
 				.Select(x => x.Value)
 				.ToList();
 
-			_selected.Clear();
 			_allOpponentNames = OpponentsOf(_battles).Where(x => x.Key is not null).Select(x => x.Key!).ToArray();
 			BuildOpponents();
 		}

@@ -395,6 +395,12 @@ a.wot-clan-card[href]:hover > .mud-paper,
 a.wot-clan-card[href]:focus-visible > .mud-paper { border-color: var(--mud-palette-primary); }
 @media (prefers-reduced-motion: reduce) { a.wot-clan-card > .mud-paper { transition: none; } }
 .mud-table.clan-match-table .mud-table-cell { padding: 6px; }
+/* The earlier-battles table: a row click toggles the opponent filter. The selected row has the active-row look of the battle table; as there, it keeps its tint under the hover. The extra .mud-table-body outranks MudBlazor's own hover rule. */
+.mud-table.clan-match-table.wot-clickable-rows .mud-table-row { cursor: pointer; }
+.mud-table.clan-match-table .mud-table-body .mud-table-row.wot-row-active > .mud-table-cell { background: var(--wot-primary-soft); }
+.mud-table.clan-match-table .mud-table-body .mud-table-row.wot-row-active > .mud-table-cell:first-child { box-shadow: inset 2px 0 0 var(--mud-palette-primary); }
+/* The row button (Datum cell) is the keyboard target: reset the look only, so the :focus-visible ring of wot.css stays. */
+.mud-table.clan-match-table .wot-row-btn { background: none; border: 0; padding: 0; font: inherit; color: inherit; text-align: inherit; cursor: inherit; }
 
 /* ==== MudTable (the battle table: .wot-battle-table; the rows, the day headers and the footer of the Gevechtslog) ==== */
 /* The expanded row nests Details' own MudTable inside this one, so every rule below walks down with child combinators: a descendant selector would restyle the nested table too. */
