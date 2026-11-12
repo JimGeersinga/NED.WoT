@@ -85,7 +85,9 @@ public class Team
     public string Base => Number == 1 ? "I" : "II";
     public string? Abbreviation { get; set; }
     public long? ClanId { get; set; }
-    public string? ClanUrl => ClanId is > 0 ? $"https://eu.wargaming.net/clans/wot/{ClanId}/" : null;
+    public string? ClanUrl => UrlOf(ClanId);
+    /// <summary>The clan page on the EU portal; null without a valid id.</summary>
+    public static string? UrlOf(long? clanId) => clanId is > 0 ? $"https://eu.wargaming.net/clans/wot/{clanId}/" : null;
     public int? Health { get; set; }
     public bool? IsWinner { get; set; }
 

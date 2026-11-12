@@ -2,6 +2,8 @@
 @implements IAsyncDisposable
 @inject BattleReportService BattleReportService
 @inject SettingService SettingService
+@inject WargamingApiClient WargamingApi
+@inject IdentityService Identity
 @inject IBrowserViewportService ViewportService
 
 <MudDialog Class="wot-dialog overflow-hidden" ContentClass="overflow-y-auto" TitleClass="wot-dialog-bar">
@@ -10,9 +12,9 @@
 			@if (Match.HasValue)
 			{
 				<MudStack Row Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="4">
-					<MudText Typo="Typo.h4" HtmlTag="span">[@Match.Value.Item1]</MudText>
+					<MudText Typo="Typo.h4" HtmlTag="span">[@Sides.Left]</MudText>
 					<MudText Typo="Typo.h5" HtmlTag="span" Class="mud-text-secondary">vs</MudText>
-					<MudText Typo="Typo.h4" HtmlTag="span">[@Match.Value.Item2]</MudText>
+					<MudText Typo="Typo.h4" HtmlTag="span">[@Sides.Right]</MudText>
 				</MudStack>
 			}
 		</WotDialogTitle>
@@ -21,6 +23,27 @@
 		@if (Match.HasValue)
 		{
 			<MudStack Spacing="4" Class="pt-2">
+				<MudStack Row Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="3" Class="flex-wrap">
+					@ClanCard(Sides.Left, OwnTag)
+					<MudText Typo="Typo.h6" HtmlTag="span" Class="mud-text-secondary">vs</MudText>
+					@ClanCard(Sides.Right, OwnTag)
+				</MudStack>
+				@if (_state is RatingState.Failed)
+				{
+					<MudAlert Severity="Severity.Warning" Variant="Variant.Outlined" Dense="true">
+						<MudStack Row AlignItems="AlignItems.Center" Spacing="3">
+							<span><b>Ratings niet beschikbaar</b> · Wargaming gaf geen antwoord. Het gevecht zelf werkt gewoon.</span>
+							<MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Warning" OnClick="LoadRatings">Opnieuw</MudButton>
+						</MudStack>
+					</MudAlert>
+				}
+				else
+				{
+					<MudText Typo="Typo.caption" Class="mud-text-secondary" Align="Align.Center">
+						@(_state is RatingState.Loading ? "Ratings ophalen bij Wargaming…" : $"Ratings uit de Wargaming API · bijgewerkt {_updated:HH:mm} · PR = persoonlijke rating · WTR = World of Tanks Rating")
+					</MudText>
+				}
+
 				<MudStack Row Justify="Justify.Center" Spacing="6" role="group" aria-label="Eerdere gevechten">
 					@foreach (var (result, count) in new[] { (Result.Win, _battles.Count(x => x.Result is Result.Win)), (Result.Draw, _battles.Count(x => x.Result is Result.Draw)), (Result.Lose, _battles.Count(x => x.Result is Result.Lose)) })
 					{
@@ -35,7 +58,7 @@
 				{
 					<MudTabs Class="wot-tabs" Elevation="0" TabPanelsClass="pt-4">
 						<MudTabPanel Text="@OpponentsTitle">@Opponents</MudTabPanel>
-						<MudTabPanel Text="@PastTitle">@Past</MudTabPanel>
+						<MudTabPanel Text="@PastTitle">@if (_selected.Count > 0) { @PastHeading }@Past</MudTabPanel>
 					</MudTabs>
 				}
 				else
@@ -49,7 +72,7 @@
 						</MudItem>
 						<MudItem xs="5">
 							<MudPaper Outlined Elevation="0" Class="overflow-hidden">
-								<MudText Typo="Typo.h6" Class="px-4 py-3">@PastTitle</MudText>
+								@PastHeading
 								@Past
 							</MudPaper>
 						</MudItem>
@@ -67,19 +90,33 @@
 	private string OpponentsTitle => $"Tegenstanders · {_enemyPlayers.Count}";
 	private string PastTitle => $"Eerdere gevechten · {_battles.Count}";
 
+	private RenderFragment PastHeading => @<MudStack Row AlignItems="AlignItems.Center" Spacing="3" Class="px-4 py-3">
+		<MudText Typo="Typo.h6">@PastTitle@(_selected.Count > 0 ? $" · {_selected.Count} geselecteerd" : null)</MudText>
+		@if (_selected.Count > 0)
+		{
+			<MudButton Size="Size.Small" Variant="Variant.Text" OnClick="ClearSelection">Wis selectie</MudButton>
+		}
+	</MudStack>;
+
 	private RenderFragment Opponents => @<MudTable Items="@_enemyPlayers" Class="clan-match-table" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Elevation="0">
 		<HeaderContent>
-			<MudTh Style="text-align: right; width: 110px">
-				<MudTableSortLabel InitialDirection="SortDirection.Descending" SortBy="new Func<IGrouping<string?, Player>, object>(x => x.Count())">Gevechten</MudTableSortLabel>
+			<MudTh Style="text-align: right; width: 1%; white-space: nowrap" title="Gevechten" aria-label="Gevechten">
+				<MudTableSortLabel InitialDirection="SortDirection.Descending" SortBy="new Func<IGrouping<string?, Player>, object>(x => x.Count())">#</MudTableSortLabel>
 			</MudTh>
 			<MudTh>
 				<MudTableSortLabel SortBy="new Func<IGrouping<string?, Player>, object>(x => x.Key ?? string.Empty)">Speler</MudTableSortLabel>
 			</MudTh>
 			<MudTh>Tanks</MudTh>
+			<MudTh Style="text-align: right" title="Persoonlijke rating (Wargaming)">
+				<MudTableSortLabel SortBy="new Func<IGrouping<string?, Player>, object>(x => RatingOf(x.Key)?.PersonalRating ?? -1)">PR</MudTableSortLabel>
+			</MudTh>
+			<MudTh Style="text-align: right; width: 112px" title="World of Tanks Rating">
+				<MudTableSortLabel SortBy="new Func<IGrouping<string?, Player>, object>(x => RatingOf(x.Key)?.Wtr ?? -1)">WTR</MudTableSortLabel>
+			</MudTh>
 		</HeaderContent>
 		<RowTemplate>
-			<MudTd DataLabel="Gevechten" Style="text-align: right; vertical-align: text-top;">@context.Count()</MudTd>
-			<MudTd DataLabel="Speler" Style="vertical-align: text-top;">@context.Key</MudTd>
+			<MudTd DataLabel="Gevechten" Style="text-align: right; vertical-align: top;">@context.Count()</MudTd>
+			<MudTd DataLabel="Speler" Style="vertical-align: top;">@context.Key</MudTd>
 			<MudTd DataLabel="Tanks">
 				@foreach (var vehicle in context.GroupBy(x => x.Vehicle).OrderByDescending(x => x.Count()))
 				{
@@ -89,10 +126,102 @@
 					</div>
 				}
 			</MudTd>
+			<MudTd DataLabel="PR" Style="text-align: right; vertical-align: top; font-variant-numeric: tabular-nums;">@PlayerRatingCell(context.Key)</MudTd>
+			<MudTd DataLabel="WTR" Style="text-align: right; vertical-align: top;">@WtrCell(context.Key)</MudTd>
 		</RowTemplate>
 	</MudTable>;
 
-	private RenderFragment Past => @<MudTable Items="@_battles" Class="clan-match-table" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Elevation="0">
+	// Null while loading, on failure, for an unknown nickname; the sorts treat that as the lowest (-1).
+	private PlayerRating? RatingOf(string? name) => _state is RatingState.Ok && name is not null && _players.TryGetValue(name, out PlayerRating? rating) ? rating : null;
+
+	private RenderFragment WtrCell(string? name) => @<text>
+		@if (_state is RatingState.Loading)
+		{
+			<MudSkeleton Width="70px" Class="ml-auto" />
+		}
+		else if (_state is RatingState.Ok && name is not null && _players.TryGetValue(name, out PlayerRating? rating) && rating.Wtr is { } wtr)
+		{
+			string level = WtrLevel.Name(WtrLevel.Index(wtr));
+			<span class="gl-wtr">
+				<img src="@WtrLevel.IconPath(WtrLevel.Index(wtr))" alt="@level" title="@level" width="24" height="24" style="flex: none;" />
+				@NumberFormat.Fmt(wtr)
+			</span>
+		}
+		else
+		{
+			<span class="mud-text-secondary">–</span>
+		}
+	</text>;
+
+	private RenderFragment PlayerRatingCell(string? name) => @<text>
+		@if (_state is RatingState.Loading)
+		{
+			<MudSkeleton Width="48px" Class="ml-auto" />
+		}
+		else if (_state is RatingState.Ok && name is not null && _players.TryGetValue(name, out PlayerRating? rating) && rating.PersonalRating is { } pr)
+		{
+			@NumberFormat.Fmt(pr)
+		}
+		else if (_state is RatingState.Ok && name is not null && _players.TryGetValue(name, out PlayerRating? hidden) && hidden.StatsHidden)
+		{
+			<MudTooltip Text="Deze speler verbergt zijn statistieken, dus er is geen rating.">
+				<span class="d-inline-flex align-center gap-1 mud-text-secondary" aria-label="Deze speler verbergt zijn statistieken, dus er is geen rating.">–<MudIcon Icon="@Icons.Material.Outlined.VisibilityOff" Size="Size.Small" /></span>
+			</MudTooltip>
+		}
+		else
+		{
+			<span class="mud-text-secondary">–</span>
+		}
+	</text>;
+
+	// The design's rating value (ClanMatch board): display font, 700 30px/1.1, tabular figures.
+	private const string RatingValueStyle = "font: 700 30px/1.1 var(--wot-font-display); font-variant-numeric: tabular-nums;";
+
+	// The clan page: the id from the rating lookup, else the id the battles carry for that tag; no link when neither is known.
+	private string? ClanPageUrl(string tag) =>
+		_clans.TryGetValue(tag, out ClanRating? clan) && Team.UrlOf(clan.ClanId) is { } url
+			? url
+			: _battles.SelectMany(x => new[] { x.Team1, x.Team2 }).FirstOrDefault(x => x.ClanUrl is not null && string.Equals(x.Abbreviation, tag, StringComparison.OrdinalIgnoreCase))?.ClanUrl;
+
+	private RenderFragment ClanCard(string tag, string? ownTag) => @<a href="@ClanPageUrl(tag)" target="_blank" rel="noopener" title="@(ClanPageUrl(tag) is null ? null : "Open de clanpagina")" class="d-block wot-clan-card" style="min-width: 300px; flex: 1 1 300px; max-width: 460px; color: inherit; text-decoration: none;">
+	<MudPaper Outlined Elevation="0" Class="pa-3">
+		<MudStack Row AlignItems="AlignItems.Center" Spacing="3">
+			@if (_clans.TryGetValue(tag, out ClanRating? clan) && clan.EmblemUrl is { } emblem)
+			{
+				<img src="@emblem" alt="" width="40" height="40" />
+			}
+			<MudStack Spacing="0" Style="min-width: 0; flex: 1">
+				<MudText Typo="Typo.h6">[@tag]</MudText>
+				<MudText Typo="Typo.body2" Class="mud-text-secondary">
+					@(_clans.TryGetValue(tag, out ClanRating? named) ? named.Name + " · " : null)@(ownTag is not null && tag.Equals(ownTag, StringComparison.OrdinalIgnoreCase) ? "jouw clan" : "tegenstander")
+				</MudText>
+			</MudStack>
+			<MudStack Spacing="0" Style="text-align: right;">
+				<MudText Typo="Typo.overline" Class="mud-text-secondary">Clanrating</MudText>
+				@if (_state is RatingState.Loading)
+				{
+					<MudSkeleton Width="64px" Height="33px" Class="ml-auto" />
+				}
+				else if (_state is RatingState.Ok && _clans.TryGetValue(tag, out ClanRating? rated) && rated.Rating is { } value)
+				{
+					<MudText Style="@RatingValueStyle">@NumberFormat.Fmt(value)</MudText>
+					@if (rated.Rank is { } rank)
+					{
+						<MudText Typo="Typo.caption" Class="mud-text-secondary">Rang @rank</MudText>
+					}
+				}
+				else
+				{
+					<MudText Class="mud-text-secondary" Style="@RatingValueStyle">–</MudText>
+				}
+			</MudStack>
+		</MudStack>
+	</MudPaper>
+	</a>;
+
+	private RenderFragment Past => @<MudTable Items="@_battles" Class="clan-match-table wot-clickable-rows" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Elevation="0"
+			  RowClassFunc="@((BattleReport x, int _) => IsSelected(x) ? "wot-row-active" : "")"
+			  OnRowClick="@((TableRowClickEventArgs<BattleReport> e) => Toggle(e.Item!))">
 		<HeaderContent>
 			<MudTh>
 				<MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<BattleReport, object>(x => x.MatchStart)">Datum</MudTableSortLabel>
@@ -103,23 +232,27 @@
 			<MudTh>
 				<MudTableSortLabel SortBy="new Func<BattleReport, object>(x => x.MapName ?? string.Empty)">Map</MudTableSortLabel>
 			</MudTh>
-			<MudTh>Winnaar</MudTh>
+			<MudTh Style="text-align: right">Resultaat</MudTh>
 		</HeaderContent>
 		<RowTemplate>
 			@{
 				Team? ownTeam = context.OwnTeam;
 			}
-			<MudTd DataLabel="Datum">@context.MatchTimeDisplay</MudTd>
+			<MudTd DataLabel="Datum">
+				@* MudTable cannot put attributes on its rows, so the keyboard target is this native button (Enter/Space click bubbles to OnRowClick). *@
+				<button type="button" aria-pressed="@(IsSelected(context) ? "true" : "false")" class="wot-row-btn">@context.MatchTimeDisplay</button>
+			</MudTd>
 			<MudTd DataLabel="Duur" Style="text-align: right" Class="mud-text-secondary">@context.MatchDurationDisplay</MudTd>
 			<MudTd DataLabel="Map"><b>@context.MapName</b> @ownTeam?.Base</MudTd>
-			<MudTd DataLabel="Winnaar">
-				<MudStack Row AlignItems="AlignItems.Center" Spacing="2">
-					<span class="@ownTeam?.Result.ToString()">@(context.Team1.IsWinner == true ? context.Team1.Abbreviation : context.Team2.Abbreviation)</span>
-					@if (ownTeam is not null)
-					{
-						<ResultChip Result="ownTeam.Result" />
-					}
-				</MudStack>
+			<MudTd DataLabel="Resultaat" Style="text-align: right">
+				@if (ownTeam is not null)
+				{
+					<ResultChip Result="ownTeam.Result" IconRight="true" />
+				}
+				else
+				{
+					@(context.Team1.IsWinner == true ? context.Team1.Abbreviation : context.Team2.Abbreviation)
+				}
 			</MudTd>
 		</RowTemplate>
 	</MudTable>;
@@ -130,8 +263,53 @@
 	[Parameter]
 	public (string, string)? Match { get; set; }
 
+	private enum RatingState { Loading, Ok, Failed }
+
+	private RatingState _state = RatingState.Loading;
+	private DateTime _updated;
+	private Dictionary<string, PlayerRating> _players = new(StringComparer.OrdinalIgnoreCase);
+	private Dictionary<string, ClanRating> _clans = new(StringComparer.OrdinalIgnoreCase);
+	private CancellationTokenSource _cts = new();
+
+	private string? OwnTag => Identity.Current?.ClanTag;
+
+	// The signed-in clan is always on the left; no own clan (or neither side matches) keeps the game's order. Display only: the battle filter still uses Match.
+	private (string Left, string Right) Sides => Match is { } m && OwnTag is not null && m.Item2.Equals(OwnTag, StringComparison.OrdinalIgnoreCase) ? (m.Item2, m.Item1) : Match ?? default;
+
 	private List<BattleReport> _battles = [];
 	private List<IGrouping<string?, Player>> _enemyPlayers = [];
+	private string[] _allOpponentNames = [];
+	private readonly HashSet<string> _selected = new(StringComparer.Ordinal); // BattleReport.FileName of the selected battles (union filter)
+
+	private static string KeyOf(BattleReport x) => x.FileName ?? string.Empty;
+
+	private bool IsSelected(BattleReport x) => _selected.Contains(KeyOf(x));
+
+	private void Toggle(BattleReport x)
+	{
+		if (!_selected.Remove(KeyOf(x)))
+		{
+			_selected.Add(KeyOf(x));
+		}
+
+		BuildOpponents();
+	}
+
+	private void ClearSelection()
+	{
+		_selected.Clear();
+		BuildOpponents();
+	}
+
+	// No selection = all battles. Ratings are not touched: they were fetched once for _allOpponentNames.
+	private void BuildOpponents() => _enemyPlayers = OpponentsOf(_selected.Count == 0 ? _battles : _battles.Where(IsSelected));
+
+	private static List<IGrouping<string?, Player>> OpponentsOf(IEnumerable<BattleReport> battles) => battles
+		.Select(x => x.OwnTeam == x.Team1 ? x.Team2 : x.Team1)
+		.SelectMany(x => x.Players)
+		.GroupBy(x => x.Name)
+		.OrderByDescending(x => x.Count())
+		.ToList();
 
 	protected override void OnParametersSet()
 	{
@@ -148,13 +326,53 @@
 				.Select(x => x.Value)
 				.ToList();
 
-			_enemyPlayers = _battles
-				.Select(x => x.OwnTeam == x.Team1 ? x.Team2 : x.Team1)
-				.SelectMany(x => x.Players)
-				.GroupBy(x => x.Name)
-				.OrderByDescending(x => x.Count())
-				.ToList();
+			_allOpponentNames = OpponentsOf(_battles).Where(x => x.Key is not null).Select(x => x.Key!).ToArray();
+			BuildOpponents();
 		}
+	}
+
+	private async Task LoadRatings()
+	{
+		await _cts.CancelAsync();
+		_cts.Dispose();
+		_cts = new CancellationTokenSource();
+		CancellationToken ct = _cts.Token;
+		_state = RatingState.Loading;
+		StateHasChanged();
+		try
+		{
+			string[] tags = [Match!.Value.Item1, Match.Value.Item2];
+			string[] names = _allOpponentNames;
+			Task<ClanRatingResult>[] clanTasks = tags.Select(t => WargamingApi.GetClanRatingAsync(t, ct)).ToArray();
+			RatingsResult players = await WargamingApi.GetPlayerRatingsAsync(names, ct);
+			ClanRatingResult[] clans = await Task.WhenAll(clanTasks);
+			if (ct.IsCancellationRequested)
+			{
+				return;
+			}
+
+			if (players.Ok && clans.All(x => x.Ok))
+			{
+				_players = players.Players.ToDictionary(x => x.Nickname, StringComparer.OrdinalIgnoreCase);
+				_clans = clans.Select(x => x.Clan).OfType<ClanRating>().ToDictionary(x => x.Tag, StringComparer.OrdinalIgnoreCase);
+				_updated = DateTime.Now;
+				_state = RatingState.Ok;
+			}
+			else
+			{
+				_state = RatingState.Failed;
+			}
+		}
+		catch (OperationCanceledException)
+		{
+			return; // a newer load (Opnieuw) or the dialog closing took over
+		}
+		catch (Exception)
+		{
+			_state = RatingState.Failed; // never leave the skeleton hanging
+		}
+
+		await InvokeAsync(StateHasChanged);
 	}
 
 	void Cancel() => MudDialog.Close(DialogResult.Ok(true));
@@ -183,9 +401,19 @@
 	{
 		if (firstRender)
 		{
+			// The dialog is already showing; the ratings arrive when Wargaming answers (never awaited here).
+			if (Match.HasValue)
+			{
+				_ = LoadRatings();
+			}
+
 			await ViewportService.SubscribeAsync(this);
 		}
 	}
 
-	public async ValueTask DisposeAsync() => await ViewportService.UnsubscribeAsync(this);
+	public async ValueTask DisposeAsync()
+	{
+		await _cts.CancelAsync();
+		await ViewportService.UnsubscribeAsync(this);
+	}
 }

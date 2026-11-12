@@ -16,7 +16,7 @@ A path marked "created by #N" does not exist yet.
 | Identity | Sign in with Wargaming (§3.2), then HQ's answer (§3.3) gives nickname, clan tag, name, emblem, role and rights; none of it comes from Settings. |
 | Replay folders | Several folders (title + path) and a carousel in the app bar. Only the selected folder is read, watched and held in memory; switching folders drops the old one's battles and reads the new one from disk. |
 | Live battle | One temp-replay path setting, separate from the folders. |
-| Ratings | PR and clan rating (no WTR: the public API has none) in the Clan battle dialog, for everyone with access, from Wargaming's public API under the app's own application id. |
+| Ratings | PR, WTR (`account/wtr`) and clan rating in the Clan battle dialog, for everyone with access, from Wargaming's public API under the app's own application id. |
 | Tests | No test project. Acceptance is checked by hand and with screenshots (CLAUDE.md, "Screenshots instead of UI tests"). |
 | Build | The .NET recommended analyzers run (`AnalysisLevel` `latest-recommended`) and any warning fails the build (`TreatWarningsAsErrors`); decided by the owner on 2026-11-07. The other Recur build rules stay out (CLAUDE.md). The SDK is pinned to 11.0.x by `global.json`, the same band CI uses. |
 
@@ -80,10 +80,27 @@ answer and never decides rights itself. Nothing is kept on the HQ side. HQ down,
 or any other failure to get an answer, shows "Geen verbinding met WoT HQ".
 
 ### 3.4 Public reads (created by #18)
-Under the app's own application id, no token: `account/list` (name → account id),
-`account/info` (`global_rating`), `clans/list` and `clanratings/clans` (`efficiency.value`, `.rank`); the public API has no WTR (checked 2026-11-09),
-for the Clan battle dialog. Each call names its endpoint, parameters and fields
-in its issue, marked **(verify)** until checked against the live API.
+`Services/WargamingApiClient.cs`: GET, no token, under the app's own application id, for the Clan battle dialog.
+Failures (Wargaming error, timeout, no network) are a failed result, never an exception (caller cancellation is the
+one exception, rethrown). 10 s per method call, retries included; one retry after 1 s on `REQUEST_LIMIT_EXCEEDED`.
+The error's `value` is never deserialized. Checked against the live EU API on 2026-11-12:
+
+- `account/list/?search=<n1,n2,...>&type=exact&limit=100` gives `data[].account_id`, `.nickname`. A comma-separated
+  exact search of 86 names (a whole clan) returned all 86; unknown names are simply absent. Matching is case-insensitive.
+- `account/info/?account_id=<ids>&fields=global_rating` gives `data[id].global_rating` (the PR). An unknown id gives
+  `data[id] = null`. Hidden stats are assumed to give the same `null`, which the client maps to `StatsHidden`, but this is
+  **not verified**: none of the 86 NED-1 members hides their stats and no hidden account was found. Only a `null` entry
+  counts as hidden; an object without `global_rating` fails the call.
+- `clans/list/?search=<tag>&limit=100&fields=clan_id,tag,name,emblems.x64` is a prefix search: the client picks the entry
+  whose `tag` equals the tag. NED-1 gives 500012147, "Noobs Elite Divisie", `emblems.x64.portal`. No match gives `data: []`.
+  Short tags: `NED` (295 prefix matches), `ABC` (519) and `AA` (13348) each return 100 entries on page 1, with the exact tag
+  first in all three. The default limit is already 100. For a very short, common tag the exact one could still fall off the
+  first page; the client does not page on.
+- `clanratings/clans/?clan_id=<id>&fields=efficiency` gives `data[id].efficiency.value` and `.rank` (NED-1: 7261, rank 643).
+  An unrated or unknown clan gives `data[id] = null`. **(verify)** that `efficiency.value` can be null: not seen; the client
+  gives a null rating, rank and emblem when `efficiency`, its `value` or `rank`, or `emblems.x64` is missing or null.
+  Other keys are not used.
+- WTR exists in the public API (found 2026-11-12; the 2026-11-09 check was wrong): `GET account/wtr/?account_id=<up to 100 ids>` → `data[id] = { rating, account_id }`, or `null` for an unknown id **or an account without a WTR** (live 2026-11-12: real accounts with battles, e.g. one with 3020 battles, also return `null`; ids 1 and 2 are `null`; no key was ever missing) (101 ids → `ACCOUNT_ID_LIST_LIMIT_EXCEEDED`). Shown next to PR, with a level icon: limits `[0, 400, 1000, 1400, 1900, 2700, 3200, 3900, 4800, 5400, 6200, 7300, 8000, 8800, 9900]` = Brons I–III, Zilver I–III, Goud I–III, Aas I–III, Legende I–III. **(verify)** what `account/info` returns for a player who hides their stats (not seen yet; expected `null`, which the app shows as hidden). WTR is optional: a failed `account/wtr` call, or a missing entry, only leaves WTR empty, and PR still shows; `account/list` and `account/info` failures fail the whole result.
 
 ## 4. Settings
 
