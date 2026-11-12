@@ -44,20 +44,13 @@ else
 		</MudTooltip>
 	</MudTd>
 	<MudTd Class="mapcol"><div class="mapc"><b title="@Report.MapName">@Report.MapName</b><span class="gl-chip">@ownTeam?.Base</span></div></MudTd>
-	<MudTd>
+	<MudTd @oncontextmenu="OpenMenu">
 		<span class="vs">
 			<a class="@TagClass(left, left == ownTeam, onlyOwn)" href="@left.ClanUrl" target="_blank" title="@(left.ClanUrl is null ? null : "Open de clanpagina")" @onclick:stopPropagation="true">@left.Abbreviation</a>
 			<span class="score">@(left.Result is Result.Win ? (MarkupString)$"<b>{leftKills}</b>" : (MarkupString)$"<span>{leftKills}</span>")–@(right.Result is Result.Win ? (MarkupString)$"<b>{rightKills}</b>" : (MarkupString)$"<span>{rightKills}</span>")</span>
 			<a class="@TagClass(right, right == ownTeam, onlyOwn)" href="@right.ClanUrl" target="_blank" title="@(right.ClanUrl is null ? null : "Open de clanpagina")" @onclick:stopPropagation="true">@right.Abbreviation</a>
 		</span>
-	</MudTd>
-	@if (ShowBattleStats && Stats != null)
-	{
-		@Stats(new[] { Report })
-	}
-	<MudTd Class="res"><ResultChip Result="Report.Result" IconRight="true" /></MudTd>
-	<MudTd Class="p4" @oncontextmenu="OpenMenu">
-		@* Right-click menu of the row: the replay's file name, and a button to copy it. Opened from the cells at the cursor; the activator is only an anchor. *@
+		@* Right-click menu of the row: the replay's file name, a button to copy it and the clan battle. Opened from the teams cell at the cursor; the activator is only an anchor. *@
 		<MudMenu @ref="_menu" PositionAtCursor="true" ActivationEvent="MouseEvent.RightClick" PopoverClass="wot-ctx-pop" Dense="true">
 			<ActivatorContent><span class="gl-ctx-anchor"></span></ActivatorContent>
 			<ChildContent>
@@ -66,6 +59,13 @@ else
 				<MudMenuItem Icon="@Icons.Material.Filled.SportsEsports" Disabled="@(string.IsNullOrEmpty(Report.Team1.Abbreviation) || string.IsNullOrEmpty(Report.Team2.Abbreviation))" OnClick="() => OnOpenClanMatch.InvokeAsync((Report.Team1.Abbreviation!, Report.Team2.Abbreviation!))">Open clan gevecht</MudMenuItem>
 			</ChildContent>
 		</MudMenu>
+	</MudTd>
+	@if (ShowBattleStats && Stats != null)
+	{
+		@Stats(new[] { Report })
+	}
+	<MudTd Class="res"><ResultChip Result="Report.Result" IconRight="true" /></MudTd>
+	<MudTd Class="p4">
 		<button type="button" class="gl-ibtn out" aria-label="Kopieer opstelling" title="Kopieer opstelling" disabled="@(ownTeam == null)" @onclick="() => OnCopy.InvokeAsync(Report)" @onclick:stopPropagation="true">
 			<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Filled.ContentCopy)</svg>
 		</button>

@@ -177,6 +177,7 @@
 						   ShowBattleStats="_showBattleStats"
 						   Stats="StatCells"
 						   OnCopy="@(report => CopyResultAsync(report, report.OwnTeam))"
+						   OnCopyFileName="CopyFileNameAsync"
 						   OnOpenClanMatch="@(m => OpenClanMatchDialog(m))" />
 			}
 		</RowTemplate>
