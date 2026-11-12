@@ -99,8 +99,12 @@
 				<MudTableSortLabel SortBy="new Func<IGrouping<string?, Player>, object>(x => x.Key ?? string.Empty)">Speler</MudTableSortLabel>
 			</MudTh>
 			<MudTh>Tanks</MudTh>
-			<MudTh Style="text-align: right" title="Persoonlijke rating (Wargaming)">PR</MudTh>
-			<MudTh Style="text-align: right; width: 112px" title="World of Tanks Rating">WTR</MudTh>
+			<MudTh Style="text-align: right" title="Persoonlijke rating (Wargaming)">
+				<MudTableSortLabel SortBy="new Func<IGrouping<string?, Player>, object>(x => RatingOf(x.Key)?.PersonalRating ?? -1)">PR</MudTableSortLabel>
+			</MudTh>
+			<MudTh Style="text-align: right; width: 112px" title="World of Tanks Rating">
+				<MudTableSortLabel SortBy="new Func<IGrouping<string?, Player>, object>(x => RatingOf(x.Key)?.Wtr ?? -1)">WTR</MudTableSortLabel>
+			</MudTh>
 		</HeaderContent>
 		<RowTemplate>
 			<MudTd DataLabel="Gevechten" Style="text-align: right; vertical-align: top;">@context.Count()</MudTd>
@@ -118,6 +122,9 @@
 			<MudTd DataLabel="WTR" Style="text-align: right; vertical-align: top;">@WtrCell(context.Key)</MudTd>
 		</RowTemplate>
 	</MudTable>;
+
+	// Null while loading, on failure, for an unknown nickname; the sorts treat that as the lowest (-1).
+	private PlayerRating? RatingOf(string? name) => _state is RatingState.Ok && name is not null && _players.TryGetValue(name, out PlayerRating? rating) ? rating : null;
 
 	private RenderFragment WtrCell(string? name) => @<text>
 		@if (_state is RatingState.Loading)
