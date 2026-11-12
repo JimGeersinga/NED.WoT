@@ -191,7 +191,7 @@ public sealed partial class WargamingApiClient(HttpClient http, ILogger<Wargamin
     private static ClanRating MapClan(Clan clan, Dictionary<string, ClanEntry?> ratings)
     {
         ratings.TryGetValue(clan.ClanId.ToString(CultureInfo.InvariantCulture), out ClanEntry? entry);
-        return new(clan.Tag, clan.Name, clan.Emblems?.X64?.Portal, entry?.Efficiency?.Value, entry?.Efficiency?.Rank);
+        return new(clan.ClanId, clan.Tag, clan.Name, clan.Emblems?.X64?.Portal, entry?.Efficiency?.Value, entry?.Efficiency?.Rank);
     }
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Wargaming public read failed: {Endpoint}: {Type}")]
@@ -223,7 +223,7 @@ public sealed partial class WargamingApiClient(HttpClient http, ILogger<Wargamin
         var clans = Parse<List<Clan>>("""{"status":"ok","data":[{"clan_id":9,"tag":"NED-10","name":"Other"},{"clan_id":5,"tag":"NED-1","name":"Noobs","emblems":{"x64":{"portal":"u"}}}]}""").Data!;
         Clan clan = PickClan(clans, "ned-1")!;
         Debug.Assert(clan.ClanId == 5 && PickClan(clans, "NED") is null, "exact tag on a prefix result");
-        Debug.Assert(MapClan(clan, Parse<Dictionary<string, ClanEntry?>>("""{"status":"ok","data":{"5":{"efficiency":{"value":7261,"rank":643}}}}""").Data!) == new ClanRating("NED-1", "Noobs", "u", 7261, 643));
+        Debug.Assert(MapClan(clan, Parse<Dictionary<string, ClanEntry?>>("""{"status":"ok","data":{"5":{"efficiency":{"value":7261,"rank":643}}}}""").Data!) == new ClanRating(5, "NED-1", "Noobs", "u", 7261, 643));
         string[] odd =
         [
             """{"status":"ok","data":{"5":null}}""",
@@ -233,10 +233,10 @@ public sealed partial class WargamingApiClient(HttpClient http, ILogger<Wargamin
         ];
         foreach (string json in odd)
         {
-            Debug.Assert(MapClan(clan, Parse<Dictionary<string, ClanEntry?>>(json).Data!) == new ClanRating("NED-1", "Noobs", "u", null, null), json);
+            Debug.Assert(MapClan(clan, Parse<Dictionary<string, ClanEntry?>>(json).Data!) == new ClanRating(5, "NED-1", "Noobs", "u", null, null), json);
         }
 
-        Debug.Assert(MapClan(new(5, "T", "N", new(null)), []) == new ClanRating("T", "N", null, null, null), "no emblem, no entry");
+        Debug.Assert(MapClan(new(5, "T", "N", new(null)), []) == new ClanRating(5, "T", "N", null, null, null), "no emblem, no entry");
 
         (List<Account>? data, string? error) = Parse<List<Account>>("""{"status":"error","error":{"code":407,"message":"REQUEST_LIMIT_EXCEEDED","field":null,"value":"SECRET"}}""");
         Debug.Assert(data is null && error == "REQUEST_LIMIT_EXCEEDED", "error envelope gives the message");
