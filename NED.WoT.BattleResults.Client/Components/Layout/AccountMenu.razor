@@ -1,0 +1,79 @@
+@inject IdentityService Identity
+@inject NavigationManager NavigationManager
+
+@* Who you are signed in as (from HQ's answer), and Uitloggen. Same build as WoT HQ's UserMenu: a MudMenu whose activator toggles it explicitly. *@
+@if (Identity.Current is { } who)
+{
+    <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" PopoverClass="wot-menu">
+        <ActivatorContent Context="menu">
+            <MudButton Variant="Variant.Text" Color="Color.Inherit" Class="wot-ubtn" aria-label="Account" OnClick="@menu.ToggleAsync">
+                <MudAvatar Class="wot-avatar">@Initials(who.Nickname)</MudAvatar>
+                <span class="wot-ubtn-text">
+                    <span class="wot-ubtn-name">@who.Nickname</span>
+                    <span class="wot-ubtn-role">@RoleName(who)</span>
+                </span>
+                <MudIcon Icon="@Icons.Material.Outlined.ExpandMore" Class="wot-ubtn-chevron" />
+            </MudButton>
+        </ActivatorContent>
+        <ChildContent>
+            <div class="wot-menu-head">
+                <MudAvatar Class="wot-avatar wot-avatar-lg">@Initials(who.Nickname)</MudAvatar>
+                <div class="wot-menu-head-text">
+                    <span class="wot-ubtn-name">@who.Nickname</span>
+                    <span class="wot-ubtn-role">
+                        @RoleName(who)
+                        @if (who.ClanTag is { Length: > 0 })
+                        {
+                            <span>&middot;</span>
+                            @if (!string.IsNullOrEmpty(who.EmblemUrl))
+                            {
+                                <img class="wot-emblem" src="@who.EmblemUrl" alt="" />
+                            }
+                            <span>[@who.ClanTag]</span>
+                        }
+                    </span>
+                </div>
+            </div>
+            <MudDivider />
+            <div class="wot-menu-row">
+                <span>Statistieken</span>
+                @if (who.CanSeeAdvancedStats)
+                {
+                    <MudIcon Icon="@Icons.Material.Outlined.Check" Size="Size.Small" Color="Color.Success" />
+                }
+                else
+                {
+                    <b><MudIcon Icon="@Icons.Material.Outlined.Lock" Size="Size.Small" /> Niet beschikbaar</b>
+                }
+            </div>
+            <MudDivider Class="mt-1" />
+            <MudMenuItem Icon="@Icons.Material.Outlined.Logout" OnClick="SignOut">Uitloggen</MudMenuItem>
+        </ChildContent>
+    </MudMenu>
+}
+
+@code {
+    /// <summary>First letters of the first two words (Tankmaster_NL is TN); a single word gives its first two letters.</summary>
+    private static string Initials(string nickname)
+    {
+        string[] parts = nickname.Split(['_', ' ', '-'], StringSplitOptions.RemoveEmptyEntries);
+        string initials = parts.Length switch
+        {
+            0 => string.Empty,
+            1 => parts[0][..Math.Min(2, parts[0].Length)],
+            _ => string.Concat(parts[0][0], parts[1][0]),
+        };
+        return initials.ToUpperInvariant();
+    }
+
+    // Wargaming's spelling "combat_officer" -> WoT's English name "Combat Officer"; without a role (no clan) "Geen clan".
+    private static string RoleName(Models.HqIdentity who) =>
+        who.Role is null ? "Geen clan" : string.Join(' ', who.Role.Split('_').Select(w => char.ToUpperInvariant(w[0]) + w[1..]));
+
+    // Forgets the token locally only (docs/PLAN.md section 3.2); Routes shows the login.
+    private void SignOut()
+    {
+        Identity.SignOut();
+        NavigationManager.NavigateTo("login");
+    }
+}

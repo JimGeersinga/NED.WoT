@@ -1,6 +1,7 @@
 ﻿@using System.Diagnostics
 @using System.Globalization
 @inject SettingService SettingService
+@inject IdentityService Identity
 @inject IJSRuntime JSRuntime
 
 @* The player table of an opened battle (canvas "Component: gevechtsdetails"): two header tiers, the first five columns sticky, one group per team, the HP-bar name cell, the own row and the team-killer.
@@ -211,7 +212,7 @@
             Selector = (e) => e.Team
         };
 
-    private bool IsOwn(Player player) => !string.IsNullOrEmpty(player.Name) && string.Equals(player.Name, SettingService.Settings.PlayerName, StringComparison.OrdinalIgnoreCase);
+    private bool IsOwn(Player player) => !string.IsNullOrEmpty(player.Name) && string.Equals(player.Name, Identity.Current?.Nickname, StringComparison.OrdinalIgnoreCase);
 
     private string RowClass(Player player, int rowNumber)
     {
