@@ -40,7 +40,7 @@
 				else
 				{
 					<MudText Typo="Typo.caption" Class="mud-text-secondary" Align="Align.Center">
-						@(_state is RatingState.Loading ? "Ratings ophalen bij Wargaming…" : $"Ratings uit de Wargaming API · bijgewerkt {_updated:HH:mm} · PR = persoonlijke rating")
+						@(_state is RatingState.Loading ? "Ratings ophalen bij Wargaming…" : $"Ratings uit de Wargaming API · bijgewerkt {_updated:HH:mm} · PR = persoonlijke rating · WTR = World of Tanks Rating")
 					</MudText>
 				}
 
@@ -99,7 +99,8 @@
 				<MudTableSortLabel SortBy="new Func<IGrouping<string?, Player>, object>(x => x.Key ?? string.Empty)">Speler</MudTableSortLabel>
 			</MudTh>
 			<MudTh>Tanks</MudTh>
-			<MudTh Style="text-align: right">PR</MudTh>
+			<MudTh Style="text-align: right" title="Persoonlijke rating (Wargaming)">PR</MudTh>
+			<MudTh Style="text-align: right; width: 112px" title="World of Tanks Rating">WTR</MudTh>
 		</HeaderContent>
 		<RowTemplate>
 			<MudTd DataLabel="Gevechten" Style="text-align: right; vertical-align: text-top;">@context.Count()</MudTd>
@@ -114,8 +115,28 @@
 				}
 			</MudTd>
 			<MudTd DataLabel="PR" Style="text-align: right; vertical-align: text-top;">@PlayerRatingCell(context.Key)</MudTd>
+			<MudTd DataLabel="WTR" Style="text-align: right; vertical-align: text-top;">@WtrCell(context.Key)</MudTd>
 		</RowTemplate>
 	</MudTable>;
+
+	private RenderFragment WtrCell(string? name) => @<text>
+		@if (_state is RatingState.Loading)
+		{
+			<MudSkeleton Width="70px" Class="ml-auto" />
+		}
+		else if (_state is RatingState.Ok && name is not null && _players.TryGetValue(name, out PlayerRating? rating) && rating.Wtr is { } wtr)
+		{
+			string level = WtrLevel.Name(WtrLevel.Index(wtr));
+			<span class="d-inline-flex align-center gap-2" style="font-weight: 600; white-space: nowrap;">
+				<img src="@WtrLevel.IconPath(WtrLevel.Index(wtr))" alt="@level" title="@level" width="24" height="24" style="flex: none;" />
+				@NumberFormat.Fmt(wtr)
+			</span>
+		}
+		else
+		{
+			<span class="mud-text-secondary">–</span>
+		}
+	</text>;
 
 	private RenderFragment PlayerRatingCell(string? name) => @<text>
 		@if (_state is RatingState.Loading)

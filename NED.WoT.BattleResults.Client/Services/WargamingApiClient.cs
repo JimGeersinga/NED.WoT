@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -32,6 +32,7 @@ public sealed partial class WargamingApiClient(HttpClient http, ILogger<Wargamin
     private sealed record WgError(string? Message);
     private sealed record Account(long AccountId, string Nickname);
     private sealed record AccountInfo(int? GlobalRating);
+    private sealed record AccountWtr(int? Rating);
     private sealed record Clan(long ClanId, string Tag, string Name, Emblems? Emblems);
     private sealed record Emblems([property: JsonPropertyName("x64")] EmblemSet? X64);
     private sealed record EmblemSet(string? Portal);
@@ -63,6 +64,7 @@ public sealed partial class WargamingApiClient(HttpClient http, ILogger<Wargamin
                 }
 
                 Dictionary<string, AccountInfo?>? info = [];
+                Dictionary<string, AccountWtr?>? wtr = [];
                 if (accounts.Count > 0)
                 {
                     endpoint = "account/info";
@@ -71,9 +73,16 @@ public sealed partial class WargamingApiClient(HttpClient http, ILogger<Wargamin
                     {
                         return new(false, []);
                     }
+
+                    endpoint = "account/wtr";
+                    wtr = await GetAsync<Dictionary<string, AccountWtr?>>(endpoint, $"account_id={string.Join(',', accounts.Select(a => a.AccountId))}", ct);
+                    if (wtr is null)
+                    {
+                        return new(false, []);
+                    }
                 }
 
-                result.AddRange(MapPlayers(chunk, accounts, info));
+                result.AddRange(MapPlayers(chunk, accounts, info, wtr));
             }
 
             return new(true, result);
@@ -153,7 +162,7 @@ public sealed partial class WargamingApiClient(HttpClient http, ILogger<Wargamin
             : (null, env.Error?.Message ?? "unknown");
     }
 
-    private static List<PlayerRating> MapPlayers(string[] names, List<Account> accounts, Dictionary<string, AccountInfo?> info)
+    private static List<PlayerRating> MapPlayers(string[] names, List<Account> accounts, Dictionary<string, AccountInfo?> info, Dictionary<string, AccountWtr?> wtr)
     {
         var ids = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
         foreach (Account a in accounts)
@@ -176,9 +185,16 @@ public sealed partial class WargamingApiClient(HttpClient http, ILogger<Wargamin
                 throw new JsonException("account/info lacks an account");
             }
 
+            // Same rule for account/wtr: a missing key or an object without a numeric rating fails the call; a null entry is no WTR.
+            if (!wtr.TryGetValue(id.ToString(CultureInfo.InvariantCulture), out AccountWtr? w))
+            {
+                throw new JsonException("account/wtr lacks an account");
+            }
+
+            int? wtrRating = w is null ? null : w.Rating ?? throw new JsonException("account/wtr entry lacks rating");
             rows.Add(entry is null
-                ? new(name, null, true)
-                : new(name, entry.GlobalRating ?? throw new JsonException("account/info entry lacks global_rating"), false));
+                ? new(name, null, true, wtrRating)
+                : new(name, entry.GlobalRating ?? throw new JsonException("account/info entry lacks global_rating"), false, wtrRating));
         }
 
         return rows;
@@ -203,15 +219,16 @@ public sealed partial class WargamingApiClient(HttpClient http, ILogger<Wargamin
         // Pure, on canned JSON: no network.
         var accounts = Parse<List<Account>>("""{"status":"ok","data":[{"nickname":"BarryOne","account_id":1},{"nickname":"Hidey","account_id":2}]}""").Data!;
         var info = Parse<Dictionary<string, AccountInfo?>>("""{"status":"ok","data":{"1":{"global_rating":4930},"2":null}}""").Data!;
-        List<PlayerRating> rows = MapPlayers(["barryone", "Hidey", "Nobody"], accounts, info);
-        Debug.Assert(rows[0] == new PlayerRating("barryone", 4930, false), "case-insensitive match");
-        Debug.Assert(rows[1] == new PlayerRating("Hidey", null, true), "null data[id] is hidden");
+        var wtrs = Parse<Dictionary<string, AccountWtr?>>("""{"status":"ok","data":{"1":{"rating":5333,"account_id":1},"2":null}}""").Data!;
+        List<PlayerRating> rows = MapPlayers(["barryone", "Hidey", "Nobody"], accounts, info, wtrs);
+        Debug.Assert(rows[0] == new PlayerRating("barryone", 4930, false, 5333), "case-insensitive match, with WTR");
+        Debug.Assert(rows[1] == new PlayerRating("Hidey", null, true), "null data[id] is hidden, null WTR is none");
         Debug.Assert(rows[2] == new PlayerRating("Nobody", null, false), "unknown is not hidden");
 
         bool failed = false;
         try
         {
-            MapPlayers(["barryone"], accounts, Parse<Dictionary<string, AccountInfo?>>("""{"status":"ok","data":{"1":{}}}""").Data!);
+            MapPlayers(["barryone"], accounts, Parse<Dictionary<string, AccountInfo?>>("""{"status":"ok","data":{"1":{}}}""").Data!, wtrs);
         }
         catch (JsonException)
         {
@@ -219,6 +236,18 @@ public sealed partial class WargamingApiClient(HttpClient http, ILogger<Wargamin
         }
 
         Debug.Assert(failed, "an object without global_rating fails the call");
+
+        failed = false;
+        try
+        {
+            MapPlayers(["barryone"], accounts, info, Parse<Dictionary<string, AccountWtr?>>("""{"status":"ok","data":{"1":{}}}""").Data!);
+        }
+        catch (JsonException)
+        {
+            failed = true;
+        }
+
+        Debug.Assert(failed, "an object without a WTR rating fails the call");
 
         var clans = Parse<List<Clan>>("""{"status":"ok","data":[{"clan_id":9,"tag":"NED-10","name":"Other"},{"clan_id":5,"tag":"NED-1","name":"Noobs","emblems":{"x64":{"portal":"u"}}}]}""").Data!;
         Clan clan = PickClan(clans, "ned-1")!;

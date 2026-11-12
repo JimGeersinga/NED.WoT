@@ -1,4 +1,4 @@
-# WoT Gevechtslog — plan of record
+﻿# WoT Gevechtslog — plan of record
 
 The desktop app that reads World of Tanks `.wotreplay` files and lists the
 battles in a table. It is a sibling of WoT HQ (`JimGeersinga/NED.WoT.Clan`).
@@ -16,7 +16,7 @@ A path marked "created by #N" does not exist yet.
 | Identity | Sign in with Wargaming (§3.2), then HQ's answer (§3.3) gives nickname, clan tag, name, emblem, role and rights; none of it comes from Settings. |
 | Replay folders | Several folders (title + path) and a carousel in the app bar. Only the selected folder is read, watched and held in memory; switching folders drops the old one's battles and reads the new one from disk. |
 | Live battle | One temp-replay path setting, separate from the folders. |
-| Ratings | PR and clan rating (no WTR: the public API has none) in the Clan battle dialog, for everyone with access, from Wargaming's public API under the app's own application id. |
+| Ratings | PR, WTR (`account/wtr`) and clan rating in the Clan battle dialog, for everyone with access, from Wargaming's public API under the app's own application id. |
 | Tests | No test project. Acceptance is checked by hand and with screenshots (CLAUDE.md, "Screenshots instead of UI tests"). |
 | Build | The .NET recommended analyzers run (`AnalysisLevel` `latest-recommended`) and any warning fails the build (`TreatWarningsAsErrors`); decided by the owner on 2026-11-07. The other Recur build rules stay out (CLAUDE.md). The SDK is pinned to 11.0.x by `global.json`, the same band CI uses. |
 
@@ -100,7 +100,7 @@ The error's `value` is never deserialized. Checked against the live EU API on 20
   An unrated or unknown clan gives `data[id] = null`. **(verify)** that `efficiency.value` can be null: not seen; the client
   gives a null rating, rank and emblem when `efficiency`, its `value` or `rank`, or `emblems.x64` is missing or null.
   Other keys are not used.
-- The public API has no WTR (checked 2026-11-09), so there is no WTR column.
+- WTR exists in the public API (found 2026-11-12; the 2026-11-09 check was wrong): `GET account/wtr/?account_id=<up to 100 ids>` → `data[id] = { rating, account_id }`, or `null` for an unknown id (101 ids → `ACCOUNT_ID_LIST_LIMIT_EXCEEDED`). Shown next to PR, with a level icon: limits `[0, 400, 1000, 1400, 1900, 2700, 3200, 3900, 4800, 5400, 6200, 7300, 8000, 8800, 9900]` = Brons I–III, Zilver I–III, Goud I–III, Aas I–III, Legende I–III. **(verify)** what a player who hides their stats returns (expected `null`).
 
 ## 4. Settings
 
