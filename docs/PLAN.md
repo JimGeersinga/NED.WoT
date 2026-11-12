@@ -28,12 +28,12 @@ is a second project in `NED.WoT.slnx`.
 
 | Folder | Holds |
 |---|---|
-| `Components/Layout` | `MainLayout.razor` (app bar and page frame), `Splash`, `UpdateDialog` |
-| `Components/Pages` | `Index.razor` (the battle table), `Unauthorized.razor` |
-| `Components/Battles` | the battle table and what it shows: `BattleFilterBar`, `BattleRow`, `BattleGroupHeader`, `BattleTotals`, `BattleRecord`, `Details`, `ResultChip`, `RatioCell`, `EmptyState`, `UndefinedNamesDialog`, `NumberFormat` |
+| `Components/Layout` | `MainLayout.razor` (app bar and page frame), `AccountMenu`, `FolderCarousel`, `Splash`, `UpdateDialog` |
+| `Components/Pages` | `Index.razor` (the battle table), `Login.razor`, `Unauthorized.razor` |
+| `Components/Battles` | the battle table and what it shows: `BattleFilterBar`, `BattleRow`, `BattleGroupHeader`, `BattleTotals`, `BattleRecord`, `Details`, `RatioCell`, `EmptyState`, `UndefinedNamesDialog` |
 | `Components/Clan` | `ClanMatchDialog`, `ClanMembersDialog` |
-| `Components/Settings` | `SettingsDialog` |
-| `Components/Shared` | `WotDialogTitle`, used by dialogs of several features |
+| `Components/Setup` | `SettingsDialog` |
+| `Components/Shared` | `WotDialogTitle`, `ResultChip`, `NumberFormat`: used by more than one feature |
 | `Services` | `BattleReportService`, `BattleReportMapper`, `SettingService`, `HqAuthenticationStateProvider`, `UpdateCheckService`, `MapNameResolver`, `TankNameResolver`, `ColorHelper` |
 | `Models` | `Settings`, `AppSettings`, `BattleReport` and its event args |
 | `Attributes` | `DirectoryExistsAttribute` |
@@ -143,6 +143,8 @@ Titles match the GitHub milestones one to one.
 | 06 | Clan battle statistics | #18–#19 | Clan rating and PR in the Clan battle dialog, from Wargaming's public API. |
 | 07 | Speed and memory | #41–#45 | A reload frees the old battle list; replays are read by block and parsed into a typed model; analyzers run as errors. |
 | 08 | Fewer MudBlazor overrides | #54–#60 | Hand-made buttons, icons, chips and menu rows become MudBlazor components; unused and leaking CSS goes; shadows move into the theme. |
+| 09 | Teams | #65–#70 | Per-team statistics: lobbies grouped into teams, a team filter and results per map per team. |
+| 10 | .NET 11 | #78 | Upgrade to .NET 11. |
 | 11 | Component structure | #108–#114 | Components in feature folders; `Index`, the Clan battle dialog, the filter bar and `Details` split so each has one job. |
 
 Order inside and across milestones follows each issue's `Depends on:` line

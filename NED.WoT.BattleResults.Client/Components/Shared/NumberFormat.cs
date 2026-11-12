@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace NED.WoT.BattleResults.Client.Components.Battles;
+namespace NED.WoT.BattleResults.Client.Components.Shared;
 
 internal static class NumberFormat
 {
