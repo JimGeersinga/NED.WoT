@@ -12,9 +12,9 @@
 			@if (Match.HasValue)
 			{
 				<MudStack Row Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="4">
-					<MudText Typo="Typo.h4" HtmlTag="span">[@Match.Value.Item1]</MudText>
+					<MudText Typo="Typo.h4" HtmlTag="span">[@Sides.Left]</MudText>
 					<MudText Typo="Typo.h5" HtmlTag="span" Class="mud-text-secondary">vs</MudText>
-					<MudText Typo="Typo.h4" HtmlTag="span">[@Match.Value.Item2]</MudText>
+					<MudText Typo="Typo.h4" HtmlTag="span">[@Sides.Right]</MudText>
 				</MudStack>
 			}
 		</WotDialogTitle>
@@ -24,9 +24,9 @@
 		{
 			<MudStack Spacing="4" Class="pt-2">
 				<MudStack Row Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="3" Class="flex-wrap">
-					@ClanCard(Match.Value.Item1, OwnTag)
+					@ClanCard(Sides.Left, OwnTag)
 					<MudText Typo="Typo.h6" HtmlTag="span" Class="mud-text-secondary">vs</MudText>
-					@ClanCard(Match.Value.Item2, OwnTag)
+					@ClanCard(Sides.Right, OwnTag)
 				</MudStack>
 				@if (_state is RatingState.Failed)
 				{
@@ -138,6 +138,9 @@
 		}
 	</text>;
 
+	// The design's rating value (ClanMatch board): display font, 700 30px/1.1, tabular figures.
+	private const string RatingValueStyle = "font: 700 30px/1.1 var(--wot-font-display); font-variant-numeric: tabular-nums;";
+
 	private RenderFragment ClanCard(string tag, string? ownTag) => @<MudPaper Outlined Elevation="0" Class="pa-3" Style="min-width: 300px; flex: 1 1 300px; max-width: 460px;">
 		<MudStack Row AlignItems="AlignItems.Center" Spacing="3">
 			@if (_clans.TryGetValue(tag, out ClanRating? clan) && clan.EmblemUrl is { } emblem)
@@ -151,14 +154,14 @@
 				</MudText>
 			</MudStack>
 			<MudStack Spacing="0" Style="text-align: right;">
-				<MudText Typo="Typo.caption" Class="mud-text-secondary">Clanrating</MudText>
+				<MudText Typo="Typo.overline" Class="mud-text-secondary">Clanrating</MudText>
 				@if (_state is RatingState.Loading)
 				{
-					<MudSkeleton Width="64px" Class="ml-auto" />
+					<MudSkeleton Width="64px" Height="33px" Class="ml-auto" />
 				}
 				else if (_state is RatingState.Ok && _clans.TryGetValue(tag, out ClanRating? rated) && rated.Rating is { } value)
 				{
-					<MudText Typo="Typo.h6">@NumberFormat.Fmt(value)</MudText>
+					<MudText Style="@RatingValueStyle">@NumberFormat.Fmt(value)</MudText>
 					@if (rated.Rank is { } rank)
 					{
 						<MudText Typo="Typo.caption" Class="mud-text-secondary">Rang @rank</MudText>
@@ -166,7 +169,7 @@
 				}
 				else
 				{
-					<MudText Typo="Typo.h6" Class="mud-text-secondary">–</MudText>
+					<MudText Class="mud-text-secondary" Style="@RatingValueStyle">–</MudText>
 				}
 			</MudStack>
 		</MudStack>
@@ -220,6 +223,9 @@
 	private CancellationTokenSource _cts = new();
 
 	private string? OwnTag => Identity.Current?.ClanTag;
+
+	// The signed-in clan is always on the left; no own clan (or neither side matches) keeps the game's order. Display only: the battle filter still uses Match.
+	private (string Left, string Right) Sides => Match is { } m && OwnTag is not null && m.Item2.Equals(OwnTag, StringComparison.OrdinalIgnoreCase) ? (m.Item2, m.Item1) : Match ?? default;
 
 	private List<BattleReport> _battles = [];
 	private List<IGrouping<string?, Player>> _enemyPlayers = [];
