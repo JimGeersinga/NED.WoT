@@ -13,6 +13,13 @@
 .tag.d { color: var(--mud-palette-warning); }
 .tag.u { color: var(--mud-palette-text-secondary); }
 .tag.own { padding: 3px 6px; border: 1px solid var(--wot-bronze-edge); border-radius: 2px; background: color-mix(in srgb, var(--mud-palette-tertiary) 8%, transparent); min-width: 0; }
+/* Hover on a clan link shows the own tag's box (padding 3px 6px, 1px border, 2px radius) around the text, and nothing moves: .tag-t carries that box transparent, and the negative margin (-(3+1)px, -(6+1)px) cancels it on every side, so its margin box is exactly the text. The own tag has its real box already, so it only recolours its border. The focus ring sits on the anchor (wot.css) and is not touched. */
+.tag-t { padding: 3px 6px; border: 1px solid transparent; border-radius: 2px; margin: -4px -7px; transition: border-color .12s; }
+.tag.own .tag-t { padding: 0; border: 0; margin: 0; }
+.tag.own { transition: border-color .12s; }
+a.tag:not(.own)[href]:hover .tag-t { border-color: var(--mud-palette-primary); }
+a.tag.own[href]:hover { border-color: var(--mud-palette-primary); }
+@media (prefers-reduced-motion: reduce) { .tag-t, .tag.own { transition: none; } }
 .vs { display: flex; align-items: center; gap: 10px; }
 .vs > * { flex: none; }
 .vs > .tag:first-child { justify-content: flex-end; }
