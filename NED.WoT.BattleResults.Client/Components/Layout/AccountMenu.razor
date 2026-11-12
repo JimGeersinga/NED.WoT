@@ -7,7 +7,7 @@
     <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" PopoverClass="wot-menu">
         <ActivatorContent Context="menu">
             <MudButton Variant="Variant.Text" Color="Color.Inherit" Class="wot-ubtn" aria-label="Account" OnClick="@menu.ToggleAsync">
-                <MudAvatar Class="wot-avatar">@Initials(who.Nickname)</MudAvatar>
+                <MudAvatar Class="wot-avatar">@Badge(who)</MudAvatar>
                 <span class="wot-ubtn-text">
                     <span class="wot-ubtn-name">@who.Nickname</span>
                     <span class="wot-ubtn-role">@RoleName(who)</span>
@@ -17,7 +17,7 @@
         </ActivatorContent>
         <ChildContent>
             <div class="wot-menu-head">
-                <MudAvatar Class="wot-avatar wot-avatar-lg">@Initials(who.Nickname)</MudAvatar>
+                <MudAvatar Class="wot-avatar wot-avatar-lg">@Badge(who)</MudAvatar>
                 <div class="wot-menu-head-text">
                     <span class="wot-ubtn-name">@who.Nickname</span>
                     <span class="wot-ubtn-role">
@@ -66,9 +66,13 @@
         return initials.ToUpperInvariant();
     }
 
-    // Wargaming's spelling "combat_officer" -> WoT's English name "Combat Officer"; without a role (no clan) "Geen clan".
-    private static string RoleName(Models.HqIdentity who) =>
-        who.Role is null ? "Geen clan" : string.Join(' ', who.Role.Split('_').Select(w => char.ToUpperInvariant(w[0]) + w[1..]));
+    // The rank icon; the initials when there is no clan or the role is one we have no icon for.
+    private static RenderFragment Badge(Models.HqIdentity who) => who.Role != Models.ClanRole.Unknown
+        ? @<img class="wot-rank-icon" src="img/ranks/@(who.Role).png" alt="" />
+        : @<text>@Initials(who.Nickname)</text>;
+
+    // Empty without a clan, so the span stays and the layout doesn't shift.
+    private static string RoleName(Models.HqIdentity who) => who.Role == ClanRole.Unknown ? string.Empty : who.Role.DisplayName();
 
     // Forgets the token locally only (docs/PLAN.md section 3.2); Routes shows the login.
     private void SignOut()

@@ -64,7 +64,7 @@ public sealed class GevechtslogSessionClient(HttpClient http)
     private static SessionResult Parse(string json, WargamingSession session)
     {
         HqAnswer a = JsonSerializer.Deserialize<HqAnswer>(json, Json) ?? throw new JsonException("Empty answer.");
-        var identity = new HqIdentity(session.AccountId, a.Nickname ?? session.Nickname, a.ClanId, a.ClanTag, a.ClanName, a.EmblemUrl, a.Role, a.CanSeeAdvancedStats);
+        var identity = new HqIdentity(session.AccountId, a.Nickname ?? session.Nickname, a.ClanId, a.ClanTag, a.ClanName, a.EmblemUrl, ClanRole.Parse(a.Role), a.CanSeeAdvancedStats);
         return a.CanUse ? new SessionResult.Allowed(identity) : new SessionResult.Refused(identity);
     }
 
@@ -76,7 +76,7 @@ public sealed class GevechtslogSessionClient(HttpClient http)
     {
         var session = new WargamingSession(501742326, "Jim", "tok", DateTimeOffset.UnixEpoch);
         string allowed = """{"accountId":501742326,"nickname":"Jim","clanId":500012147,"clanTag":"NED-1","clanName":"N","emblemUrl":null,"role":"commander","canUse":true,"canSeeAdvancedStats":true}""";
-        Debug.Assert(Parse(allowed, session) is SessionResult.Allowed { Identity: { ClanTag: "NED-1", Role: "commander", CanSeeAdvancedStats: true } });
+        Debug.Assert(Parse(allowed, session) is SessionResult.Allowed { Identity: { ClanTag: "NED-1", Role: ClanRole.Commander, CanSeeAdvancedStats: true } });
         string refused = """{"accountId":501742326,"nickname":"Jim","clanId":null,"clanTag":null,"clanName":null,"emblemUrl":null,"role":null,"canUse":false,"canSeeAdvancedStats":false}""";
         Debug.Assert(Parse(refused, session) is SessionResult.Refused { Identity: { ClanId: null } });
     }
