@@ -1,74 +1,78 @@
 @inject IdentityService Identity
 @inject NavigationManager NavigationManager
 
-@* Who you are signed in as (from HQ), and Uitloggen. Plain MudBlazor classes only: the menu renders in the popover provider, outside this component's scope. *@
+@* Who you are signed in as (from HQ's answer), and Uitloggen. Same build as WoT HQ's UserMenu: a MudMenu whose activator toggles it explicitly. *@
 @if (Identity.Current is { } who)
 {
-    @* MudMenu's ActivatorContent did not react to clicks here, so this is a button plus a popover anchored to the wrapper. *@
-    <div class="wot-account-anchor">
-        <button type="button" class="wot-account" aria-label="Account" aria-haspopup="menu" aria-expanded="@_open.ToString().ToLowerInvariant()" @onclick="Toggle">
-            <span class="wot-avatar">@Initials(who.Nickname)</span>
-            <span class="wot-account-name">@who.Nickname</span>
-        </button>
-        <MudOverlay Visible="_open" OnClick="Close" DarkBackground="false" ZIndex="1200" />
-        <MudPopover Open="_open" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Style="z-index: 1300;" Class="wot-account-popover">
-            <div class="pa-4" style="min-width: 260px;">
-                <MudText Typo="Typo.h6">@who.Nickname</MudText>
-                <MudText Typo="Typo.caption" Class="mud-text-secondary">Ingelogd via Wargaming</MudText>
-                <MudDivider Class="my-3" />
-                <MudStack Spacing="2">
-                    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-                        <MudText Typo="Typo.body2" Class="mud-text-secondary">Clan</MudText>
-                        <span class="wot-clan-line">
+    <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" PopoverClass="wot-menu">
+        <ActivatorContent Context="menu">
+            <MudButton Variant="Variant.Text" Color="Color.Inherit" Class="wot-ubtn" aria-label="Account" OnClick="@menu.ToggleAsync">
+                <MudAvatar Class="wot-avatar">@Initials(who.Nickname)</MudAvatar>
+                <span class="wot-ubtn-text">
+                    <span class="wot-ubtn-name">@who.Nickname</span>
+                    <span class="wot-ubtn-role">@RoleName(who)</span>
+                </span>
+                <MudIcon Icon="@Icons.Material.Outlined.ExpandMore" Class="wot-ubtn-chevron" />
+            </MudButton>
+        </ActivatorContent>
+        <ChildContent>
+            <div class="wot-menu-head">
+                <MudAvatar Class="wot-avatar wot-avatar-lg">@Initials(who.Nickname)</MudAvatar>
+                <div class="wot-menu-head-text">
+                    <span class="wot-ubtn-name">@who.Nickname</span>
+                    <span class="wot-ubtn-role">
+                        @RoleName(who)
+                        @if (who.ClanTag is { Length: > 0 })
+                        {
+                            <span>&middot;</span>
                             @if (!string.IsNullOrEmpty(who.EmblemUrl))
                             {
                                 <img class="wot-emblem" src="@who.EmblemUrl" alt="" />
                             }
-                            <MudText Typo="Typo.body2">@(who.ClanTag is null ? "Geen clan" : $"[{who.ClanTag}] {who.ClanName}")</MudText>
-                        </span>
-                    </MudStack>
-                    @if (who.Role is not null)
-                    {
-                        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-                            <MudText Typo="Typo.body2" Class="mud-text-secondary">Rol</MudText>
-                            <MudChip T="string" Size="Size.Small">@RoleName(who.Role)</MudChip>
-                        </MudStack>
-                    }
-                    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-                        <MudText Typo="Typo.body2" Class="mud-text-secondary">Uitgebreide statistieken</MudText>
-                        @if (who.CanSeeAdvancedStats)
-                        {
-                            <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Color="Color.Success" />
+                            <span>[@who.ClanTag]</span>
                         }
-                        else
-                        {
-                            <MudText Typo="Typo.body2"><MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Small" /> Niet beschikbaar</MudText>
-                        }
-                    </MudStack>
-                </MudStack>
+                    </span>
+                </div>
             </div>
             <MudDivider />
-            <MudButton Variant="Variant.Text" Color="Color.Inherit" FullWidth="true" StartIcon="@Icons.Material.Filled.Logout" OnClick="SignOut" Class="justify-start">Uitloggen</MudButton>
-        </MudPopover>
-    </div>
+            <div class="wot-menu-row">
+                <span>Statistieken</span>
+                @if (who.CanSeeAdvancedStats)
+                {
+                    <MudIcon Icon="@Icons.Material.Outlined.Check" Size="Size.Small" Color="Color.Success" />
+                }
+                else
+                {
+                    <b><MudIcon Icon="@Icons.Material.Outlined.Lock" Size="Size.Small" /> Niet beschikbaar</b>
+                }
+            </div>
+            <MudDivider Class="mt-1" />
+            <MudMenuItem Icon="@Icons.Material.Outlined.Logout" OnClick="SignOut">Uitloggen</MudMenuItem>
+        </ChildContent>
+    </MudMenu>
 }
 
 @code {
-    private bool _open;
+    /// <summary>First letters of the first two words (Tankmaster_NL is TN); a single word gives its first two letters.</summary>
+    private static string Initials(string nickname)
+    {
+        string[] parts = nickname.Split(['_', ' ', '-'], StringSplitOptions.RemoveEmptyEntries);
+        string initials = parts.Length switch
+        {
+            0 => string.Empty,
+            1 => parts[0][..Math.Min(2, parts[0].Length)],
+            _ => string.Concat(parts[0][0], parts[1][0]),
+        };
+        return initials.ToUpperInvariant();
+    }
 
-    private void Toggle() => _open = !_open;
+    // Wargaming's spelling "combat_officer" -> WoT's English name "Combat Officer"; without a role (no clan) "Geen clan".
+    private static string RoleName(Models.HqIdentity who) =>
+        who.Role is null ? "Geen clan" : string.Join(' ', who.Role.Split('_').Select(w => char.ToUpperInvariant(w[0]) + w[1..]));
 
-    private void Close() => _open = false;
-
-    private static string Initials(string nickname) => nickname[..Math.Min(2, nickname.Length)].ToUpperInvariant();
-
-    // Wargaming's spelling "combat_officer" -> WoT's English name "Combat Officer".
-    private static string RoleName(string role) => string.Join(' ', role.Split('_').Select(w => char.ToUpperInvariant(w[0]) + w[1..]));
-
-    // Forgets the token locally only (docs/PLAN.md §3.2); Routes shows the login.
+    // Forgets the token locally only (docs/PLAN.md section 3.2); Routes shows the login.
     private void SignOut()
     {
-        _open = false;
         Identity.SignOut();
         NavigationManager.NavigateTo("login");
     }
