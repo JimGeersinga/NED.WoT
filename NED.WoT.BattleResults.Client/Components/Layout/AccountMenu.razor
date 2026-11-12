@@ -66,12 +66,12 @@
         return initials.ToUpperInvariant();
     }
 
-    // Wargaming's role spellings in rank order: the position + 1 is the file name in img/ranks.
+    // Wargaming's role spellings; each is also the file name in img/ranks.
     private static readonly string[] Ranks = ["commander", "executive_officer", "personnel_officer", "combat_officer", "intelligence_officer", "quartermaster", "recruitment_officer", "junior_officer", "private", "recruit", "reservist"];
 
     // The rank icon; the initials when there is no clan or the role is one we have no icon for.
-    private static RenderFragment Badge(Models.HqIdentity who) => Array.IndexOf(Ranks, who.Role) is >= 0 and var i
-        ? @<img class="wot-rank-icon" src="img/ranks/@(i + 1).png" alt="" />
+    private static RenderFragment Badge(Models.HqIdentity who) => Array.IndexOf(Ranks, who.Role) >= 0
+        ? @<img class="wot-rank-icon" src="img/ranks/@(who.Role).png" alt="" />
         : @<text>@Initials(who.Nickname)</text>;
 
     // Wargaming's spelling "combat_officer" -> WoT's English name "Combat Officer"; without a role (no clan) "Geen clan".
