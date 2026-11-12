@@ -62,6 +62,9 @@ public class BattleReportService : IDisposable
     /// <summary>The replay files the current load has read so far, readable or not.</summary>
     public int FilesLoaded => Volatile.Read(ref _filesLoaded);
 
+    /// <summary>How long the last full folder load took, measured on the load itself (not on when the UI got round to the events).</summary>
+    public TimeSpan LastLoadDuration { get; private set; }
+
     public event EventHandler? LoadingBattleReportsStarted;
     public event EventHandler? LoadingBattleReportsFinished;
     public event EventHandler<BattleReportAddedEventArgs>? BattleReportAdded;
@@ -214,6 +217,7 @@ public class BattleReportService : IDisposable
         _loaded = true;
 
         long elapsedMs = stopwatch.ElapsedMilliseconds;
+        LastLoadDuration = stopwatch.Elapsed;
         long allocated = GC.GetTotalAllocatedBytes(true) - allocatedBefore;
         LoadingBattleReportsFinished?.Invoke(this, new EventArgs());
         Debug.WriteLine($"Battle list loaded: {files.Count} files, {Interlocked.Read(ref _bytesRead) / 1048576.0:F1} MB read, {allocated / 1048576.0:F1} MB allocated, {elapsedMs} ms");
