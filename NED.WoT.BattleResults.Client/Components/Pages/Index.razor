@@ -1,4 +1,4 @@
-﻿@page "/"
+@page "/"
 @attribute [Authorize]
 
 @using System.Collections.ObjectModel;
@@ -7,6 +7,7 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 
+@implements IDisposable
 @inject BattleReportService BattleResultService;
 @inject SettingService SettingService;
 @inject IdentityService Identity;
@@ -480,123 +481,149 @@
 		AuthenticationState authResult = await AuthenticationState;
 		_canToggleBattleStats = authResult.User.HasClaim(Claims.CanSeeBattleStats, bool.TrueString);
 
-		BattleResultService.LoadingBattleReportsStarted += async (s, e) =>
-		{
-			await InvokeAsync(async () =>
-			{
-				// Battles added by the file watcher: keep the table as it is, so the new rows can show up in place.
-				if (_loadedOnce)
-				{
-					_addedFiles = [];
-
-					return;
-				}
-
-				_reports = new List<BattleReport>();
-				_battlesVersion++;
-				_loading = true;
-				App.SetTitle(null);
-				StateHasChanged();
-
-				// The progress bar moves with it, so it runs for every load, not only when the battles show while loading.
-				while (_loading)
-				{
-					await Task.Delay(500);
-					StateHasChanged();
-				}
-			});
-		};
-
-		// Another folder was selected: the rows of the old one go and the new one loads (the empty state of a missing folder shows instead of the loading state).
-		BattleResultService.FolderChanged += async (s, e) =>
-		{
-			await InvokeAsync(() =>
-			{
-				_reports = [];
-				_addedFiles = [];
-				// The filters of the old folder do not follow (the defaults of the fields).
-				_clan = null;
-				_player = null;
-				_clanOnly = true;
-				_maps = [];
-				_results = [];
-				_battlesVersion++;
-				_loadedOnce = false;
-				_loading = Directory.Exists(SettingService.Settings.ReplayFolders.ElementAtOrDefault(BattleResultService.CurrentFolder)?.Path);
-				StateHasChanged();
-			});
-		};
-
-		BattleResultService.BattleReportAdded += async (s, e) =>
-		{
-			await InvokeAsync(() =>
-			{
-				_reports.Add(e.Report);
-				_battlesVersion++;
-				_clanMatchDialog?.Close();
-				if (!_loading && _loadedOnce)
-				{
-					_addedFiles.Add(e.Report.FileName);
-				}
-			});
-		};
-
-		BattleResultService.BattleReportRemoved += async (s, e) =>
-		{
-			await InvokeAsync(() =>
-			{
-				_reports.Remove(e.Report);
-				_battlesVersion++;
-				StateHasChanged();
-			});
-		};
-
-		BattleResultService.LoadingBattleReportsFinished += async (s, e) =>
-		{
-			await InvokeAsync(async () =>
-			{
-				_reports = BattleResultService.BattleReports.Select(x => x.Value).OrderByDescending(x => x.MatchStart).ToList();
-				_battlesVersion++;
-				_loading = false;
-				if (!_loadedOnce)
-				{
-					// The load time goes behind the version in the window title.
-					App.SetTitle($" · geladen in {BattleResultService.LastLoadDuration.TotalSeconds.ToString("0.0", BattleReport.DutchCulture)} s");
-				}
-
-				_loadedOnce = true;
-				StateHasChanged();
-
-				// The rows the watcher added stay quietly highlighted for 2 seconds, unless a newer batch took over.
-				HashSet<string?> shown = _addedFiles;
-				if (shown.Count > 0)
-				{
-					await Task.Delay(2000);
-					if (ReferenceEquals(_addedFiles, shown))
-					{
-						_addedFiles = [];
-						StateHasChanged();
-					}
-				}
-			});
-		};
-
-		BattleResultService.ClanMatchStarted += async (s, e) =>
-		{
-			await InvokeAsync(async () =>
-			{
-				if (!SettingService.Settings.AutoClanLookup)
-				{
-					return;
-				}
-
-				await OpenClanMatchDialog(e);
-			});
-		};
+		BattleResultService.LoadingBattleReportsStarted += OnLoadingStarted;
+		BattleResultService.FolderChanged += OnFolderChanged;
+		BattleResultService.BattleReportAdded += OnReportAdded;
+		BattleResultService.BattleReportRemoved += OnReportRemoved;
+		BattleResultService.LoadingBattleReportsFinished += OnLoadingFinished;
+		BattleResultService.ClanMatchStarted += OnClanMatchStarted;
 
 		await Task.Run(() => BattleResultService.LoadBattleReports());
 
+		// Whoever started the load, the page does not depend on having caught Finished (issue #116).
+		_reports = BattleResultService.BattleReports.Select(x => x.Value).OrderByDescending(x => x.MatchStart).ToList();
+		_battlesVersion++;
+		if (!_loadedOnce)
+		{
+			App.SetTitle($" · geladen in {BattleResultService.LastLoadDuration.TotalSeconds.ToString("0.0", BattleReport.DutchCulture)} s");
+		}
+
+		_loadedOnce = true;
 		_loading = false;
+	}
+
+	public void Dispose()
+	{
+		BattleResultService.LoadingBattleReportsStarted -= OnLoadingStarted;
+		BattleResultService.FolderChanged -= OnFolderChanged;
+		BattleResultService.BattleReportAdded -= OnReportAdded;
+		BattleResultService.BattleReportRemoved -= OnReportRemoved;
+		BattleResultService.LoadingBattleReportsFinished -= OnLoadingFinished;
+		BattleResultService.ClanMatchStarted -= OnClanMatchStarted;
+	}
+
+	private async void OnLoadingStarted(object? s, EventArgs e)
+	{
+		await InvokeAsync(async () =>
+		{
+			// Battles added by the file watcher: keep the table as it is, so the new rows can show up in place.
+			if (_loadedOnce)
+			{
+				_addedFiles = [];
+
+				return;
+			}
+
+			_reports = new List<BattleReport>();
+			_battlesVersion++;
+			_loading = true;
+			App.SetTitle(null);
+			StateHasChanged();
+
+			// The progress bar moves with it, so it runs for every load, not only when the battles show while loading.
+			while (_loading)
+			{
+				await Task.Delay(500);
+				StateHasChanged();
+			}
+		});
+	}
+
+	// Another folder was selected: the rows of the old one go and the new one loads (the empty state of a missing folder shows instead of the loading state).
+	private async void OnFolderChanged(object? s, EventArgs e)
+	{
+		await InvokeAsync(() =>
+		{
+			_reports = [];
+			_addedFiles = [];
+			// The filters of the old folder do not follow (the defaults of the fields).
+			_clan = null;
+			_player = null;
+			_clanOnly = true;
+			_maps = [];
+			_results = [];
+			_battlesVersion++;
+			_loadedOnce = false;
+			_loading = Directory.Exists(SettingService.Settings.ReplayFolders.ElementAtOrDefault(BattleResultService.CurrentFolder)?.Path);
+			StateHasChanged();
+		});
+	}
+
+	private async void OnReportAdded(object? s, BattleReportAddedEventArgs e)
+	{
+		await InvokeAsync(() =>
+		{
+			_reports.Add(e.Report);
+			_battlesVersion++;
+			_clanMatchDialog?.Close();
+			if (!_loading && _loadedOnce)
+			{
+				_addedFiles.Add(e.Report.FileName);
+			}
+		});
+	}
+
+	private async void OnReportRemoved(object? s, BattleReportRemovedEventArgs e)
+	{
+		await InvokeAsync(() =>
+		{
+			_reports.Remove(e.Report);
+			_battlesVersion++;
+			StateHasChanged();
+		});
+	}
+
+	private async void OnLoadingFinished(object? s, EventArgs e)
+	{
+		await InvokeAsync(async () =>
+		{
+			_reports = BattleResultService.BattleReports.Select(x => x.Value).OrderByDescending(x => x.MatchStart).ToList();
+			_battlesVersion++;
+			_loading = false;
+			if (!_loadedOnce)
+			{
+				// The load time goes behind the version in the window title.
+				App.SetTitle($" · geladen in {BattleResultService.LastLoadDuration.TotalSeconds.ToString("0.0", BattleReport.DutchCulture)} s");
+			}
+
+			_loadedOnce = true;
+			StateHasChanged();
+
+			// The rows the watcher added stay quietly highlighted for 2 seconds, unless a newer batch took over.
+			HashSet<string?> shown = _addedFiles;
+			if (shown.Count > 0)
+			{
+				await Task.Delay(2000);
+				if (ReferenceEquals(_addedFiles, shown))
+				{
+					_addedFiles = [];
+					StateHasChanged();
+				}
+			}
+		});
+	}
+
+	private async void OnClanMatchStarted(object? s, (string, string) e)
+	{
+		await InvokeAsync(async () =>
+		{
+			if (!SettingService.Settings.AutoClanLookup)
+			{
+				return;
+			}
+
+			await OpenClanMatchDialog(e);
+		});
 	}
 
 	/// <summary>A clan: the battles where either team has its tag. A player: the battles with that player on either team. Both: both conditions.</summary>

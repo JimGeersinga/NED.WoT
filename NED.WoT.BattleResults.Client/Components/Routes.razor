@@ -4,16 +4,18 @@
 @inject NavigationManager NavigationManager
 @inject IdentityService Identity
 
+@if (!_identityLoaded)
+{
+    <Splash />
+}
+else
+{
 <CascadingAuthenticationState>
     <Router AppAssembly="@typeof(MauiProgram).Assembly">
         <Found Context="routeData">
             <CascadingValue Value="@routeData">
                 @* HQ decides (docs/PLAN.md §3.3): no session -> login; refused or no answer -> unauthorized; allowed -> the page. *@
-                @if (!_identityLoaded)
-                {
-                    <Splash />
-                }
-                else if (Identity.Status == IdentityStatus.SignedOut && routeData.PageType != typeof(Pages.Login))
+                @if (Identity.Status == IdentityStatus.SignedOut && routeData.PageType != typeof(Pages.Login))
                 {
                     NavigationManager.NavigateTo("login");
                 }
@@ -42,6 +44,7 @@
         </NotFound>
     </Router>
 </CascadingAuthenticationState>
+}
 
 @code {
     private bool _identityLoaded;
