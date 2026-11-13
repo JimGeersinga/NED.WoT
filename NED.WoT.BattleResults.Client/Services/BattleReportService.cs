@@ -299,7 +299,7 @@ public class BattleReportService : IDisposable
         static ReplayHeader Header(string? clan1, string? clan2, string first = "Speler1") => new()
         {
             Vehicles = Enumerable.Range(1, 8).ToDictionary(
-                i => i.ToString(),
+                i => $"{i}",
                 i => new ReplayPlayer { Name = i == 1 ? first : $"Speler{i}", ClanAbbrev = i <= 4 ? clan1 : clan2, Team = i <= 4 ? 1 : 2 }),
         };
         static HqIdentity Me(string name, string? clan) => new(1, name, null, clan, null, null, default, false);
