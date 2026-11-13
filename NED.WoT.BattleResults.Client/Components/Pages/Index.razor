@@ -1,4 +1,4 @@
-@page "/"
+﻿@page "/"
 @attribute [Authorize]
 
 @using System.Collections.ObjectModel;
@@ -488,22 +488,25 @@
 		BattleResultService.LoadingBattleReportsFinished += OnLoadingFinished;
 		BattleResultService.ClanMatchStarted += OnClanMatchStarted;
 
+		int folder = BattleResultService.CurrentFolder;
 		await Task.Run(() => BattleResultService.LoadBattleReports());
+
+		// A folder switch during the start-up load is handled by the event handlers.
+		if (folder != BattleResultService.CurrentFolder)
+		{
+			return;
+		}
 
 		// Whoever started the load, the page does not depend on having caught Finished (issue #116).
 		_reports = BattleResultService.BattleReports.Select(x => x.Value).OrderByDescending(x => x.MatchStart).ToList();
 		_battlesVersion++;
-		if (!_loadedOnce)
-		{
-			App.SetTitle($" · geladen in {BattleResultService.LastLoadDuration.TotalSeconds.ToString("0.0", BattleReport.DutchCulture)} s");
-		}
-
 		_loadedOnce = true;
 		_loading = false;
 	}
 
 	public void Dispose()
 	{
+		_loading = false; // ends the 500 ms refresh loop of a page that is left
 		BattleResultService.LoadingBattleReportsStarted -= OnLoadingStarted;
 		BattleResultService.FolderChanged -= OnFolderChanged;
 		BattleResultService.BattleReportAdded -= OnReportAdded;

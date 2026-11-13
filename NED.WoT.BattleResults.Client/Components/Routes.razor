@@ -10,40 +10,40 @@
 }
 else
 {
-<CascadingAuthenticationState>
-    <Router AppAssembly="@typeof(MauiProgram).Assembly">
-        <Found Context="routeData">
-            <CascadingValue Value="@routeData">
-                @* HQ decides (docs/PLAN.md §3.3): no session -> login; refused or no answer -> unauthorized; allowed -> the page. *@
-                @if (Identity.Status == IdentityStatus.SignedOut && routeData.PageType != typeof(Pages.Login))
-                {
-                    NavigationManager.NavigateTo("login");
-                }
-                else if (Identity.Status is IdentityStatus.Refused or IdentityStatus.Unavailable && routeData.PageType != typeof(Pages.Unauthorized))
-                {
-                    NavigationManager.NavigateTo("unauthorized");
-                }
-                else if (Identity.Status == IdentityStatus.Allowed && routeData.PageType == typeof(Pages.Unauthorized))
-                {
-                    NavigationManager.NavigateTo("/"); // e.g. HQ came back after "Opnieuw proberen"
-                }
-                else
-                {
-                    <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)">
-                        <NotAuthorized>
-                            @{ NavigationManager.NavigateTo("unauthorized"); }
-                        </NotAuthorized>
-                    </AuthorizeRouteView>
-                }
-            </CascadingValue>
-        </Found>
-        <NotFound>
-            <LayoutView Layout="@typeof(Layout.MainLayout)">
-                <p role="alert">Sorry, there's nothing at this address.</p>
-            </LayoutView>
-        </NotFound>
-    </Router>
-</CascadingAuthenticationState>
+    <CascadingAuthenticationState>
+        <Router AppAssembly="@typeof(MauiProgram).Assembly">
+            <Found Context="routeData">
+                <CascadingValue Value="@routeData">
+                    @* HQ decides (docs/PLAN.md §3.3): no session -> login; refused or no answer -> unauthorized; allowed -> the page. *@
+                    @if (Identity.Status == IdentityStatus.SignedOut && routeData.PageType != typeof(Pages.Login))
+                    {
+                        NavigationManager.NavigateTo("login");
+                    }
+                    else if (Identity.Status is IdentityStatus.Refused or IdentityStatus.Unavailable && routeData.PageType != typeof(Pages.Unauthorized))
+                    {
+                        NavigationManager.NavigateTo("unauthorized");
+                    }
+                    else if (Identity.Status == IdentityStatus.Allowed && routeData.PageType == typeof(Pages.Unauthorized))
+                    {
+                        NavigationManager.NavigateTo("/"); // e.g. HQ came back after "Opnieuw proberen"
+                    }
+                    else
+                    {
+                        <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)">
+                            <NotAuthorized>
+                                @{ NavigationManager.NavigateTo("unauthorized"); }
+                            </NotAuthorized>
+                        </AuthorizeRouteView>
+                    }
+                </CascadingValue>
+            </Found>
+            <NotFound>
+                <LayoutView Layout="@typeof(Layout.MainLayout)">
+                    <p role="alert">Sorry, there's nothing at this address.</p>
+                </LayoutView>
+            </NotFound>
+        </Router>
+    </CascadingAuthenticationState>
 }
 
 @code {
