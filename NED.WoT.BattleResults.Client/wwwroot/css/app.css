@@ -6,7 +6,7 @@
     width: 100%;
 }
 
-/* The splash board (canvas "Splashscherm"): HUD ground, bronze corners, the hero in its sight, the wordmark, an indeterminate bar. Same markup in index.html and Components/Shared/Splash.razor. */
+/* The splash board (canvas "Splashscherm"): HUD ground, bronze corners, the hero in its sight, the wordmark, an indeterminate bar. Same markup in index.html and Components/Layout/Splash.razor. */
 .splash {
     position: fixed;
     inset: 0;
