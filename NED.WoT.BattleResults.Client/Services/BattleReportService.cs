@@ -294,6 +294,20 @@ public class BattleReportService : IDisposable
         string folder = Path.GetTempPath();
         Debug.Assert(LiveReplayFile(folder, @"C:\replays") == Path.Combine(folder, "temp.wotreplay"), "a configured folder gives temp.wotreplay in it");
         Debug.Assert(LiveReplayFile(null, null) is null, "nothing known: no lookup");
+
+        static ReplayHeader Header(string? clan1, string? clan2) => new()
+        {
+            Vehicles = new()
+            {
+                ["1"] = new() { Name = "Speler1", ClanAbbrev = clan1, Team = 1 },
+                ["2"] = new() { Name = "Speler2", ClanAbbrev = clan2, Team = 2 },
+            },
+        };
+        static HqIdentity Me(string name, string? clan) => new(1, name, null, clan, null, null, default, false);
+        Debug.Assert(ClanMatch(Header("NED", "ABC"), Me("Speler1", "NED-1")) == ("NED", "ABC"), "my name is in team 1: dialog");
+        Debug.Assert(ClanMatch(Header("NED", "ABC"), Me("Ander", "NED")) == ("NED", "ABC"), "my clan tag is a team's: dialog");
+        Debug.Assert(ClanMatch(Header("XYZ", "ABC"), Me("Ander", "NED")) is null, "not my teams: no dialog");
+        Debug.Assert(ClanMatch(Header("NED", null), Me("Speler1", "NED")) is null, "a team without a clan: no dialog");
     }
 
     /// <summary>Every 2 s: the two clan tags of the battle being played, from block 0 of temp.wotreplay. A tick that finds the previous one still running is skipped.</summary>
@@ -315,13 +329,9 @@ public class BattleReportService : IDisposable
             }
 
             ReplayHeader? header = JsonSerializer.Deserialize(ReplayReader.Read(tempFile).Header, ReplayJsonContext.Default.ReplayHeader);
-            (string, string)? clanMatch = ClanTags(header);
+            (string, string)? clanMatch = ClanMatch(header, _identity.Current);
 
-            if (!_clanMatch.Equals(clanMatch) && clanMatch.HasValue &&
-                _identity.Current?.ClanTag is { } myClan && (
-                myClan.Equals(clanMatch.Value.Item1, StringComparison.OrdinalIgnoreCase) ||
-                myClan.Equals(clanMatch.Value.Item2, StringComparison.OrdinalIgnoreCase)
-                ))
+            if (!_clanMatch.Equals(clanMatch) && clanMatch.HasValue)
             {
                 _clanMatch = clanMatch;
 
@@ -342,8 +352,8 @@ public class BattleReportService : IDisposable
         return Task.CompletedTask;
     }
 
-    /// <returns>The clan tags of team 1 and team 2 (the most mentioned clanAbbrev per team, as in the battle list), or null when a team has none.</returns>
-    private static (string, string)? ClanTags(ReplayHeader? header)
+    /// <returns>The clan tags of team 1 and team 2 (the most mentioned clanAbbrev per team, as in the battle list) when both teams have one and I am in one of them (<see cref="BattleReportMapper.IsMyTeam"/>); else null.</returns>
+    internal static (string, string)? ClanMatch(ReplayHeader? header, HqIdentity? me)
     {
         if (header?.Vehicles is null)
         {
@@ -356,13 +366,15 @@ public class BattleReportService : IDisposable
         {
             // The same split as BattleReportMapper.MapPlayerData: team 1, everyone else team 2.
             Team team = player.Team == team1.Number ? team1 : team2;
-            team.Players.Add(new Player(team) { Clan = player.ClanAbbrev });
+            team.Players.Add(new Player(team) { Name = player.Name, Clan = player.ClanAbbrev });
         }
 
-        string clan1 = BattleReportMapper.GetMostMentionedClanAbbreviation(team1);
-        string clan2 = BattleReportMapper.GetMostMentionedClanAbbreviation(team2);
+        team1.Abbreviation = BattleReportMapper.GetMostMentionedClanAbbreviation(team1);
+        team2.Abbreviation = BattleReportMapper.GetMostMentionedClanAbbreviation(team2);
 
-        return clan1 == "?" || clan2 == "?" ? null : (clan1, clan2);
+        return team1.Abbreviation == "?" || team2.Abbreviation == "?" || !(BattleReportMapper.IsMyTeam(team1, me) || BattleReportMapper.IsMyTeam(team2, me))
+            ? null
+            : (team1.Abbreviation, team2.Abbreviation);
     }
 
     private void OnRenamed(object sender, RenamedEventArgs e) => OnCreated(sender, e);

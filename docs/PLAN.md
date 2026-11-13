@@ -139,7 +139,7 @@ Titles match the GitHub milestones one to one.
 | 02 | Filter dropdowns | #13–#14 | Clan, Speler, Map and Resultaat dropdowns and the Clangevechten \| Alles switch. |
 | 03 | Sign in with Wargaming | #10–#12, #75, #116 | Wargaming login in the desktop app (#10, #11); access and identity from WoT HQ replace the Excel check (#75); the account menu and the removal of the clan and player Settings fields (#12); the battle list shows on every cold start (#116). |
 | 04 | Replay folders | #15–#16 | Several replay folders in Settings and a folder carousel in the app bar. |
-| 05 | Live battle | #17 | A separate temp-replay path for the live clan lookup. |
+| 05 | Live battle | #17, #118 | A separate temp-replay path for the live clan lookup. The live lookup recognises the own team by clan tag or nickname (as the battle list does). |
 | 06 | Clan battle statistics | #18–#19 | Clan rating and PR in the Clan battle dialog, from Wargaming's public API. |
 | 07 | Speed and memory | #41–#45 | A reload frees the old battle list; replays are read by block and parsed into a typed model; analyzers run as errors. |
 | 08 | Fewer MudBlazor overrides | #54–#60 | Hand-made buttons, icons, chips and menu rows become MudBlazor components; unused and leaking CSS goes; shadows move into the theme. |

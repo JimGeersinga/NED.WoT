@@ -93,7 +93,7 @@ public class BattleReportMapper
     }
 
     /// <summary>Your team: its clan tag is yours, or one of its players has your name. Without a clan only the name matches.</summary>
-    private static bool IsMyTeam(Team team, HqIdentity? me) =>
+    internal static bool IsMyTeam(Team team, HqIdentity? me) =>
         me is not null
         && ((me.ClanTag is not null && string.Equals(team.Abbreviation, me.ClanTag, StringComparison.OrdinalIgnoreCase))
             || team.Players.Any(x => string.Equals(x.Name, me.Nickname, StringComparison.OrdinalIgnoreCase)));
