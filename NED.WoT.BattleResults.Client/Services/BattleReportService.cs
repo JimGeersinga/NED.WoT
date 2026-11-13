@@ -295,18 +295,17 @@ public class BattleReportService : IDisposable
         Debug.Assert(LiveReplayFile(folder, @"C:\replays") == Path.Combine(folder, "temp.wotreplay"), "a configured folder gives temp.wotreplay in it");
         Debug.Assert(LiveReplayFile(null, null) is null, "nothing known: no lookup");
 
-        static ReplayHeader Header(string? clan1, string? clan2) => new()
+        // 4 players per team: GetMostMentionedClanAbbreviation needs max(n / 2, 4) mentions. Speler1 is team 1's first player unless renamed.
+        static ReplayHeader Header(string? clan1, string? clan2, string first = "Speler1") => new()
         {
-            Vehicles = new()
-            {
-                ["1"] = new() { Name = "Speler1", ClanAbbrev = clan1, Team = 1 },
-                ["2"] = new() { Name = "Speler2", ClanAbbrev = clan2, Team = 2 },
-            },
+            Vehicles = Enumerable.Range(1, 8).ToDictionary(
+                i => i.ToString(),
+                i => new ReplayPlayer { Name = i == 1 ? first : $"Speler{i}", ClanAbbrev = i <= 4 ? clan1 : clan2, Team = i <= 4 ? 1 : 2 }),
         };
         static HqIdentity Me(string name, string? clan) => new(1, name, null, clan, null, null, default, false);
         Debug.Assert(ClanMatch(Header("NED", "ABC"), Me("Speler1", "NED-1")) == ("NED", "ABC"), "my name is in team 1: dialog");
         Debug.Assert(ClanMatch(Header("NED", "ABC"), Me("Ander", "NED")) == ("NED", "ABC"), "my clan tag is a team's: dialog");
-        Debug.Assert(ClanMatch(Header("XYZ", "ABC"), Me("Ander", "NED")) is null, "not my teams: no dialog");
+        Debug.Assert(ClanMatch(Header("XYZ", "ABC", "Ander"), Me("Speler1", "NED")) is null, "not my teams: no dialog");
         Debug.Assert(ClanMatch(Header("NED", null), Me("Speler1", "NED")) is null, "a team without a clan: no dialog");
     }
 
