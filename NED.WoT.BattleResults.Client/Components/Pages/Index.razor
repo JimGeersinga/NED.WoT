@@ -35,14 +35,16 @@
 	var lastVisible = visible.LastOrDefault();
 	// One flat item list for the whole table (a Virtualize per MudBlazor group would keep every row it rendered): a header line for each day after the first (the first day's header is the sticky row in the thead), then that day's rows.
 	var lines = new List<Line>(visible.Count + days.Count);
+	var inDay = 0;
 	foreach (var report in visible)
 	{
 		if (lines.Count > 0 && lines[^1].Day != report.Group)
 		{
 			lines.Add(new Line(report.Group, null));
+			inDay = 0;
 		}
 
-		lines.Add(new Line(report.Group, report));
+		lines.Add(new Line(report.Group, report, inDay++ % 2 == 1));
 	}
 
 	var currentDay = (_currentDay != null && dayByLabel.TryGetValue(_currentDay, out var found) ? found : null) ?? (lines.Count > 0 ? dayByLabel[lines[0].Day] : null);
@@ -276,14 +278,14 @@
 
 	private List<BattleReport> _reports = new List<BattleReport>();
 
-	/// <summary>One line of the flat table: a day header (no Report) or a row of that day. It holds the day label, not the Day: with the object every render made new lines, MudTable re-created all the rows and scroll-into-view broke.</summary>
-	private sealed record Line(string Day, BattleReport? Report);
+	/// <summary>One line of the flat table: a day header (no Report) or a row of that day (Alt: every second row of its day is striped). It holds the day label, not the Day: with the object every render made new lines, MudTable re-created all the rows and scroll-into-view broke.</summary>
+	private sealed record Line(string Day, BattleReport? Report, bool Alt = false);
 
 	private string? _currentDay;
 	private DotNetObjectReference<Index>? _self;
 
-	private string RowClass(Line line, int index) => line.Report is not { } report ? "gl-day" : report.Error != null ? "gl-unreadable" : "gl-row"
-		+ (index % 2 == 1 ? " alt" : string.Empty)
+	private string RowClass(Line line, int _) => line.Report is not { } report ? "gl-day" : report.Error != null ? "gl-unreadable" : "gl-row"
+		+ (line.Alt ? " alt" : string.Empty)
 		+ (report.ShowDetails ? " wot-row-active" : string.Empty)
 		+ (_addedFiles.Contains(report.FileName) ? " gl-new" : string.Empty);
 
@@ -548,9 +550,9 @@
 		{
 			await JSRuntime.InvokeVoidAsync("watchCurrentDay", _self, ".wot-battle-table .mud-table-container");
 		}
-		catch (JSException)
+		catch (Exception e) when (e is JSException or JSDisconnectedException)
 		{
-			// The sticky day row is cosmetic: it stays on its last day.
+			// The sticky day row is cosmetic: it stays on its last day (or the window is closing).
 		}
 	}
 
