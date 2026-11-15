@@ -189,19 +189,10 @@
 								   Stats="StatCells"
 								   OnCopy="@(reports => CopyResultAsync(reports))" />
 			}
-			else if (context.Report.Error != null)
-			{
-				@* One warning Alert over all the columns, instead of a silent gap. *@
-				<MudTd colspan="@(_showBattleStats ? 11 : 7)" Class="gl-err">
-					<MudAlert Severity="Severity.Warning" Variant="Variant.Text" Icon="@Icons.Material.Filled.Warning" Class="wot-row-alert" Dense="true" Square="true" Elevation="0">
-						<b>Niet te lezen · </b>@context.Report.Error
-					</MudAlert>
-				</MudTd>
-			}
 			else
 			{
 				<BattleRow Report="context.Report"
-						   Number="dayByLabel[context.Day].Number(context.Report)"
+						   Number="@(context.Report.Error == null ? dayByLabel[context.Day].Number(context.Report) : 0)"
 						   ShowBattleStats="_showBattleStats"
 						   Stats="StatCells"
 						   OnCopy="@(report => CopyResultAsync(report, report.OwnTeam))"

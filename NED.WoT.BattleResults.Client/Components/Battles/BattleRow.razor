@@ -9,6 +9,15 @@
 		</MudTd>
 	</MudTr>
 }
+else if (Report.Error != null)
+{
+	@* One warning Alert over all the columns, instead of a silent gap. *@
+	<MudTd colspan="@(ShowBattleStats ? 11 : 7)" Class="gl-err">
+		<MudAlert Severity="Severity.Warning" Variant="Variant.Text" Icon="@Icons.Material.Filled.Warning" Class="wot-row-alert" Dense="true" Square="true" Elevation="0">
+			<b>Niet te lezen · </b>@Report.Error
+		</MudAlert>
+	</MudTd>
+}
 else
 {
 	var ownTeam = Report.OwnTeam;
