@@ -7,7 +7,7 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 
-@implements IDisposable
+@implements IAsyncDisposable
 @inject BattleReportService BattleResultService;
 @inject SettingService SettingService;
 @inject IdentityService Identity;
@@ -33,6 +33,19 @@
 	var all = battles.Concat(unreadable);
 	var visible = (_oldestFirst ? all.OrderBy(x => x.MatchStart) : all.OrderByDescending(x => x.MatchStart)).ToList();
 	var lastVisible = visible.LastOrDefault();
+	// One flat item list for the whole table (a Virtualize per MudBlazor group would keep every row it rendered): a header line for each day after the first (the first day's header is the sticky row in the thead), then that day's rows.
+	var lines = new List<Line>(visible.Count + days.Count);
+	foreach (var report in visible)
+	{
+		if (lines.Count > 0 && lines[^1].Day != report.Group)
+		{
+			lines.Add(new Line(report.Group, null));
+		}
+
+		lines.Add(new Line(report.Group, report));
+	}
+
+	var currentDay = (_currentDay != null && dayByLabel.TryGetValue(_currentDay, out var found) ? found : null) ?? (lines.Count > 0 ? dayByLabel[lines[0].Day] : null);
 	var emptyCause = _loading || battles.Count > 0 ? EmptyCause.None : EmptyCauseOf(Directory.Exists(SettingService.Settings.ReplayFolders.ElementAtOrDefault(BattleResultService.CurrentFolder)?.Path), _reports.Count);
 	var filesToLoad = BattleResultService.FilesToLoad;
 	var filesLoaded = BattleResultService.FilesLoaded;
@@ -101,9 +114,9 @@
 	}
 	else
 	{
-	<MudTable T="BattleReport"
-			  Items="visible"
-			  GroupBy="_groupDefinition"
+	<MudTable T="Line"
+			  Items="lines"
+			  CustomHeader="true"
 			  Virtualize="true"
 			  ItemSize="48"
 			  FixedHeader="true"
@@ -113,9 +126,8 @@
 			  Hover="true"
 			  Elevation="0"
 			  Class="@("wot-battle-table" + (_showBattleStats ? " stats" : "") + (_loading ? " loading" : ""))"
-			  GroupHeaderClass="gl-day"
 			  RowClassFunc="@RowClass"
-			  OnRowClick="@(e => ToggleShowDetailsAsync(e.Item))">
+			  OnRowClick="@(e => ToggleShowDetailsAsync(e.Item?.Report))">
 		@* 5 lead columns, 4 stat columns, 2 tail columns; the colspans in BattleRow, BattleGroupHeader and the footer follow this *@
 		<ColGroup>
 			<col class="c-chev" />
@@ -131,50 +143,63 @@
 			<col class="c-copy" />
 		</ColGroup>
 		<HeaderContent>
-			<MudTh>
-				<button type="button" class="gl-ibtn" aria-label="Alles inklappen" title="Alles inklappen" @onclick="CollapseAllBattleReports">
-					<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Outlined.UnfoldLess)</svg>
-				</button>
-			</MudTh>
-			<MudTh Class="c">#</MudTh>
-			<MudTh><button type="button" class="gl-sorted" title="@(_oldestFirst ? "Oudste eerst" : "Nieuwste eerst")" @onclick="@(() => _oldestFirst = !_oldestFirst)">Tijd · Duur<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)(_oldestFirst ? Icons.Material.Filled.ArrowUpward : Icons.Material.Filled.ArrowDownward))</svg></button></MudTh>
-			<MudTh Class="mapcol"><div class="mapc"><span>Map</span><span></span></div></MudTh>
-			<MudTh>Teams</MudTh>
-			@if (_showBattleStats)
+			<MudTHeadRow>
+				<MudTh>
+					<button type="button" class="gl-ibtn" aria-label="Alles inklappen" title="Alles inklappen" @onclick="CollapseAllBattleReports">
+						<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Outlined.UnfoldLess)</svg>
+					</button>
+				</MudTh>
+				<MudTh Class="c">#</MudTh>
+				<MudTh><button type="button" class="gl-sorted" title="@(_oldestFirst ? "Oudste eerst" : "Nieuwste eerst")" @onclick="@(() => _oldestFirst = !_oldestFirst)">Tijd · Duur<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)(_oldestFirst ? Icons.Material.Filled.ArrowUpward : Icons.Material.Filled.ArrowDownward))</svg></button></MudTh>
+				<MudTh Class="mapcol"><div class="mapc"><span>Map</span><span></span></div></MudTh>
+				<MudTh>Teams</MudTh>
+				@if (_showBattleStats)
+				{
+					<MudTh Class="r">Geschoten</MudTh>
+					<MudTh Class="r">Geraakt</MudTh>
+					<MudTh Class="r">Gepenetreerd</MudTh>
+					<MudTh Class="r">Geblokt</MudTh>
+				}
+				<MudTh Class="res">Resultaat</MudTh>
+				<MudTh aria-label="Kopiëren"></MudTh>
+			</MudTHeadRow>
+			@* The day of the first visible row, a second header row under the column header (the same table, so the columns align); watchCurrentDay in index.html tells which day. *@
+			@if (currentDay != null)
 			{
-				<MudTh Class="r">Geschoten</MudTh>
-				<MudTh Class="r">Geraakt</MudTh>
-				<MudTh Class="r">Gepenetreerd</MudTh>
-				<MudTh Class="r">Geblokt</MudTh>
+				<MudTHeadRow Class="gl-current">
+					<BattleGroupHeader Label="@currentDay.Label"
+									   Date="currentDay.Date"
+									   Reports="currentDay.Items"
+									   ShowBattleStats="_showBattleStats"
+									   Stats="StatCells"
+									   OnCopy="@(reports => CopyResultAsync(reports))" />
+				</MudTHeadRow>
 			}
-			<MudTh Class="res">Resultaat</MudTh>
-			<MudTh aria-label="Kopiëren"></MudTh>
 		</HeaderContent>
-		<GroupHeaderTemplate>
-			@{
-				var day = dayByLabel[context.Key?.ToString() ?? string.Empty];
-			}
-			<BattleGroupHeader Label="@day.Label"
-							   Date="day.Date"
-							   Reports="day.Items"
-							   ShowBattleStats="_showBattleStats"
-							   Stats="StatCells"
-							   OnCopy="@(reports => CopyResultAsync(reports))" />
-		</GroupHeaderTemplate>
 		<RowTemplate>
-			@if (context.Error != null)
+			@if (context.Report == null)
+			{
+				var day = dayByLabel[context.Day];
+				<BattleGroupHeader Label="@day.Label"
+								   Date="day.Date"
+								   Reports="day.Items"
+								   ShowBattleStats="_showBattleStats"
+								   Stats="StatCells"
+								   OnCopy="@(reports => CopyResultAsync(reports))" />
+			}
+			else if (context.Report.Error != null)
 			{
 				@* One warning Alert over all the columns, instead of a silent gap. *@
 				<MudTd colspan="@(_showBattleStats ? 11 : 7)" Class="gl-err">
 					<MudAlert Severity="Severity.Warning" Variant="Variant.Text" Icon="@Icons.Material.Filled.Warning" Class="wot-row-alert" Dense="true" Square="true" Elevation="0">
-						<b>Niet te lezen · </b>@context.Error
+						<b>Niet te lezen · </b>@context.Report.Error
 					</MudAlert>
 				</MudTd>
 			}
 			else
 			{
-				<BattleRow Report="context"
-						   Number="dayByLabel[context.Group].Number(context)"
+				<BattleRow Report="context.Report"
+						   Number="dayByLabel[context.Day].Number(context.Report)"
 						   ShowBattleStats="_showBattleStats"
 						   Stats="StatCells"
 						   OnCopy="@(report => CopyResultAsync(report, report.OwnTeam))"
@@ -183,11 +208,11 @@
 			}
 		</RowTemplate>
 		<ChildRowContent>
-			@if (context.ShowDetails)
+			@if (context.Report is { ShowDetails: true } shown)
 			{
-				<BattleRow Report="context" ShowBattleStats="_showBattleStats" DetailsRow="true" />
+				<BattleRow Report="shown" ShowBattleStats="_showBattleStats" DetailsRow="true" />
 			}
-			@if (_loading && ReferenceEquals(context, lastVisible))
+			@if (_loading && context.Report != null && ReferenceEquals(context.Report, lastVisible))
 			{
 				@* Rows still to come, under the last one. *@
 				@SkeletonRow
@@ -250,14 +275,14 @@
 	private IDialogReference? _clanMatchDialog;
 
 	private List<BattleReport> _reports = new List<BattleReport>();
-	private TableGroupDefinition<BattleReport> _groupDefinition = new()
-	{
-		Indentation = false,
-		Expandable = false,
-		Selector = (e) => e.Group
-	};
 
-	private string RowClass(BattleReport report, int index) => report.Error != null ? "gl-unreadable" : "gl-row"
+	/// <summary>One line of the flat table: a day header (no Report) or a row of that day. It holds the day label, not the Day: with the object every render made new lines, MudTable re-created all the rows and scroll-into-view broke.</summary>
+	private sealed record Line(string Day, BattleReport? Report);
+
+	private string? _currentDay;
+	private DotNetObjectReference<Index>? _self;
+
+	private string RowClass(Line line, int index) => line.Report is not { } report ? "gl-day" : report.Error != null ? "gl-unreadable" : "gl-row"
 		+ (index % 2 == 1 ? " alt" : string.Empty)
 		+ (report.ShowDetails ? " wot-row-active" : string.Empty)
 		+ (_addedFiles.Contains(report.FileName) ? " gl-new" : string.Empty);
@@ -504,7 +529,32 @@
 		_loading = false;
 	}
 
-	public void Dispose()
+	/// <summary>Called by watchCurrentDay (index.html) when the first visible row belongs to another day.</summary>
+	[JSInvokable]
+	public Task SetCurrentDay(string day) => InvokeAsync(() =>
+	{
+		if (day != _currentDay)
+		{
+			_currentDay = day;
+			StateHasChanged();
+		}
+	});
+
+	// The table comes and goes (empty states, loading), so every render asks index.html to watch the one that is there; it does nothing when it already does.
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		_self ??= DotNetObjectReference.Create(this);
+		try
+		{
+			await JSRuntime.InvokeVoidAsync("watchCurrentDay", _self, ".wot-battle-table .mud-table-container");
+		}
+		catch (JSException)
+		{
+			// The sticky day row is cosmetic: it stays on its last day.
+		}
+	}
+
+	public async ValueTask DisposeAsync()
 	{
 		_loading = false; // ends the 500 ms refresh loop of a page that is left
 		BattleResultService.LoadingBattleReportsStarted -= OnLoadingStarted;
@@ -513,6 +563,16 @@
 		BattleResultService.BattleReportRemoved -= OnReportRemoved;
 		BattleResultService.LoadingBattleReportsFinished -= OnLoadingFinished;
 		BattleResultService.ClanMatchStarted -= OnClanMatchStarted;
+		try
+		{
+			await JSRuntime.InvokeVoidAsync("unwatchCurrentDay");
+		}
+		catch (JSDisconnectedException)
+		{
+			// The window is closing: nothing left to unwatch.
+		}
+
+		_self?.Dispose();
 	}
 
 	private async void OnLoadingStarted(object? s, EventArgs e)
