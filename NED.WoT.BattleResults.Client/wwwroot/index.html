@@ -68,7 +68,7 @@
             function compute() {
                 queued = false;
                 var stack = 0, day = null;
-                c.querySelectorAll('thead .mud-table-cell').forEach(function (h) { stack = Math.max(stack, h.getBoundingClientRect().bottom); });
+                c.querySelectorAll(':scope > .mud-table-root > thead > tr > .mud-table-cell').forEach(function (h) { stack = Math.max(stack, h.getBoundingClientRect().bottom); });
                 var rows = tbody.querySelectorAll(':scope > tr.gl-row, :scope > tr.gl-day');
                 for (var i = 0; i < rows.length; i++) {
                     if (rows[i].getBoundingClientRect().top > stack + 0.5) break;
