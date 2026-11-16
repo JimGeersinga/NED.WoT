@@ -325,7 +325,7 @@ public class BattleReportService : IDisposable
                 ClanMatchStarted?.Invoke(this, clanMatch.Value);
             }
         }
-        catch (IOException ex)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             // The game holds the file or it is gone: the next tick tries again.
             Debug.WriteLine($"temp.wotreplay not read: {ex.Message}");

@@ -83,7 +83,10 @@ public static class LiveReplayReader
         static byte[] B(string s) => Encoding.Latin1.GetBytes(s);
 
         Debug.Assert(P(B("U\u0009opponents}q\u0008(U\u00011}q\tU\u0004nameq\nU\u0004COMAsU\u00012}q\u000bh\nU\u0005NED-1suu.")) == ("COMA", "NED-1"), "1.x slice");
-        Debug.Assert(P(B("U\u0009opponentsq^}q_(U\u00011}q U\u0004nameq!U\u0005NED-1sU\u00012}q\"h!U\u0005KRAWLsuu.")) == ("NED-1", "KRAWL"), "2.x skirmish slice");
+        Debug.Assert(P(B("U\u0009opponentsq\u001e}q\u001f(U\u00011}q U\u0004nameq!U\u0005NED-1sU\u00012}q\"h!U\u0005KRAWLsuu.")) == ("NED-1", "KRAWL"), "2.x skirmish slice");
+        Debug.Assert(P(B("U\u0009opponents}q\u0008(U\u00011}q\tU\u0004nameq\nU\u0005NED-1sU\u00012}q\u000bh\nU\u0005ZSYUAsuu.")) == ("NED-1", "ZSYUA"), "temp3 slice");
+        Debug.Assert(P(B("U\u0009opponents}q\u0008(U\u00011}q\tU\u0004nameq\nU\u0004MSSZsU\u00012}q\u000bh\nU\u0005NED-1suu.")) == ("MSSZ", "NED-1"), "temp4 slice");
+        Debug.Assert(P(B("U\u0009opponents}q\u0008(U\u00011}q\tU\u0004nameq\nU\u0005NED-1sU\u00012}q\u000bh\nU\u0005UTD-Usuu.")) == ("NED-1", "UTD-U"), "temp5 slice");
         Debug.Assert(P(B("random battle, no block")) is null, "no opponents");
         Debug.Assert(P(B("U\u0009opponents}q\u0008(U\u00011}q\tU\u0004nameq\nU\u0004COMA")) is null, "truncated");
         Debug.Assert(P([]) is null, "empty");
