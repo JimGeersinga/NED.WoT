@@ -21,9 +21,9 @@
 			<MudIconButton Icon="@Icons.Material.Filled.ChevronLeft" Class="folder-carousel-arrow" aria-label="@($"Vorige map: {folders[previous].Title}")" title="Vorige map" OnClick="() => SelectAsync(previous)" />
 			<MudButton Variant="Variant.Text" Class="folder-carousel-neighbour" tabindex="-1" aria-hidden="true" title="@folders[previous].Title" OnClick="() => SelectAsync(previous)">@folders[previous].Title</MudButton>
 		}
-		<MudMenu Open="_open" OpenChanged="OnOpenChanged" Class="folder-carousel-menu" PopoverClass="folder-menu-popover" AnchorOrigin="Origin.BottomCenter" TransformOrigin="Origin.TopCenter">
+		<MudMenu @ref="_menu" Open="_open" OpenChanged="OnOpenChanged" Class="folder-carousel-menu" PopoverClass="folder-menu-popover" AnchorOrigin="Origin.BottomCenter" TransformOrigin="Origin.TopCenter">
 			<ActivatorContent>
-				<MudButton Variant="Variant.Text" Class="folder-carousel-current" @ref="_title" OnClick="@context.ToggleAsync" aria-haspopup="menu" aria-expanded="@(_open ? "true" : "false")" aria-live="polite" title="@folder.Path">
+				<MudButton Variant="Variant.Text" Class="folder-carousel-current" @ref="_title" OnClick="@context.ToggleAsync" aria-live="polite" title="@folder.Path">
 					<span class="folder-carousel-title"><MudIcon Icon="@Icons.Material.Filled.FolderOpen" /><span class="folder-carousel-title-text">@folder.Title</span></span>
 					@if (count > 1)
 					{
@@ -42,7 +42,7 @@
 					int index = i;
 					ReplayFolder item = folders[i];
 					int? battles = Reports.GetBattleCount(item);
-					<MudMenuItem Icon="@Icons.Material.Filled.Check" IconColor="@(index == current ? Color.Primary : Color.Transparent)" role="menuitemradio" aria-checked="@(index == current ? "true" : "false")" OnClick="() => SelectAsync(index)">
+					<MudMenuItem Icon="@Icons.Material.Filled.Check" IconColor="@(index == current ? Color.Primary : Color.Transparent)" role="menuitemradio" aria-checked="@(index == current ? "true" : "false")" OnClick="() => PickAsync(index)">
 						<span class="folder-menu-item-text">
 							<span class="folder-menu-item-title">@item.Title</span>
 							<span class="folder-menu-item-path" title="@item.Path"><bdo dir="ltr">@item.Path</bdo></span>
@@ -71,7 +71,7 @@
 	public EventCallback OnManage { get; set; }
 
 	private bool _open;
-	private bool _refocus;
+	private MudMenu? _menu;
 	private bool _managing;
 	private MudButton? _title;
 
@@ -98,25 +98,27 @@
 	private Task SelectAsync(int index) => Reports.SelectFolderAsync(index);
 
 	/// <summary>MudMenu closes on Escape and after a pick but leaves the focus on the page: it returns to the current title (not for "Mappen beheren": the dialog takes it).</summary>
-	private void OnOpenChanged(bool open)
+	private async Task OnOpenChanged(bool open)
 	{
 		_open = open;
-		_refocus = !open && !_managing;
+		bool managing = _managing;
 		_managing = false;
+		if (!open && !managing)
+		{
+			await _title!.FocusAsync();
+		}
+	}
+
+	/// <summary>MudMenuItem awaits OnClick before it closes the menu: close first, so the menu does not wait for the folder to load.</summary>
+	private async Task PickAsync(int index)
+	{
+		await _menu!.CloseMenuAsync();
+		await SelectAsync(index);
 	}
 
 	private Task ManageAsync()
 	{
 		_managing = true;
 		return OnManage.InvokeAsync();
-	}
-
-	protected override async Task OnAfterRenderAsync(bool firstRender)
-	{
-		if (_refocus && _title is not null)
-		{
-			_refocus = false;
-			await _title.FocusAsync();
-		}
 	}
 }
