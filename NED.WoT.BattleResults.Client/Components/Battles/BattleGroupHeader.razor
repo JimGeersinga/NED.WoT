@@ -1,5 +1,5 @@
-@* The day header of the battle table: the content of the MudTable's GroupHeaderTemplate. It renders cells, so it sits inside the group header row. *@
-<MudTh colspan="5" scope="rowgroup">
+@* The day header of the battle table: a header line of the MudTable's flat list and the sticky day row of its thead. It renders cells, so it sits inside a row; data-day tells watchCurrentDay (index.html) the day. *@
+<MudTh colspan="5" scope="rowgroup" data-day="@Label">
 	<div class="gl">
 		<div class="gl-dayname">
 			<span class="gl-daydate">@Date.ToString("dddd dd-MM-yyyy", BattleReport.DutchCulture)</span>

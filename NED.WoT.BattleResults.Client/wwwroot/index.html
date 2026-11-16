@@ -56,6 +56,37 @@
             }
         }
 
+        // The day of the first visible row of the battle table, for the sticky day row in its thead: the last row (a battle or a day header) that starts above the sticky headers. Index calls this after every render; it only rewires when the table is another element.
+        var currentDayWatch = null;
+        function watchCurrentDay(ref, selector) {
+            var c = document.querySelector(selector);
+            if (currentDayWatch && currentDayWatch.c === c) { currentDayWatch.compute(); return; }
+            unwatchCurrentDay();
+            var tbody = c && c.querySelector('tbody');
+            if (!tbody) return;
+            var last = null, queued = false;
+            function compute() {
+                queued = false;
+                var stack = 0, day = null;
+                c.querySelectorAll(':scope > .mud-table-root > thead > tr > .mud-table-cell').forEach(function (h) { stack = Math.max(stack, h.getBoundingClientRect().bottom); });
+                var rows = tbody.querySelectorAll(':scope > tr.gl-row, :scope > tr.gl-day');
+                for (var i = 0; i < rows.length; i++) {
+                    if (rows[i].getBoundingClientRect().top > stack + 0.5) break;
+                    day = rows[i].firstElementChild.dataset.day;
+                }
+                if (day && day !== last) { last = day; ref.invokeMethodAsync('SetCurrentDay', day); }
+            }
+            function onScroll() { if (!queued) { queued = true; requestAnimationFrame(compute); } }
+            c.addEventListener('scroll', onScroll, { passive: true });
+            var mo = new MutationObserver(onScroll); mo.observe(tbody, { childList: true });
+            currentDayWatch = { c: c, onScroll: onScroll, compute: compute, mo: mo };
+            onScroll();
+        }
+        function unwatchCurrentDay() {
+            if (currentDayWatch) { currentDayWatch.c.removeEventListener('scroll', currentDayWatch.onScroll); currentDayWatch.mo.disconnect(); }
+            currentDayWatch = null;
+        }
+
         function openOwnTeam(selector) {
             console.log('openOwnTeam', selector);
             var elements = document.querySelectorAll(selector);
