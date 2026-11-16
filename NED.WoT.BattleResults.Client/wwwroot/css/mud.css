@@ -148,6 +148,8 @@
 .mud-input-control.filter-field input.mud-input-slot { field-sizing: content; min-width: 0; }
 .mud-input-control.filter-field .mud-input-filled { height: 40px; min-height: 40px; font: 400 14px/1.4 var(--wot-font-text); }
 .mud-input-control.filter-field .mud-input-filled > input { height: 40px; padding: 0 8px 0 0; font: inherit; }
+/* MudBlazor pushes a start adornment of a filled, shrunk input 16px down (margin-top), 7-8px below the text: put it back. */
+.mud-input-control.filter-field .mud-input-adornment-start { margin-top: 0; }
 /* A MudAutocomplete draws its icon as a 40px icon button, a MudTextField or MudSelect the bare icon: without this the text starts 12px closer to the icon in Map and Resultaat (measured 40px against 52px from the box edge). */
 .mud-input-control.filter-field .mud-input-adornment-start > svg.mud-input-adornment-icon { margin-right: 12px; }
 .mud-input-control.filter-field .mud-input-adornment .mud-icon-root { width: 20px; height: 20px; color: var(--mud-palette-tertiary); }
