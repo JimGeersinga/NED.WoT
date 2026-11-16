@@ -124,8 +124,13 @@
 .mud-dialog,
 .mud-popover {
     background-color: var(--wot-surface-dialog);
-    box-shadow: var(--wot-shadow-dialog);
 }
+
+/* MudBlazor 9.12.0 draws the dialog's shadow as a fixed value and puts no mud-elevation class on it, so the theme's index 24 is applied here. */
+.mud-dialog { box-shadow: var(--mud-elevation-24); }
+
+/* One edge for every popover (menus, selects, pickers); the shadow is Shadows.Elevation[8] in WotTheme.cs. A tooltip sets its own edge below. */
+.mud-popover { border: 1px solid var(--mud-palette-lines-default); border-radius: 6px; overflow: hidden; }
 
 /* ==== MudInput ==== */
 /* The filled input surface at rest: MudBlazor's own tint on hover and focus still wins, as before the layer. */
@@ -147,7 +152,7 @@
 .mud-input-control.wot-filter .mud-input-adornment-text { display: inline-flex; align-items: center; margin: 0 8px 0 -2px; font: 600 15px/1 var(--wot-font-display); letter-spacing: .03em; color: var(--mud-palette-tertiary); }
 .mud-input-control.wot-filter .mud-input-adornment-text::before { content: ""; flex: none; width: 20px; height: 20px; margin-right: 8px; background: var(--mud-palette-primary); mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M12 3C7.6 3 4.5 6.4 4.5 10.8V15l1.5 1.5V19h12v-2.5l1.5-1.5v-4.2C19.5 6.4 16.4 3 12 3zM6.8 10.4h10.4v3.2H6.8z'/%3E%3C/svg%3E") center / contain no-repeat; }
 .mud-input-control.wot-filter.filled .mud-input-adornment .mud-icon-root { color: var(--mud-palette-primary); }
-.mud-popover.wot-filter-pop { overflow: hidden; min-width: 280px; border: 1px solid var(--mud-palette-lines-default); border-radius: 6px; box-shadow: var(--wot-shadow-menu); }
+.mud-popover.wot-filter-pop { min-width: 280px; }
 .wot-filter-pop .mud-list-item { min-height: 38px; padding: 0 14px; }
 .wot-filter-pop .wot-opt { display: flex; align-items: center; justify-content: flex-start; gap: 10px; width: 100%; }
 .wot-filter-pop .wot-opt b { font-weight: 700; color: var(--mud-palette-text-primary); }
@@ -195,7 +200,7 @@
 
 /* ==== MudMenu (the folder menu of the carousel: design "Replaymappen: navigatie") ==== */
 /* 480px, below the current title. A row is a radio (the check, the title over the path, the number of battles once the folder is read); the last row opens the settings. */
-.mud-popover.wot-folder-pop { width: max-content; min-width: 480px; max-width: min(760px, calc(100vw - 32px)); padding: 6px 0; border: 1px solid var(--mud-palette-lines-default); border-radius: 6px; box-shadow: var(--wot-shadow-menu); overflow: hidden; }
+.mud-popover.wot-folder-pop { width: max-content; min-width: 480px; max-width: min(760px, calc(100vw - 32px)); padding: 6px 0; }
 .wot-folder-pop .fm-row { display: flex; align-items: center; justify-content: flex-start; gap: 12px; width: 100%; min-height: 56px; padding: 0 16px; border: 0; background: none; color: var(--mud-palette-text-primary); font: 400 15px/1.55 var(--wot-font-text); text-align: left; cursor: pointer; }
 .wot-folder-pop .fm-row:hover { background: var(--mud-palette-action-default-hover); }
 .wot-folder-pop .fm-row:focus-visible { outline-offset: -2px; }
@@ -539,13 +544,11 @@ a.wot-clan-card[href]:focus-visible > .mud-paper { border-color: var(--mud-palet
 .mud-snackbar {
     --wot-snack: var(--mud-palette-text-primary);
     align-items: flex-start;
-    min-width: 288px;
     max-width: 440px;
     padding: 12px 16px;
-    border: 1px solid var(--mud-palette-lines-default);
-    border-radius: 4px;
+    border-color: var(--mud-palette-lines-default);
     background: linear-gradient(color-mix(in srgb, var(--wot-snack) 13%, transparent), color-mix(in srgb, var(--wot-snack) 13%, transparent)), var(--wot-surface-dialog);
-    box-shadow: var(--wot-shadow-menu);
+    box-shadow: var(--mud-elevation-8);
     color: var(--mud-palette-text-primary);
     font-size: 14px;
     line-height: 1.5;
@@ -577,13 +580,13 @@ a.wot-clan-card[href]:focus-visible > .mud-paper { border-color: var(--mud-palet
 .mud-image.gl-unauth-mark { width: 64px; height: 64px; }
 
 /* ==== MudTooltip and the right-click menu of a battle row ==== */
-.mud-tooltip { padding: 0; border: 1px solid var(--mud-palette-lines-inputs); border-radius: 4px; background: var(--wot-surface-dialog); box-shadow: var(--wot-shadow-menu); color: var(--mud-palette-text-primary); font: 500 13px/1.4 var(--wot-font-text); }
+.mud-tooltip { padding: 0; border: 1px solid var(--mud-palette-lines-inputs); border-radius: 4px; background: var(--wot-surface-dialog); box-shadow: var(--mud-elevation-8); color: var(--mud-palette-text-primary); font: 500 13px/1.4 var(--wot-font-text); }
 /* The time tooltip reads like the team list of the details: a bronze display-font header, then numbered-style rows with a dim label. */
 .wot-tt { display: grid; grid-template-columns: 1fr auto; min-width: 200px; column-gap: 24px; row-gap: 3px; padding: 8px 14px 10px; }
 .wot-tt b { grid-column: 1 / -1; padding-bottom: 6px; margin-bottom: 3px; border-bottom: 1px solid var(--mud-palette-lines-default); font: 600 15px/1.3 var(--wot-font-display); letter-spacing: .06em; text-transform: uppercase; color: var(--mud-palette-tertiary); }
 .wot-tt span { color: var(--mud-palette-text-secondary); text-align:left; }
 .wot-tt i { font-style: normal; font-weight: 600; text-align: right; }
-.mud-popover.wot-ctx-pop { min-width: 240px; max-width: 420px; border: 1px solid var(--mud-palette-lines-default); border-radius: 6px; box-shadow: var(--wot-shadow-menu); overflow: hidden; }
+.mud-popover.wot-ctx-pop { min-width: 240px; max-width: 420px; }
 .wot-ctx-pop .wot-ctx-file { display: flex; flex-direction: column; gap: 2px; padding: 8px 16px; border-bottom: 1px solid var(--mud-palette-lines-default); user-select: text; }
 .wot-ctx-pop .wot-ctx-file span { font: 600 11px/1.4 var(--wot-font-display); letter-spacing: .12em; text-transform: uppercase; color: var(--mud-palette-tertiary); }
 .wot-ctx-pop .wot-ctx-file code { font: 400 12px/1.4 ui-monospace, Consolas, monospace; color: var(--mud-palette-text-primary); overflow-wrap: anywhere; }
@@ -622,9 +625,6 @@ a.wot-clan-card[href]:focus-visible > .mud-paper { border-color: var(--mud-palet
     left: auto !important; /* beats the inline left MudBlazor computes from the anchor */
     right: 16px;
     width: 260px;
-    border: 1px solid var(--mud-palette-lines-default);
-    border-radius: 6px;
-    box-shadow: var(--wot-shadow-menu);
     padding: 6px 0;
 }
 

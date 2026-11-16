@@ -75,8 +75,9 @@ public static class WotTheme
         },
         Shadows = new MudBlazor.Shadow
         {
-            // MudBlazor indexes 0..25: none, then a 1px hairline for every elevation 1-25; the real shadow is on dialogs and popovers only (wwwroot/css/mud.css).
-            Elevation = ["none", .. Enumerable.Repeat("0 0 0 1px rgba(255,255,255,.06)", 25)],
+            // MudBlazor indexes 0..25: none, then a 1px hairline for every elevation 1-25; the real shadow is on popovers (index 8, the MudPopover default: menus, selects, pickers) and dialogs (index 24) only.
+            Elevation = ["none", .. Enumerable.Repeat("0 0 0 1px rgba(255,255,255,.06)", 25)
+                .Select((hairline, i) => (i + 1) switch { 8 => "0 16px 40px rgba(0,0,0,.55)", 24 => "0 24px 56px rgba(0,0,0,.6)", _ => hairline })],
         },
     };
 

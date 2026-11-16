@@ -29,7 +29,7 @@ All paths are under `NED.WoT.BattleResults.Client/`.
 
 CSS-only tokens (`--wot-*` in `wwwroot/css/tokens.css`, the only CSS file with raw colour values): `surface-dialog #1c2127`, `surface-input #222830`, `skipped #8a939c`,
 `primary-soft rgba(255,136,0,.14)`, `steel-highlight rgba(255,255,255,.09)`, `bronze-edge #6e5a42`, `chip-bg rgba(176,145,106,.06)`,
-`appbar-grain`/`-top`/`-mid`/`-bottom` (app bar gradient), `dialog-bar-top #252b33` (top of the dialog title bar), `rivet-hi`/`-mid`/`-shadow`, `shadow-menu`, `shadow-dialog`, `error-boundary`, and `boot-bg` / `boot-primary` / `boot-text` / `boot-text-secondary` / `boot-lines` / `boot-track` / `boot-glow` / `boot-grid` (the splash in `index.html` and `Splash.razor`, drawn before the theme sets `--mud-palette-*`).
+`appbar-grain`/`-top`/`-mid`/`-bottom` (app bar gradient), `dialog-bar-top #252b33` (top of the dialog title bar), `rivet-hi`/`-mid`/`-shadow`, `error-boundary`, and `boot-bg` / `boot-primary` / `boot-text` / `boot-text-secondary` / `boot-lines` / `boot-track` / `boot-glow` / `boot-grid` (the splash in `index.html` and `Splash.razor`, drawn before the theme sets `--mud-palette-*`).
 
 ## Type scale
 Heading family `"Barlow Condensed", Rajdhani, "Arial Narrow", sans-serif`; text family `Inter, system-ui, sans-serif`.
@@ -54,7 +54,7 @@ Tabular figures everywhere, from one `body` rule in `wot.css`.
 ## Shape and space
 - Radius 4px; chips 2px; dialogs 6px. No pill shapes except count chips.
 - Layout: no drawer and no navigation rail. An app bar of 56px over the page. Window client area about 1280×800, down to 1024 wide. Desktop only, no phone layout.
-- Elevation is a 1px hairline (`0 0 0 1px rgba(255,255,255,.06)`) at every level. A real shadow (`0 24px 56px rgba(0,0,0,.6)`) only on dialogs and popovers.
+- Elevation is a 1px hairline (`0 0 0 1px rgba(255,255,255,.06)`) at every level. A real shadow only on dialogs and popovers: `Shadows.Elevation[24]` (`0 24px 56px rgba(0,0,0,.6)`, dialogs) and `[8]` (`0 16px 40px rgba(0,0,0,.55)`, menus, selects, pickers) in `WotTheme.cs`. Every popover gets its 1px edge and 6px radius from one `.mud-popover` rule in `mud.css`.
 - Dialogs and popovers sit on `surface-dialog`; filled inputs on `surface-input`.
 - Dialog title bar (`.wot-dialog-bar`): the app bar's steel (grain over `dialog-bar-top` to `surface-dialog`, top highlight), min height 60, padding `12px 16px 12px 24px`, rivets top-left and bottom-left, the title in `Typo.h5` sentence case (`.wot-dialog-title` sets only the display font), a close X on the right on every dialog except first-run settings. The actions sit under a 1px `divider` line, padding `12px 16px 16px`.
 - Focus ring: a 2px primary outline set 2px off the element (no box-shadow, which showed as a dark ring on MudBlazor inputs).
