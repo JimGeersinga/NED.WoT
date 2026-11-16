@@ -1,26 +1,25 @@
+using System.Buffers;
 using System.Diagnostics;
 using System.Text;
+using Microsoft.Win32.SafeHandles;
 
 namespace NED.WoT.BattleResults.Client.Services;
 
 /// <summary>Reads the two clan tags from a live temp.wotreplay. That file has no JSON header (it is the raw packet stream); the tags sit in a pickled <c>opponents</c> dict near the start. Never unpickles: the file is untrusted input.</summary>
 public static class LiveReplayReader
 {
-    private const int MaxRead = 64 * 1024;
+    // The block sits at ~0.7-0.9 KB in every sample (temp3-6, 1.x and 2.x).
+    private const int MaxRead = 8 * 1024;
     private const int MaxWalk = 256;
+    private static readonly SearchValues<byte> TagChars = SearchValues.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"u8);
 
     /// <returns>The clan tags of team 1 and team 2, or null while the block is not there (yet) or is not the known shape.</returns>
     public static (string, string)? ReadClans(string path)
     {
-        using FileStream stream = new(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
-        byte[] buffer = new byte[MaxRead];
-        int read = 0;
-        int n;
-        while (read < buffer.Length && (n = stream.Read(buffer, read, buffer.Length - read)) > 0)
-        {
-            read += n;
-        }
-        return Parse(buffer.AsSpan(0, read));
+        using SafeFileHandle file = File.OpenHandle(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        Span<byte> buffer = stackalloc byte[MaxRead];
+        // A short read (the game is still writing) just means: not there yet, the next tick tries again.
+        return Parse(buffer[..RandomAccess.Read(file, buffer, 0)]);
     }
 
     internal static (string, string)? Parse(ReadOnlySpan<byte> data)
@@ -32,7 +31,7 @@ public static class LiveReplayReader
         }
 
         ReadOnlySpan<byte> p = data[(key + 9)..];
-        string?[] tags = new string?[3];
+        ReadOnlySpan<byte> tag1 = default, tag2 = default;
         int team = 0;
         int i = 0;
         while (true)
@@ -42,22 +41,25 @@ public static class LiveReplayReader
                 return null;
             }
 
-            byte op = p[i++];
-            switch (op)
+            switch (p[i++])
             {
                 case (byte)'.':
-                    return Valid(tags[1]) && Valid(tags[2]) ? (tags[1]!, tags[2]!) : null;
+                    return Valid(tag1) && Valid(tag2) ? (Encoding.ASCII.GetString(tag1), Encoding.ASCII.GetString(tag2)) : null;
                 case (byte)'U':
                     if (i >= p.Length || i + 1 + p[i] > p.Length)
                     {
                         return null;
                     }
-                    int len = p[i];
-                    string s = Encoding.ASCII.GetString(p.Slice(i + 1, len));
-                    i += 1 + len;
-                    if (s == "1") team = 1;
-                    else if (s == "2") team = 2;
-                    else if (s != "name" && team > 0 && tags[team] is null) tags[team] = s;
+                    ReadOnlySpan<byte> s = p.Slice(i + 1, p[i]);
+                    i += 1 + s.Length;
+                    if (s.SequenceEqual("1"u8)) team = 1;
+                    else if (s.SequenceEqual("2"u8)) team = 2;
+                    else if (team > 0 && !s.SequenceEqual("name"u8))
+                    {
+                        // The first value after a team key is its tag; anything else up to the next key is ignored.
+                        if (team == 1) tag1 = s; else tag2 = s;
+                        team = 0;
+                    }
                     break;
                 case (byte)'q' or (byte)'h':
                     i += 1;
@@ -73,8 +75,7 @@ public static class LiveReplayReader
         }
     }
 
-    private static bool Valid(string? tag) =>
-        !string.IsNullOrEmpty(tag) && tag.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_');
+    private static bool Valid(ReadOnlySpan<byte> tag) => !tag.IsEmpty && !tag.ContainsAnyExcept(TagChars);
 
     [Conditional("DEBUG")]
     internal static void SelfCheck()
@@ -91,5 +92,6 @@ public static class LiveReplayReader
         Debug.Assert(P(B("U\u0009opponents}q\u0008(U\u00011}q\tU\u0004nameq\nU\u0004COMA")) is null, "truncated");
         Debug.Assert(P([]) is null, "empty");
         Debug.Assert(P(B("U\u0009opponents}(U\u00011}U\u0004nameU\u0000sU\u00012}U\u0004nameU\u0002ABsuu.")) is null, "empty tag");
+        Debug.Assert(P(B("U\u0009opponents}(U\u00011}U\u0004nameU\u0000U\u0001XsU\u00012}U\u0004nameU\u0002ABsuu.")) is null, "empty tag, later value ignored");
     }
 }
