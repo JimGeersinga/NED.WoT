@@ -1,12 +1,12 @@
 @inject IDialogService DialogService
 
-@* The filter bar over the battle table, in the order of the design: the Clangevechten | Alles switch, a separator, then the Clan and Speler dropdowns (MudAutocomplete over BattleFilters, styled by wot-filter in mud.css), the Map and Resultaat dropdowns and the tool buttons. Index owns the state and gets it back through the callbacks. *@
+@* The filter bar over the battle table, in the order of the design: the Clangevechten | Alles switch, a separator, then the Clan and Speler dropdowns (MudAutocomplete over BattleFilters, styled by filter-field in mud.css), the Map and Resultaat dropdowns and the tool buttons. Index owns the state and gets it back through the callbacks. *@
 @{
 	var clanMembers = Filtered.SelectMany(x => x.Team1.Players.Concat(x.Team2.Players)).Where(x => x.IsClanMember).Select(x => x.Name).Distinct().Count();
 	var undefinedNames = TankNameResolver.UndefinedTankNames.Count + MapNameResolver.UndefinedMapNames.Count;
 }
 
-<section class="gl-bar" aria-label="Filters">
+<section class="filter-bar" aria-label="Filters">
 	<MudToggleGroup T="bool" Value="ClanOnly" ValueChanged="ClanOnlyChanged" Class="wot-view-toggle" aria-label="Soort gevechten">
 		<MudToggleItem Value="true" Text="Clangevechten" />
 		<MudToggleItem Value="false" Text="Alles" />
@@ -18,55 +18,55 @@
 					 Value="_clan" ValueChanged="PickClan"
 					 SearchFunc="SearchClans" ToStringFunc="@(o => o?.Name)" ItemDisabledFunc="@(o => o.Header != null)"
 					 MaxItems="MaxItems" ReturnedItemsCountChanged="@(n => _clanCount = n)"
-					 Variant="Variant.Filled" Margin="Margin.Dense" Class="@("wot-filter" + (Clan != null ? " filled" : string.Empty))" PopoverClass="wot-filter-pop"
+					 Variant="Variant.Filled" Margin="Margin.Dense" Class="@("filter-field" + (Clan != null ? " filter-field-active" : string.Empty))" PopoverClass="filter-popover"
 					 Adornment="Adornment.Start" AdornmentIcon="@BattleFilters.Shield" Strict="false" OpenOnFocus="true"
 					 Clearable="true" ResetValueOnEmptyText="true" CoerceText="true" DebounceInterval="150" RelativeWidth="DropdownWidth.Adaptive">
 		<ItemTemplate Context="o">
-			<span class="wot-opt"><span class="wot-opt-tag">[@BattleFilters.Highlighted(o.Name, _clanTerm)]</span><span class="wot-opt-n">@BattleCount(o.Battles)</span></span>
+			<span class="filter-option"><span class="filter-option-clan-tag">[@BattleFilters.Highlighted(o.Name, _clanTerm)]</span><span class="filter-option-count">@BattleCount(o.Battles)</span></span>
 		</ItemTemplate>
-		<ItemDisabledTemplate Context="o"><span class="wot-opt-h">@o.Header</span></ItemDisabledTemplate>
-		<MoreItemsTemplate><span class="wot-opt-more">Nog @(_clanCount - MaxItems) clans · typ om te zoeken</span></MoreItemsTemplate>
-		<NoItemsTemplate><span class="wot-opt-more">Geen clan gevonden</span></NoItemsTemplate>
+		<ItemDisabledTemplate Context="o"><span class="filter-option-header">@o.Header</span></ItemDisabledTemplate>
+		<MoreItemsTemplate><span class="filter-option-note">Nog @(_clanCount - MaxItems) clans · typ om te zoeken</span></MoreItemsTemplate>
+		<NoItemsTemplate><span class="filter-option-note">Geen clan gevonden</span></NoItemsTemplate>
 	</MudAutocomplete>
 
 	<MudAutocomplete T="BattleFilters.Choice" Placeholder="Speler zoeken" aria-label="Speler"
 					 Value="_player" ValueChanged="PickPlayer"
 					 SearchFunc="SearchPlayers" ToStringFunc="@(o => o?.Name)" ItemDisabledFunc="@(o => o.Header != null)"
 					 MaxItems="@(Clan == null ? MaxItems : (int?)null)" ReturnedItemsCountChanged="@(n => _playerCount = n)"
-					 Variant="Variant.Filled" Margin="Margin.Dense" Class="@("wot-filter" + (Player != null ? " filled" : string.Empty))" PopoverClass="wot-filter-pop"
-					 Adornment="Adornment.Start" AdornmentIcon="@BattleFilters.Helmet" AdornmentText="@PlayerTag" Strict="false" OpenOnFocus="true"
+					 Variant="Variant.Filled" Margin="Margin.Dense" Class="@("filter-field" + (Player != null ? " filter-field-active" : string.Empty))" PopoverClass="filter-popover"
+					 Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.Person" AdornmentText="@PlayerTag" Strict="false" OpenOnFocus="true"
 					 Clearable="true" ResetValueOnEmptyText="true" CoerceText="true" DebounceInterval="150" RelativeWidth="DropdownWidth.Adaptive">
 		<ItemTemplate Context="o">
-			<span class="wot-opt">
+			<span class="filter-option">
 				@if (Clan == null)
 				{
-					<span class="wot-opt-tag">[@(o.Clan ?? "?")]</span>
+					<span class="filter-option-clan-tag">[@(o.Clan ?? "?")]</span>
 				}
 				<span>@BattleFilters.Highlighted(o.Name, _playerTerm)</span>
 				@if (Clan != null)
 				{
-					<span class="wot-opt-n">@BattleCount(o.Battles)</span>
+					<span class="filter-option-count">@BattleCount(o.Battles)</span>
 				}
 			</span>
 		</ItemTemplate>
-		<ItemDisabledTemplate Context="o"><span class="wot-opt-h">@o.Header</span></ItemDisabledTemplate>
-		<MoreItemsTemplate><span class="wot-opt-more">Nog @(_playerCount - MaxItems) spelers · typ om te zoeken</span></MoreItemsTemplate>
-		<NoItemsTemplate><span class="wot-opt-more">Geen speler gevonden</span></NoItemsTemplate>
+		<ItemDisabledTemplate Context="o"><span class="filter-option-header">@o.Header</span></ItemDisabledTemplate>
+		<MoreItemsTemplate><span class="filter-option-note">Nog @(_playerCount - MaxItems) spelers · typ om te zoeken</span></MoreItemsTemplate>
+		<NoItemsTemplate><span class="filter-option-note">Geen speler gevonden</span></NoItemsTemplate>
 	</MudAutocomplete>
 
 	@* Map: a MudMenu whose popover holds a search box, a checkbox per map and the Wissen and Alles buttons; the field is its activator. *@
-	<MudMenu @bind-Open="_mapOpen" Class="wot-pick" PopoverClass="wot-filter-pop wot-map-pop" RelativeWidth="DropdownWidth.Adaptive" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft">
+	<MudMenu @bind-Open="_mapOpen" Class="map-filter" PopoverClass="filter-popover map-filter-popover" RelativeWidth="DropdownWidth.Adaptive" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft">
 		<ActivatorContent>
 			@* The clear button is MudBlazor's own (a small MudIconButton with its mud-input-clear-button class), placed over the box like the one MudBlazor draws in the other three; it sits outside the clickable field so its click does not also toggle the menu. *@
-			<div class="wot-pick-field">
+			<div class="map-filter-field">
 				<div @onclick="() => ToggleMap(context)">
 					<MudTextField T="string" ReadOnly="true" Text="@BattleFilters.MapSummary(Maps)" Placeholder="Alle maps" aria-label="Map" aria-haspopup="listbox"
-								  Variant="Variant.Filled" Margin="Margin.Dense" Class="@("wot-filter" + (Maps.Count > 0 ? " filled" : string.Empty))"
+								  Variant="Variant.Filled" Margin="Margin.Dense" Class="@("filter-field" + (Maps.Count > 0 ? " filter-field-active" : string.Empty))"
 								  Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.Map" />
 				</div>
 				@if (Maps.Count > 0)
 				{
-					<MudIconButton Icon="@Icons.Material.Filled.Clear" Size="Size.Small" Class="mud-input-clear-button wot-pick-clear" aria-label="Maps wissen" title="Maps wissen" OnClick="ClearMaps" />
+					<MudIconButton Icon="@Icons.Material.Filled.Clear" Size="Size.Small" Class="mud-input-clear-button map-filter-clear-button" aria-label="Maps wissen" title="Maps wissen" OnClick="ClearMaps" />
 				}
 			</div>
 		</ActivatorContent>
@@ -74,27 +74,27 @@
 			@if (_mapOpen)
 			{
 				var maps = BattleFilters.MapChoices(Scoped, Maps, _mapTerm);
-				<div class="wot-map-search" @onkeydown="MapKey">
+				<div class="map-filter-search" @onkeydown="MapKey">
 					<MudTextField T="string" @bind-Value="_mapTerm" Immediate="true" Placeholder="Zoek een map" aria-label="Map zoeken"
 								  Variant="Variant.Outlined" Margin="Margin.Dense" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.Search" />
 				</div>
-				<div class="wot-map-list" role="listbox" aria-multiselectable="true" aria-label="Maps">
+				<div class="map-filter-list" role="listbox" aria-multiselectable="true" aria-label="Maps">
 					@foreach (var map in maps)
 					{
 						var name = map.Name;
 						<div role="option" aria-selected="@(Maps.Contains(name) ? "true" : "false")">
 							<MudCheckBox T="bool" Value="Maps.Contains(name)" ValueChanged="@(on => ToggleMapName(name, on))" Dense="true" Color="Color.Primary">
-								<span class="wot-opt"><span>@BattleFilters.Highlighted(name, _mapTerm)</span><span class="wot-opt-n">@BattleCount(map.Battles)</span></span>
+								<span class="filter-option"><span>@BattleFilters.Highlighted(name, _mapTerm)</span><span class="filter-option-count">@BattleCount(map.Battles)</span></span>
 							</MudCheckBox>
 						</div>
 					}
 					@if (maps.Count == 0)
 					{
-						<span class="wot-opt-more wot-map-none">Geen map gevonden</span>
+						<span class="filter-option-note map-filter-empty">Geen map gevonden</span>
 					}
 				</div>
-				<div class="wot-map-foot">
-					<span class="wot-opt-more">@Maps.Count geselecteerd</span>
+				<div class="map-filter-footer">
+					<span class="filter-option-note">@Maps.Count geselecteerd</span>
 					<MudButton Variant="Variant.Text" Size="Size.Small" Disabled="@(Maps.Count == 0)" OnClick="ClearMaps">Wissen</MudButton>
 					<MudButton Variant="Variant.Outlined" Size="Size.Small" OnClick="() => TickAll(maps)">Alles</MudButton>
 				</div>
@@ -104,12 +104,12 @@
 
 	@* Resultaat: a multi-select; nothing ticked shows every result. *@
 	<MudSelect T="Result" MultiSelection="true" SelectedValues="Results" SelectedValuesChanged="PickResults" ToStringFunc="ResultChip.Word" MultiSelectionTextFunc="ResultText"
-			   Placeholder="Alle resultaten" aria-label="Resultaat" Variant="Variant.Filled" Margin="Margin.Dense" Class="@("wot-filter wot-result" + (Results.Count > 0 ? " filled" : string.Empty))" PopoverClass="wot-filter-pop wot-result-pop"
+			   Placeholder="Alle resultaten" aria-label="Resultaat" Variant="Variant.Filled" Margin="Margin.Dense" Class="@("filter-field result-filter" + (Results.Count > 0 ? " filter-field-active" : string.Empty))" PopoverClass="filter-popover result-filter-popover"
 			   Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.EmojiEvents" Clearable="@(Results.Count > 0)" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft">
 		@foreach (var result in ResultChip.Order)
 		{
 			<MudSelectItem T="Result" Value="result">
-				<span class="wot-opt"><ResultChip Result="result" ShowBackground="false" /><span class="wot-opt-n">@Filtered.Count(x => x.Result == result)</span></span>
+				<span class="filter-option"><ResultChip Result="result" ShowBackground="false" /><span class="filter-option-count">@Filtered.Count(x => x.Result == result)</span></span>
 			</MudSelectItem>
 		}
 	</MudSelect>
@@ -221,7 +221,7 @@
 
 	private static string BattleCount(int battles) => $"{battles} {(battles == 1 ? "gevecht" : "gevechten")}";
 
-	/// <summary>The clan tag as the start adornment of the Speler box (mud.css colours it and draws the helmet in front of it); with no tag the helmet icon shows.</summary>
+	/// <summary>The clan tag as the start adornment of the Speler box (mud.css colours it); with no tag the Person icon shows.</summary>
 	private string? PlayerTag => BattleFilters.SpelerTag(Clan, _player) is { } tag ? $"[{tag}]" : null;
 
 	private Task<IEnumerable<BattleFilters.Choice>> SearchClans(string? term, CancellationToken token)

@@ -28,8 +28,8 @@ a.tag.own[href]:hover { border-color: var(--mud-palette-primary); }
 
 /* The page: the filter bar over the table. Only the table scrolls; the filter bar, the column header and the footer stay in view. */
 .gl-page { display: flex; flex-direction: column; height: calc(100vh - var(--mud-appbar-height)); min-height: 0; }
-.gl-bar { flex: none; display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 8px 16px; background: var(--mud-palette-surface); border-bottom: 1px solid var(--mud-palette-lines-default); }
-.gl-bar .wot-vsep { height: 32px; }
+.filter-bar { flex: none; display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 8px 16px; background: var(--mud-palette-surface); border-bottom: 1px solid var(--mud-palette-lines-default); }
+.filter-bar .wot-vsep { height: 32px; }
 .filter-bar-tools { display: flex; align-items: center; gap: 8px; margin-left: auto; flex: none; }
 
 .sorted-column-label { display: flex; align-items: center; gap: 2px; color: inherit; font: inherit; padding: 0; border: 0; background: none; cursor: pointer; }

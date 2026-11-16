@@ -9,9 +9,8 @@ public sealed class BattleFilters
     /// <summary>One line of a dropdown. A clan: Name is its tag, Clan the same tag, Battles the battles it is in. A player: Name, Clan the tag of their latest battle (null when they had none) and, with a clan chosen, Battles the battles with that clan. A section header: only Header is set.</summary>
     public sealed record Choice(string Name, string? Clan, int Battles, string? Header = null);
 
-    /// <summary>The icons of the two boxes: the game-art glyphs of the design board, as markup like the MudBlazor icons.</summary>
+    /// <summary>The icon of the Clan box: the game-art glyph of the design board, as markup like the MudBlazor icons.</summary>
     public const string Shield = "<path fill-rule=\"evenodd\" d=\"M12 2.5l7.5 2.8v6.2c0 4.6-3.1 8.6-7.5 10.5-4.4-1.9-7.5-5.9-7.5-10.5V5.3zM12 7.4L8 9.9v1.3l4-2.2 4 2.2V9.9zM12 12.2l-4 2.5V16l4-2.2 4 2.2v-1.3z\"/>";
-    public const string Helmet = "<path fill-rule=\"evenodd\" d=\"M12 3C7.6 3 4.5 6.4 4.5 10.8V15l1.5 1.5V19h12v-2.5l1.5-1.5v-4.2C19.5 6.4 16.4 3 12 3zM6.8 10.4h10.4v3.2H6.8z\"/>";
 
     private Lazy<Tables> _tables;
     private int _version;
