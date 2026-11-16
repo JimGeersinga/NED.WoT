@@ -528,16 +528,17 @@ public class BattleReportService : IDisposable
 
         try
         {
-            ReplayReader.ReplayBlocks blocks = ReplayReader.Read(file.FullName);
-            Interlocked.Add(ref _bytesRead, blocks.Header.Length + (blocks.Results?.Length ?? 0));
+            // The blocks are in rented buffers: nothing parsed from them may outlive this using (System.Text.Json copies every string out).
+            using ReplayReader.ReplayBlocks blocks = ReplayReader.Read(file.FullName);
+            Interlocked.Add(ref _bytesRead, blocks.Header.Length + blocks.Results.Length);
 
-            ReplayHeader? header = JsonSerializer.Deserialize(blocks.Header, ReplayJsonContext.Default.ReplayHeader);
+            ReplayHeader? header = JsonSerializer.Deserialize(blocks.Header.Span, ReplayJsonContext.Default.ReplayHeader);
             if (header?.DateTime == null)
             {
                 return Unreadable(file, "no dateTime in the replay header");
             }
 
-            ReplayResults? results = ParseResults(blocks.Results);
+            ReplayResults? results = ParseResults(blocks.Results.Span);
             report = BattleReportMapper.Map(header, results, _identity.Current);
         }
         catch (Exception ex)
@@ -551,9 +552,9 @@ public class BattleReportService : IDisposable
     }
 
     /// <summary>The results block; null when there is none or it isn't a valid results array (the battle then maps without stats).</summary>
-    private static ReplayResults? ParseResults(byte[]? results)
+    private static ReplayResults? ParseResults(ReadOnlySpan<byte> results)
     {
-        if (results is null)
+        if (results.IsEmpty)
         {
             return null;
         }
