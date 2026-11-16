@@ -101,6 +101,7 @@ Values come from the design canvas's `wot.css`; `mud.css`, `wot.css` and the com
   items (`.wot-mitem`, MudMenuItem) 40px min height, padding `0 16px`, 15px, icon `#a2abb5`; the danger item (`.wot-menu-danger`) in the error colour.
 
 ## Gevechtslog patterns (`wwwroot/css/gl.css`, from the canvas's `project/gl.css` and its "New patterns" note)
+- **Folder carousel** (`FolderCarousel.razor`): `MudIconButton` arrows (`folder-carousel-arrow`), `MudButton` neighbours (`folder-carousel-neighbour`) and current title (`folder-carousel-current`, the `MudMenu` activator), the folder menu is `MudMenuItem`s (`folder-menu-popover`, `folder-menu-item-*`; the Check on the current row only, the other rows keep its room), so MudBlazor handles the keyboard. Tokens `--wot-folder-carousel-bg` and `--wot-folder-carousel-dot`.
 - **Result chip** (variant Text, tinted): Gewonnen `Success` + `CheckCircle`; Verloren `Error` + `Cancel`; Gelijkspel `Warning` + `Remove`; Onbekend skipped grey (`--wot-skipped`) + `HelpOutline`. `ShowBackground="false"` drops the tint (icon and word only), as in the Resultaat list. The neutral count chip (a day, a folder, a map base) is `MudChip Size.Small Variant.Text`.
 - **Ratio cell with a level icon** (stats mode): the value on the left, the ratio on the right, in columns. Each ratio is its colour **plus** a 16px Filled icon (`arrow_drop_down` low, `remove` mid, `arrow_drop_up` high).
 
