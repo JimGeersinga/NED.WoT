@@ -32,21 +32,16 @@ a.tag.own[href]:hover { border-color: var(--mud-palette-primary); }
 .gl-bar .wot-vsep { height: 32px; }
 .filter-bar-tools { display: flex; align-items: center; gap: 8px; margin-left: auto; flex: none; }
 
-.gl-sorted { display: flex; align-items: center; gap: 2px; color: inherit; font: inherit; padding: 0; border: 0; background: none; cursor: pointer; }
-.gl-sorted svg { width: 16px; height: 16px; fill: currentColor; }
+.sorted-column-label { display: flex; align-items: center; gap: 2px; color: inherit; font: inherit; padding: 0; border: 0; background: none; cursor: pointer; }
 .gl-dim { color: var(--mud-palette-text-secondary); }
 .gl-err svg { width: 20px; height: 20px; fill: currentColor; }
 
 /* A row the file watcher added: a quiet steel flash that fades in 2 seconds. */
 @keyframes gl-new { from { background-color: color-mix(in srgb, var(--mud-palette-text-primary) 16%, transparent); } to { background-color: transparent; } }
 
-/* The neutral chip: the count of a day, the base of a map. */
-.gl-chip { display: inline-flex; align-items: center; justify-content: center; gap: 5px; height: 24px; padding: 0 8px; border-radius: 2px; background: color-mix(in srgb, var(--mud-palette-text-primary) 6%, transparent); color: var(--mud-palette-text-secondary); font-family: var(--wot-font-text); font-size: 13px; font-weight: 500; line-height: 1; white-space: nowrap; flex: none; }
-
 /* Map name right-aligned against a column of base chips. */
 .mapc { display: grid; grid-template-columns: minmax(0, 1fr) 26px; column-gap: 8px; align-items: center; }
 .mapc b, .mapc span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-weight: 500; text-align: right; white-space: nowrap; }
-.mapc .gl-chip { padding: 0; width: 26px; }
 
 /* Steel scrollbar: a dark track, a rounded light thumb, an arrow button at both ends. */
 *::-webkit-scrollbar { width: 16px; height: 16px; background: var(--mud-palette-background-gray); }
@@ -109,11 +104,11 @@ a.tag.own[href]:hover { border-color: var(--mud-palette-primary); }
 /* The 24px icon must not make the line taller than the text: the number then sits on the same line as the PR number of the row (both cells are text-top aligned). */
 .gl-wtr > img { margin: -4px 0; }
 .gl-rec .n { min-width: 2ch; text-align: right; }
-.gl-rec svg { width: 16px; height: 16px; fill: currentColor; }
+.gl-rec .mud-icon-root { font-size: 16px; }
 /* The icons carry the result colours of the chips; the words stay secondary. */
-.gl-rec .w svg { fill: var(--mud-palette-success); }
-.gl-rec .d svg { fill: var(--mud-palette-warning); }
-.gl-rec .l svg { fill: var(--mud-palette-error); }
+.gl-rec .w .mud-icon-root { color: var(--mud-palette-success); }
+.gl-rec .d .mud-icon-root { color: var(--mud-palette-warning); }
+.gl-rec .l .mud-icon-root { color: var(--mud-palette-error); }
 
 /* The filter bar while a load runs: Index makes it inert (the keyboard and the pointer stay out), this greys it. */
 .gl-filters { flex: none; }
@@ -122,7 +117,6 @@ a.tag.own[href]:hover { border-color: var(--mud-palette-primary); }
 /* Empty state (EmptyState.razor): an Outlined 48px icon in text-secondary, an H5, one sentence and one action. The well centres it in the room under the filter bar. */
 .gl-empty-well { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
 .empty { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; padding: 40px 24px; }
-.empty > svg { width: 48px; height: 48px; fill: var(--mud-palette-text-secondary); }
 .empty p { max-width: 340px; margin: 0; font-size: 14px; color: var(--mud-palette-text-secondary); }
 
 /* The "Geen toegang" page: a centred card on the background-gray well. */

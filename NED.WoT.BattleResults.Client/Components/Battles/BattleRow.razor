@@ -50,7 +50,7 @@ else
 			</ChildContent>
 		</MudTooltip>
 	</MudTd>
-	<MudTd Class="mapcol"><div class="mapc"><b title="@Report.MapName">@Report.MapName</b><span class="gl-chip">@ownTeam?.Base</span></div></MudTd>
+	<MudTd Class="mapcol"><div class="mapc"><b title="@Report.MapName">@Report.MapName</b><MudChip T="string" Size="Size.Small" Variant="Variant.Text" Class="map-base-chip">@ownTeam?.Base</MudChip></div></MudTd>
 	<MudTd @oncontextmenu="OpenMatchMenu">
 		<span class="vs" @oncontextmenu:preventDefault="true">
 			<a class="@TagClass(left, left == ownTeam, onlyOwn)" href="@left.ClanUrl" target="_blank" title="@(left.ClanUrl is null ? null : "Open de clanpagina")" @onclick:stopPropagation="true"><span class="tag-t">@left.Abbreviation</span></a>

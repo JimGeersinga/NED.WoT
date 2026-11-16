@@ -80,7 +80,7 @@
             <MudTd DataLabel="Number" Class="sticky-left num">
                 @if (own)
                 {
-                    <svg class="wot-name-person" viewBox="0 0 24 24" role="img" aria-label="Jij"><title>Jij</title>@((MarkupString)Icons.Material.Filled.Person)</svg>
+                    <MudIcon Icon="@Icons.Material.Filled.Person" Color="Color.Primary" Size="Size.Small" Title="Jij" aria-label="Jij" Class="own-row-icon" />
                 }
                 @context.Number
             </MudTd>
@@ -95,7 +95,7 @@
                     <span class="@("wot-name-text" + (own ? " me" : string.Empty) + (teamKiller ? " tk" : string.Empty))">@context.DisplayName</span>           
                     @if (teamKiller)
                     {
-                        <svg class="wot-name-tk" viewBox="0 0 24 24" role="img" aria-label="Teamkiller"><title>Teamkiller</title>@((MarkupString)Icons.Material.Filled.Report)</svg>
+                        <MudIcon Icon="@Icons.Material.Filled.Report" Color="Color.Info" Size="Size.Small" Title="Teamkiller" aria-label="Teamkiller" />
                     }
                 </div>
             </MudTd>

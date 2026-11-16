@@ -4,7 +4,7 @@
 	@if (Ratio.HasValue)
 	{
 		<span class="wot-ratio-value" title="@LevelWord" style="color: @Level.GetColor()">
-			@Ratio%<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)LevelIcon)</svg>
+			@Ratio%<MudIcon Icon="@LevelIcon" Style="font-size: 16px" />
 		</span>
 	}
 	else if (Detail != null)

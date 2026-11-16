@@ -1,9 +1,13 @@
-<MudChip T="string" Variant="Variant.Text" Size="Size.Small" Color="@Colour" Icon="@Icon" Class="@(Result is Result.Unknown ? "wot-result-skipped" + (IconRight ? " wot-chip-icon-right" : null) : IconRight ? "wot-chip-icon-right" : null)">@Word(Result)</MudChip>
+<MudChip T="string" Variant="Variant.Text" Size="Size.Small" Color="@Colour" Icon="@Icon" Class="@ChipClass">@Word(Result)</MudChip>
 
 @code {
     /// <summary>Shows the icon after the word instead of before it (the battle row).</summary>
     [Parameter]
     public bool IconRight { get; set; }
+
+    /// <summary>False drops the tinted ground: icon and word only, as in the Resultaat list.</summary>
+    [Parameter]
+    public bool ShowBackground { get; set; } = true;
 
     /// <summary>The result of the battle, as shown in the chip: the colour, the icon and the word (docs/DESIGN.md, "Result chip").</summary>
     [Parameter, EditorRequired]
@@ -35,4 +39,16 @@
         Result.Draw => Icons.Material.Filled.RemoveCircle,
         _ => Icons.Material.Filled.HelpOutline,
     };
+
+    private string? ChipClass
+    {
+        get
+        {
+            List<string> classes = [];
+            if (Result is Result.Unknown) classes.Add("wot-result-skipped");
+            if (IconRight) classes.Add("wot-chip-icon-right");
+            if (!ShowBackground) classes.Add("result-chip-without-background");
+            return classes.Count == 0 ? null : string.Join(' ', classes);
+        }
+    }
 }

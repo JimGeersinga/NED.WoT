@@ -9,7 +9,7 @@
     var percentage = WinPercentage(wins, draws, loses);
 }
 
-<span class="gl-chip">@Reports.Count @(Reports.Count == 1 ? "gevecht" : "gevechten")</span>
+<MudChip T="string" Size="Size.Small" Variant="Variant.Text">@Reports.Count @(Reports.Count == 1 ? "gevecht" : "gevechten")</MudChip>
 @if (decided > 0)
 {
     var band = percentage.GetWinRatioColor();

@@ -109,7 +109,7 @@
 		@foreach (var result in ResultChip.Order)
 		{
 			<MudSelectItem T="Result" Value="result">
-				<span class="wot-opt"><ResultChip Result="result" /><span class="wot-opt-n">@Filtered.Count(x => x.Result == result)</span></span>
+				<span class="wot-opt"><ResultChip Result="result" ShowBackground="false" /><span class="wot-opt-n">@Filtered.Count(x => x.Result == result)</span></span>
 			</MudSelectItem>
 		}
 	</MudSelect>
