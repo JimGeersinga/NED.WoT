@@ -79,6 +79,7 @@ public class BattleReportService : IDisposable
         _folderCts = CancellationTokenSource.CreateLinkedTokenSource(_disposed.Token);
         _batchTimer = new Timer(async _ => await AddPendingFilesAsync(), null, Timeout.Infinite, Timeout.Infinite);
         SelfCheck();
+        LiveReplayReader.SelfCheck();
         // The live lookup runs whichever folder is selected; every tick reads the setting, so a changed path needs no restart.
         _timer = new Timer(async _ => await TempFileWatcherAsync(), null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2));
         ListenForFileChanges();
@@ -296,7 +297,7 @@ public class BattleReportService : IDisposable
         Debug.Assert(LiveReplayFile(null, null) is null, "nothing known: no lookup");
     }
 
-    /// <summary>Every 2 s: the two clan tags of the battle being played, from block 0 of temp.wotreplay. A tick that finds the previous one still running is skipped.</summary>
+    /// <summary>Every 2 s: the two clan tags of the battle being played, from the live packet stream of temp.wotreplay. A tick that finds the previous one still running is skipped.</summary>
     private Task TempFileWatcherAsync()
     {
         if (!_tempFileGate.Wait(0))
@@ -314,14 +315,9 @@ public class BattleReportService : IDisposable
                 return Task.CompletedTask;
             }
 
-            ReplayHeader? header = JsonSerializer.Deserialize(ReplayReader.Read(tempFile).Header, ReplayJsonContext.Default.ReplayHeader);
-            (string, string)? clanMatch = ClanTags(header);
+            (string, string)? clanMatch = LiveReplayReader.ReadClans(tempFile);
 
-            if (!_clanMatch.Equals(clanMatch) && clanMatch.HasValue &&
-                _identity.Current?.ClanTag is { } myClan && (
-                myClan.Equals(clanMatch.Value.Item1, StringComparison.OrdinalIgnoreCase) ||
-                myClan.Equals(clanMatch.Value.Item2, StringComparison.OrdinalIgnoreCase)
-                ))
+            if (!_clanMatch.Equals(clanMatch) && clanMatch.HasValue)
             {
                 _clanMatch = clanMatch;
 
@@ -329,9 +325,9 @@ public class BattleReportService : IDisposable
                 ClanMatchStarted?.Invoke(this, clanMatch.Value);
             }
         }
-        catch (Exception ex) when (ex is IOException or InvalidDataException or JsonException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            // The game is still writing the header, or the file is gone: the next tick tries again.
+            // The game holds the file or it is gone: the next tick tries again.
             Debug.WriteLine($"temp.wotreplay not read: {ex.Message}");
         }
         finally
@@ -340,29 +336,6 @@ public class BattleReportService : IDisposable
         }
 
         return Task.CompletedTask;
-    }
-
-    /// <returns>The clan tags of team 1 and team 2 (the most mentioned clanAbbrev per team, as in the battle list), or null when a team has none.</returns>
-    private static (string, string)? ClanTags(ReplayHeader? header)
-    {
-        if (header?.Vehicles is null)
-        {
-            return null;
-        }
-
-        Team team1 = new() { Number = 1 };
-        Team team2 = new() { Number = 2 };
-        foreach (ReplayPlayer player in header.Vehicles.Values)
-        {
-            // The same split as BattleReportMapper.MapPlayerData: team 1, everyone else team 2.
-            Team team = player.Team == team1.Number ? team1 : team2;
-            team.Players.Add(new Player(team) { Clan = player.ClanAbbrev });
-        }
-
-        string clan1 = BattleReportMapper.GetMostMentionedClanAbbreviation(team1);
-        string clan2 = BattleReportMapper.GetMostMentionedClanAbbreviation(team2);
-
-        return clan1 == "?" || clan2 == "?" ? null : (clan1, clan2);
     }
 
     private void OnRenamed(object sender, RenamedEventArgs e) => OnCreated(sender, e);
