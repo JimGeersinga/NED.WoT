@@ -651,3 +651,7 @@ a.wot-clan-card[href]:focus-visible > .mud-paper { border-color: var(--mud-palet
 }
 
 .wot-menu .mud-menu-item > p { margin: 0; }
+
+/* MudIconButton (the tool buttons of the filter bar: the stats book, the clan members, the unknown names; game art inside). */
+.mud-icon-button.filter-tool-button img { width: 28px; height: 28px; object-fit: contain; }
+.mud-icon-button.stats-book-button img { width: 36px; }

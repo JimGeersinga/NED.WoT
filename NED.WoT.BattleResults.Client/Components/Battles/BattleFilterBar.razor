@@ -114,28 +114,35 @@
 		}
 	</MudSelect>
 
-	<div class="gl-tools">
+	<div class="filter-bar-tools">
 		@if (CanToggleBattleStats)
 		{
-			<button type="button" class="gl-imgbtn gl-icon-only gl-book" aria-pressed="@(ShowBattleStats ? "true" : "false")" aria-label="Statistieken" title="Uitgebreide statistieken&#10;▲ hoog · ▬ gemiddeld · ▼ laag&#10;Geraakt: ≤ 50% laag, ≥ 70% hoog&#10;Gepenetreerd: ≤ 55% laag, ≥ 70% hoog&#10;Geblokt: ≥ 25% hoog" @onclick="() => ShowBattleStatsChanged.InvokeAsync(!ShowBattleStats)">
+			<MudIconButton Variant="Variant.Outlined" Color="@(ShowBattleStats ? Color.Primary : Color.Default)" Class="filter-tool-button stats-book-button" aria-pressed="@(ShowBattleStats ? "true" : "false")" aria-label="Statistieken" title="@StatsTooltip" OnClick="() => ShowBattleStatsChanged.InvokeAsync(!ShowBattleStats)">
 				<img src="@(ShowBattleStats ? "images/book-open.png" : "images/book-closed.png")" alt="" />
-			</button>
+			</MudIconButton>
 		}
 
-		<button type="button" class="gl-imgbtn gl-icon-only" aria-label="Clanleden, @clanMembers" title="Clanleden" @onclick="OpenClanMembersDialog">
-			<img src="images/crew.png" alt="" /><span class="gl-badge">@clanMembers</span>
-		</button>
+		<MudBadge Content="@clanMembers" Overlap="true" Bordered="true" Color="Color.Dark">
+			<MudIconButton Variant="Variant.Outlined" Class="filter-tool-button" aria-label="@($"Clanleden, {clanMembers}")" title="Clanleden" OnClick="OpenClanMembersDialog">
+				<img src="images/crew.png" alt="" />
+			</MudIconButton>
+		</MudBadge>
 
 		@if (undefinedNames > 0)
 		{
-			<button type="button" class="gl-imgbtn gl-icon-only gl-warn" aria-label="@undefinedNames onbekende mapnamen en tanknamen" title="Onbekende mapnamen en tanknamen" @onclick="OpenUndefinedNamesDialog">
-				<img src="images/CrewSkill_Commander_sixthSense.png" alt="" /><span class="gl-badge">@undefinedNames</span>
-			</button>
+			<MudBadge Content="@undefinedNames" Overlap="true" Bordered="true" Color="Color.Warning">
+				<MudIconButton Variant="Variant.Outlined" Class="filter-tool-button" aria-label="@($"{undefinedNames} onbekende mapnamen en tanknamen")" title="Onbekende mapnamen en tanknamen" OnClick="OpenUndefinedNamesDialog">
+					<img src="images/CrewSkill_Commander_sixthSense.png" alt="" />
+				</MudIconButton>
+			</MudBadge>
 		}
 	</div>
 </section>
 
 @code {
+	/// <summary>The tooltip of the stats book: a title attribute on a component needs a real newline, not an HTML entity.</summary>
+	private const string StatsTooltip = "Uitgebreide statistieken\n▲ hoog · ▬ gemiddeld · ▼ laag\nGeraakt: ≤ 50% laag, ≥ 70% hoog\nGepenetreerd: ≤ 55% laag, ≥ 70% hoog\nGeblokt: ≥ 25% hoog";
+
 	/// <summary>The lookup of the clans and players in the battles, built once by Index and dropped when the battles change.</summary>
 	[Parameter, EditorRequired]
 	public required BattleFilters Filters { get; set; }

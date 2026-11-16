@@ -30,7 +30,7 @@ a.tag.own[href]:hover { border-color: var(--mud-palette-primary); }
 .gl-page { display: flex; flex-direction: column; height: calc(100vh - var(--mud-appbar-height)); min-height: 0; }
 .gl-bar { flex: none; display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 8px 16px; background: var(--mud-palette-surface); border-bottom: 1px solid var(--mud-palette-lines-default); }
 .gl-bar .wot-vsep { height: 32px; }
-.gl-tools { display: flex; align-items: center; gap: 8px; margin-left: auto; flex: none; }
+.filter-bar-tools { display: flex; align-items: center; gap: 8px; margin-left: auto; flex: none; }
 
 .gl-sorted { display: flex; align-items: center; gap: 2px; color: inherit; font: inherit; padding: 0; border: 0; background: none; cursor: pointer; }
 .gl-sorted svg { width: 16px; height: 16px; fill: currentColor; }
@@ -40,15 +40,6 @@ a.tag.own[href]:hover { border-color: var(--mud-palette-primary); }
 /* A row the file watcher added: a quiet steel flash that fades in 2 seconds. */
 @keyframes gl-new { from { background-color: color-mix(in srgb, var(--mud-palette-text-primary) 16%, transparent); } to { background-color: transparent; } }
 
-/* Icon buttons of the rows: chevron and copy. */
-.gl-ibtn { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border: 1px solid transparent; border-radius: 4px; background: none; color: var(--mud-palette-text-secondary); cursor: pointer; flex: none; }
-.gl-ibtn svg { width: 20px; height: 20px; fill: currentColor; }
-.gl-ibtn.out { border-color: var(--mud-palette-lines-inputs); }
-.gl-ibtn.out.primary { border-color: var(--mud-palette-primary); color: var(--mud-palette-primary); }
-.gl-ibtn.out svg { width: 18px; height: 18px; }
-.gl-ibtn:hover:not(:disabled) { background: var(--mud-palette-table-hover); color: var(--mud-palette-text-primary); }
-.gl-ibtn:disabled { color: var(--mud-palette-action-disabled); cursor: default; }
-
 /* The neutral chip: the count of a day, the base of a map. */
 .gl-chip { display: inline-flex; align-items: center; justify-content: center; gap: 5px; height: 24px; padding: 0 8px; border-radius: 2px; background: color-mix(in srgb, var(--mud-palette-text-primary) 6%, transparent); color: var(--mud-palette-text-secondary); font-family: var(--wot-font-text); font-size: 13px; font-weight: 500; line-height: 1; white-space: nowrap; flex: none; }
 
@@ -56,17 +47,6 @@ a.tag.own[href]:hover { border-color: var(--mud-palette-primary); }
 .mapc { display: grid; grid-template-columns: minmax(0, 1fr) 26px; column-gap: 8px; align-items: center; }
 .mapc b, .mapc span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-weight: 500; text-align: right; white-space: nowrap; }
 .mapc .gl-chip { padding: 0; width: 26px; }
-
-/* Image buttons built on game art (the stats book, the clan members, the unknown names), with a count badge. */
-.gl-imgbtn { position: relative; display: inline-flex; align-items: center; justify-content: center; height: 40px; padding: 0; border: 1px solid var(--mud-palette-lines-inputs); border-radius: 4px; background: none; color: var(--mud-palette-text-primary); cursor: pointer; flex: none; }
-.gl-imgbtn.gl-icon-only { width: 44px; }
-.gl-imgbtn img { width: 28px; height: 28px; object-fit: contain; }
-.gl-imgbtn.gl-book img { width: 36px; }
-.gl-imgbtn:hover { background: var(--mud-palette-table-hover); }
-.gl-imgbtn[aria-pressed=true] { background: var(--wot-primary-soft); border-color: var(--mud-palette-primary); }
-.gl-imgbtn.gl-warn { border-color: color-mix(in srgb, var(--mud-palette-warning) 55%, transparent); }
-.gl-badge { position: absolute; top: -7px; right: -7px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: var(--mud-palette-dark); border: 1px solid var(--mud-palette-lines-inputs); color: var(--mud-palette-text-primary); font-family: var(--wot-font-text); font-size: 11px; font-weight: 600; line-height: 16px; text-align: center; }
-.gl-warn .gl-badge { background: var(--mud-palette-warning); border-color: var(--mud-palette-warning); color: var(--mud-palette-warning-text); }
 
 /* Steel scrollbar: a dark track, a rounded light thumb, an arrow button at both ends. */
 *::-webkit-scrollbar { width: 16px; height: 16px; background: var(--mud-palette-background-gray); }
@@ -148,10 +128,10 @@ a.tag.own[href]:hover { border-color: var(--mud-palette-primary); }
 /* The "Geen toegang" page: a centred card on the background-gray well. */
 .gl-unauth { box-sizing: border-box; display: flex; align-items: center; justify-content: center; min-height: calc(100vh - var(--mud-appbar-height)); padding: 24px; background: var(--mud-palette-background-gray); }
 
-/* Replay folder list (SettingsDialog): a row holds Titel, Pad and the up, down and delete buttons (square .gl-ibtn, 32px). */
-.fr { display: grid; grid-template-columns: 180px minmax(0, 1fr) 32px 32px 32px; gap: 8px; align-items: start; padding: 8px; border-radius: 4px; background: var(--mud-palette-surface); }
-/* (56px filled field - 32px button) / 2 */
-.fr > .gl-ibtn { margin-top: 12px; }
+/* Replay folder list (SettingsDialog): a row holds Titel, Pad and the up, down and delete buttons (small icon buttons). */
+.replay-folder-row { display: grid; grid-template-columns: 180px minmax(0, 1fr) auto auto auto; gap: 8px; align-items: start; padding: 8px; border-radius: 4px; background: var(--mud-palette-surface); }
+/* (56px filled field - 26px small icon button) / 2 */
+.replay-folder-row > .mud-icon-button { margin-top: 15px; }
 
 /* Folder carousel in the app bar (FolderCarousel.razor; design gl.css .car): arrows, the dimmed neighbours, the current title (a button that opens the folder menu) and position dots. */
 .car { display: inline-flex; align-items: stretch; height: 44px; border: 1px solid var(--mud-palette-lines-default); border-radius: 4px; background: var(--wot-car-bg); overflow: hidden; flex: none; }
