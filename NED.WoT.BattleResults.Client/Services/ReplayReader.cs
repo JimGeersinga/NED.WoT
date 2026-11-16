@@ -34,24 +34,21 @@ public static class ReplayReader
         /// <summary>The block's real bytes (the rented buffer is longer).</summary>
         public ReadOnlyMemory<byte> Header => _header.AsMemory(0, _headerLength);
 
-        /// <summary>The block's real bytes; empty when <see cref="HasResults"/> is false.</summary>
+        /// <summary>The block's real bytes; empty for a replay without (or with a damaged or zero-length) results block.</summary>
         public ReadOnlyMemory<byte> Results => _results.AsMemory(0, _resultsLength);
-
-        /// <summary>False for a replay that ended without results (or whose results block is damaged).</summary>
-        public bool HasResults => _results is not null;
 
         public void Dispose()
         {
-            byte[]? header = Interlocked.Exchange(ref _header, null);
-            byte[]? results = Interlocked.Exchange(ref _results, null);
-            if (header is not null)
+            if (_header is not null)
             {
-                ArrayPool<byte>.Shared.Return(header);
+                ArrayPool<byte>.Shared.Return(_header);
+                _header = null;
             }
 
-            if (results is not null)
+            if (_results is not null)
             {
-                ArrayPool<byte>.Shared.Return(results);
+                ArrayPool<byte>.Shared.Return(_results);
+                _results = null;
             }
         }
     }
@@ -85,7 +82,7 @@ public static class ReplayReader
             throw new InvalidDataException("The replay has no blocks.");
         }
 
-        (byte[] Buffer, int Length)? header = ReadBlock(stream) ?? throw new InvalidDataException("The header block is missing or runs past the end of the replay.");
+        (byte[] Buffer, int Length) header = ReadBlock(stream) ?? throw new InvalidDataException("The header block is missing or runs past the end of the replay.");
         (byte[] Buffer, int Length)? results;
         try
         {
@@ -93,11 +90,11 @@ public static class ReplayReader
         }
         catch
         {
-            ArrayPool<byte>.Shared.Return(header.Value.Buffer);
+            ArrayPool<byte>.Shared.Return(header.Buffer);
             throw;
         }
 
-        return new ReplayBlocks(header.Value.Buffer, header.Value.Length, results?.Buffer, results?.Length ?? 0);
+        return new ReplayBlocks(header.Buffer, header.Length, results?.Buffer, results?.Length ?? 0);
     }
 
     /// <returns>A rented buffer (longer than the block) with the block's length, or null when its length field is missing or the block runs past the end of the stream.</returns>
@@ -136,7 +133,7 @@ public static class ReplayReader
         byte[] bc = "{}"u8.ToArray();
 
         using ReplayBlocks one = Read(Replay(MAGIC, a));
-        Debug.Assert(one.Header.Span.SequenceEqual(a) && !one.HasResults);
+        Debug.Assert(one.Header.Span.SequenceEqual(a) && one.Results.IsEmpty);
 
         using ReplayBlocks two = Read(Replay(MAGIC, a, bc));
         Debug.Assert(two.Header.Span.SequenceEqual(a) && two.Results.Span.SequenceEqual(bc));
@@ -158,24 +155,27 @@ public static class ReplayReader
         MemoryStream resultsTooLong = Replay(MAGIC, a, bc);
         BinaryPrimitives.WriteUInt32LittleEndian(resultsTooLong.GetBuffer().AsSpan(8 + 4 + a.Length), 99);
         using ReplayBlocks damaged = Read(resultsTooLong);
-        Debug.Assert(damaged.Header.Span.SequenceEqual(a) && !damaged.HasResults);
+        Debug.Assert(damaged.Header.Span.SequenceEqual(a) && damaged.Results.IsEmpty);
 
         MemoryStream lengthMissing = Replay(MAGIC, a, bc);
         lengthMissing.SetLength(8 + 4 + a.Length + 2); // the count says 2, block 1 has half a length field
         using ReplayBlocks missing = Read(lengthMissing);
-        Debug.Assert(!missing.HasResults);
+        Debug.Assert(missing.Results.IsEmpty);
 
-        // Pooled path: a block longer than a rented bucket start (so the buffer is longer than the block) comes back sliced to its real length, and a recycled dirty buffer does not leak into the next read.
+        // Pooled path: the buffer is longer than the block, and a recycled (dirty) buffer of the same bucket must not leak into a shorter block.
+        // 100 and 99 bytes both rent from the 128-byte bucket, so the second read gets the first one's buffers back (on the same thread).
         byte[] big = new byte[100];
         Array.Fill(big, (byte)'x');
-        byte[] small = [(byte)'y'];
+        byte[] shorter = new byte[99];
+        Array.Fill(shorter, (byte)'y');
         using (ReplayBlocks first = Read(Replay(MAGIC, big, big)))
         {
             Debug.Assert(first.Header.Length == 100 && first.Results.Length == 100);
         }
 
-        using ReplayBlocks second = Read(Replay(MAGIC, small, small));
-        Debug.Assert(second.Header.Span.SequenceEqual(small) && second.Results.Span.SequenceEqual(small));
+        using ReplayBlocks second = Read(Replay(MAGIC, shorter, shorter));
+        Debug.Assert(second.Header.Length == 99 && second.Results.Length == 99);
+        Debug.Assert(second.Header.Span.SequenceEqual(shorter) && second.Results.Span.SequenceEqual(shorter));
 
         static bool Throws(Stream stream)
         {
