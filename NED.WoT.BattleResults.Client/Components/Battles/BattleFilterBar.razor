@@ -258,7 +258,8 @@
 	{
 		await DialogService.ShowAsync<UndefinedNamesDialog>("Onbekende namen", new DialogOptions
 		{
-			CloseOnEscapeKey = true
+			CloseOnEscapeKey = true,
+			CloseButton = true
 		});
 	}
 
@@ -269,6 +270,7 @@
 			new DialogOptions
 			{
 				CloseOnEscapeKey = true,
+				CloseButton = true,
 				FullWidth = true,
 				MaxWidth = MaxWidth.Small
 			});

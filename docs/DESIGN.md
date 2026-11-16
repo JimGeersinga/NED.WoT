@@ -56,7 +56,7 @@ Tabular figures everywhere, from one `body` rule in `wot.css`.
 - Layout: no drawer and no navigation rail. An app bar of 56px over the page. Window client area about 1280×800, down to 1024 wide. Desktop only, no phone layout.
 - Elevation is a 1px hairline (`0 0 0 1px rgba(255,255,255,.06)`) at every level. A real shadow only on dialogs and popovers: `Shadows.Elevation[24]` (`0 24px 56px rgba(0,0,0,.6)`, dialogs) and `[8]` (`0 16px 40px rgba(0,0,0,.55)`, menus, selects, pickers) in `WotTheme.cs`. Every popover gets its 1px edge and 6px radius from one `.mud-popover` rule in `mud.css`; the tooltip sets its own (4px, `lines-inputs`).
 - Dialogs and popovers sit on `surface-dialog`; filled inputs on `surface-input`.
-- Dialog title bar (`.wot-dialog-bar`): the app bar's steel (grain over `dialog-bar-top` to `surface-dialog`, top highlight), min height 60, padding `12px 16px 12px 24px`, rivets top-left and bottom-left, the title in `Typo.h5` sentence case (`.wot-dialog-title` sets only the display font), a close X on the right on every dialog except first-run settings. The actions sit under a 1px `divider` line, padding `12px 16px 16px`.
+- Dialog title bar (`.wot-dialog-bar`): the app bar's steel (grain over `dialog-bar-top` to `surface-dialog`, top highlight), min height 60, padding `12px 16px 12px 24px`, rivets top-left and bottom-left, the title in `Typo.h5` sentence case (`.wot-dialog-title` sets only the display font), a close X on the right (MudBlazor's `DialogOptions.CloseButton`) on every dialog except first-run settings. The actions sit under a 1px `divider` line, padding `12px 16px 16px`.
 - Focus ring: a 2px primary outline set 2px off the element (no box-shadow, which showed as a dark ring on MudBlazor inputs).
 
 ## Where styles live
@@ -70,7 +70,7 @@ Every style has one home, chosen by what it styles. Work through the list in thi
 | 4 | `wwwroot/css/wot.css` | Shared `wot-*` pieces used in more than one place or meant to be, with no `.mud-*` in the selector. |
 | 5 | `wwwroot/css/gl.css` | The Gevechtslog patterns (below) that no other WoT HQ app uses. |
 | 6 | `Component.razor.css` | One component's own elements. |
-| (legacy) | `wwwroot/css/app.css` | Temporary: only the rules the screens not yet laid out again (the dialogs, Details) still need (`.Win`/`.Lose`/`.Draw`) and the splash. #3–#9 empty it; its `!important` rules are allowed until then. |
+| (legacy) | `wwwroot/css/app.css` | Temporary: only the rules the screens not yet laid out again (Details) still need and the splash. #3–#9 empty it; its `!important` rules are allowed until then. |
 
 - **Cascade layer.** `wwwroot/css/layers.css` (linked first, because it only imports) declares `@layer mud` and imports `MudBlazor.min.css` into it. Our CSS is unlayered, so it wins over MudBlazor whatever the selector's specificity: no doubled or quadrupled classes.
   `<head>` order: `css/layers.css`, `tokens.css`, `mud.css`, `wot.css`, `gl.css`, `app.css` (legacy, above), then the scoped bundle.
