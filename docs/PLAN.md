@@ -141,11 +141,13 @@ Titles match the GitHub milestones one to one.
 | 04 | Replay folders | #15–#16 | Several replay folders in Settings and a folder carousel in the app bar. |
 | 05 | Live battle | #17 | A separate temp-replay path for the live clan lookup; #120: the lookup reads the clan tags from the `opponents` block of the live packet stream. |
 | 06 | Clan battle statistics | #18–#19 | Clan rating and PR in the Clan battle dialog, from Wargaming's public API. |
-| 07 | Speed and memory | #41–#45 | A reload frees the old battle list; replays are read by block and parsed into a typed model; analyzers run as errors. |
+| 07 | Speed and memory | #41–#45, #73 | A reload frees the old battle list; replays are read by block and parsed into a typed model; analyzers run as errors; the Release build ships ReadyToRun code. |
 | 08 | Fewer MudBlazor overrides | #54–#60 | Hand-made buttons, icons, chips and menu rows become MudBlazor components; unused and leaking CSS goes; shadows move into the theme. |
 | 09 | Teams | #65–#70 | Per-team statistics: lobbies grouped into teams, a team filter and results per map per team. |
 | 10 | .NET 11 | #78 | Upgrade to .NET 11. |
 | 11 | Component structure | #108–#114 | Components in feature folders; `Index`, the Clan battle dialog, the filter bar and `Details` split so each has one job. |
+
+ReadyToRun is on for Release builds only (#73): it cuts JIT time at start. Trimming and Native AOT stay off: MAUI on Windows supports neither, and Blazor WebView and MudBlazor need runtime reflection.
 
 Order inside and across milestones follows each issue's `Depends on:` line
 (CLAUDE.md), not the table.

@@ -15,6 +15,9 @@
     <!-- .NET 11 CsWinRT: CsWinRT1032 flags collection expressions for trimming/AOT. The app is neither trimmed nor AOT-compiled. -->
     <NoWarn>$(NoWarn);CsWinRT1032</NoWarn>
 
+    <!-- Release ships precompiled (ReadyToRun) code for a faster start. No trimming or Native AOT: see docs/PLAN.md §5. -->
+    <PublishReadyToRun Condition="'$(Configuration)' == 'Release'">true</PublishReadyToRun>
+
     <!-- Display name -->
     <ApplicationTitle>WoT Gevechtslog</ApplicationTitle>
 
