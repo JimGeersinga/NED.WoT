@@ -54,7 +54,7 @@ Tabular figures everywhere, from one `body` rule in `wot.css`.
 ## Shape and space
 - Radius 4px; chips 2px; dialogs 6px. No pill shapes except count chips.
 - Layout: no drawer and no navigation rail. An app bar of 56px over the page. Window client area about 1280×800, down to 1024 wide. Desktop only, no phone layout.
-- Elevation is a 1px hairline (`0 0 0 1px rgba(255,255,255,.06)`) at every level. A real shadow only on dialogs and popovers: `Shadows.Elevation[24]` (`0 24px 56px rgba(0,0,0,.6)`, dialogs) and `[8]` (`0 16px 40px rgba(0,0,0,.55)`, menus, selects, pickers) in `WotTheme.cs`. Every popover gets its 1px edge and 6px radius from one `.mud-popover` rule in `mud.css`.
+- Elevation is a 1px hairline (`0 0 0 1px rgba(255,255,255,.06)`) at every level. A real shadow only on dialogs and popovers: `Shadows.Elevation[24]` (`0 24px 56px rgba(0,0,0,.6)`, dialogs) and `[8]` (`0 16px 40px rgba(0,0,0,.55)`, menus, selects, pickers) in `WotTheme.cs`. Every popover gets its 1px edge and 6px radius from one `.mud-popover` rule in `mud.css`; the tooltip sets its own (4px, `lines-inputs`).
 - Dialogs and popovers sit on `surface-dialog`; filled inputs on `surface-input`.
 - Dialog title bar (`.wot-dialog-bar`): the app bar's steel (grain over `dialog-bar-top` to `surface-dialog`, top highlight), min height 60, padding `12px 16px 12px 24px`, rivets top-left and bottom-left, the title in `Typo.h5` sentence case (`.wot-dialog-title` sets only the display font), a close X on the right on every dialog except first-run settings. The actions sit under a 1px `divider` line, padding `12px 16px 16px`.
 - Focus ring: a 2px primary outline set 2px off the element (no box-shadow, which showed as a dark ring on MudBlazor inputs).
