@@ -442,16 +442,20 @@ a.wot-clan-card[href]:focus-visible > .mud-paper { border-color: var(--mud-palet
     font: 600 13px/1.45 var(--wot-font-text);
 }
 
-/* The day header sticks under the column header (36px). */
-.wot-battle-table > .mud-table-container > .mud-table-root > tbody > tr.gl-day > .mud-table-cell {
-    position: sticky;
-    top: 36px;
-    z-index: 2;
+/* The day header: a line of the list (it scrolls) and the second row of the thead (tr.gl-current: it sticks under the column header, 36px, and shows the day of the first visible row). */
+.wot-battle-table > .mud-table-container > .mud-table-root > :is(tbody, thead) > tr:is(.gl-day, .gl-current) > .mud-table-cell {
     height: 44px;
     padding: 0 12px 0 16px;
     background: var(--wot-appbar-top);
     border-top: 1px solid var(--mud-palette-lines-default);
     border-bottom: 1px solid var(--mud-palette-lines-default);
+}
+
+.wot-battle-table > .mud-table-container > .mud-table-root > thead > tr.gl-current > .mud-table-cell {
+    top: 36px;
+    color: var(--mud-palette-text-primary);
+    font: inherit;
+    font-size: 14px;
 }
 
 .wot-battle-table > .mud-table-container > .mud-table-root > tfoot > tr > .mud-table-cell {
@@ -499,8 +503,8 @@ a.wot-clan-card[href]:focus-visible > .mud-paper { border-color: var(--mud-palet
         linear-gradient(to bottom, transparent 47px, var(--mud-palette-table-lines) 47px) 0 0 / 100% 48px repeat-y;
 }
 
-/* Loading="true" makes MudBlazor add a second head row (a th with colspan 1000 and an indeterminate bar). The page has its own progress bar, and a 1000-column cell would make the fixed layout collapse the Team column: no row, no layout. */
-.wot-battle-table > .mud-table-container > .mud-table-root > thead > tr + tr { display: none; }
+/* Loading="true" makes MudBlazor add another head row (a th with colspan 1000 and an indeterminate bar). The page has its own progress bar, and a 1000-column cell would make the fixed layout collapse the Team column: no row, no layout. */
+.wot-battle-table > .mud-table-container > .mud-table-root > thead > tr:not(:first-child, .gl-current) { display: none; }
 
 /* ==== MudAlert (the warning row of an unreadable replay: design .alert.c-warn on the table's row) ==== */
 .mud-alert.wot-row-alert {
