@@ -5,9 +5,15 @@
 		<WotDialogTitle Dialog="MudDialog" Title="@Title" />
 	</TitleContent>
 	<DialogContent>
-		<div class="gl-details">
-			<Details Report="Report" ShowBattleStats="_showBattleStats" />
-		</div>
+		@if (_canToggleBattleStats)
+		{
+			<div class="d-flex justify-end pb-2">
+				<button type="button" class="gl-imgbtn gl-icon-only gl-book" aria-pressed="@(_showBattleStats ? "true" : "false")" aria-label="Statistieken" title="Uitgebreide statistieken&#10;▲ hoog · ▬ gemiddeld · ▼ laag&#10;Geraakt: ≤ 50% laag, ≥ 70% hoog&#10;Gepenetreerd: ≤ 55% laag, ≥ 70% hoog&#10;Geblokt: ≥ 25% hoog" @onclick="() => _showBattleStats = !_showBattleStats">
+					<img src="@(_showBattleStats ? "images/book-open.png" : "images/book-closed.png")" alt="" />
+				</button>
+			</div>
+		}
+		<Details Report="Report" ShowBattleStats="_showBattleStats" />
 	</DialogContent>
 	<DialogActions>
 		<MudButton OnClick="() => MudDialog.Close()">Sluiten</MudButton>
@@ -24,6 +30,7 @@
 	[Parameter]
 	public required BattleReport Report { get; set; }
 
+	private bool _canToggleBattleStats;
 	private bool _showBattleStats;
 
 	// Map, date and score, own team first as in the clan match dialog.
@@ -33,14 +40,14 @@
 		{
 			Team first = Report.OwnTeam ?? Report.Team1;
 			Team second = first == Report.Team1 ? Report.Team2 : Report.Team1;
-			string score = Report.HasScore ? $"{Report.Kills(first)} – {Report.Kills(second)}" : "–";
+			string score = Report.HasScore ? $"{Report.Destroyed(first)} – {Report.Destroyed(second)}" : "–";
 			return $"{Report.MapName} · {Report.MatchTimeDisplay} · {score}";
 		}
 	}
 
-	// Same claim as Index: the dialog has no toggle, so the claim decides.
+	// Same claim as Index; the stats columns start off.
 	protected override async Task OnInitializedAsync()
 	{
-		_showBattleStats = AuthenticationState is not null && (await AuthenticationState).User.HasClaim(Claims.CanSeeBattleStats, bool.TrueString);
+		_canToggleBattleStats = AuthenticationState is not null && (await AuthenticationState).User.HasClaim(Claims.CanSeeBattleStats, bool.TrueString);
 	}
 }

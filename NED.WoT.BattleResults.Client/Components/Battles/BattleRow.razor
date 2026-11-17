@@ -14,8 +14,8 @@ else
 	var ownTeam = Report.OwnTeam;
 	var left = Report.Team1;
 	var right = Report.Team2;
-	var leftKills = Report.Kills(left);
-	var rightKills = Report.Kills(right);
+	var leftKills = Report.Destroyed(left);
+	var rightKills = Report.Destroyed(right);
 	var onlyOwn = SettingService.Settings.OnlyHighlistOwnMatches;
 
 	<MudTd Class="p4">

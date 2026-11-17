@@ -253,7 +253,7 @@
 			<MudTd DataLabel="Score" Style="text-align: center">
 				@if (context.HasScore)
 				{
-					@* Same markup as the battle table (BattleRow); a draw dims neither count. *@
+					@* Same markup as the battle table (BattleRow); a draw dims both counts. *@
 					<span class="score">@Count(context, first)–@Count(context, second)</span>
 				}
 				else
@@ -271,7 +271,7 @@
 		</RowTemplate>
 	</MudTable>;
 
-	private RenderFragment Count(BattleReport report, Team team) => @<text>@if (team.Result is Result.Win or Result.Draw) { <b>@report.Kills(team)</b> } else { <span>@report.Kills(team)</span> }</text>;
+	private RenderFragment Count(BattleReport report, Team team) => @<text>@if (team.Result is Result.Win) { <b>@report.Destroyed(team)</b> } else { <span>@report.Destroyed(team)</span> }</text>;
 
 	[CascadingParameter]
 	public required IMudDialogInstance MudDialog { get; set; }
