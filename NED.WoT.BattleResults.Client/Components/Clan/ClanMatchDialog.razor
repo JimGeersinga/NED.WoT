@@ -16,9 +16,9 @@
 		{
 			<MudStack Spacing="4" Class="pt-2">
 				<MudStack Row Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="3" Class="flex-wrap">
-					@ClanCard(Sides.Left, OwnTag, false)
+					@ClanCard(Sides.Left, false)
 					<MudText Typo="Typo.h6" HtmlTag="span" Class="mud-text-secondary">vs</MudText>
-					@ClanCard(Sides.Right, OwnTag, true)
+					@ClanCard(Sides.Right, true)
 				</MudStack>
 				@if (_state is RatingState.Failed)
 				{
@@ -176,7 +176,7 @@
 			: _battles.SelectMany(x => new[] { x.Team1, x.Team2 }).FirstOrDefault(x => x.ClanUrl is not null && string.Equals(x.Abbreviation, tag, StringComparison.OrdinalIgnoreCase))?.ClanUrl;
 
 	// mirror (the right card): Reverse puts the emblem on the outer edge and the rating towards the "vs"; MudStack's flex-row utility is !important, so no inline flex-direction.
-	private RenderFragment ClanCard(string tag, string? ownTag, bool mirror) => @<a href="@ClanPageUrl(tag)" target="_blank" rel="noopener" title="@(ClanPageUrl(tag) is null ? null : "Open de clanpagina")" class="d-block wot-clan-card" style="min-width: 300px; flex: 1 1 300px; max-width: 460px; color: inherit; text-decoration: none;">
+	private RenderFragment ClanCard(string tag, bool mirror) => @<a href="@ClanPageUrl(tag)" target="_blank" rel="noopener" title="@(ClanPageUrl(tag) is null ? null : "Open de clanpagina")" class="d-block wot-clan-card" style="min-width: 300px; flex: 1 1 300px; max-width: 460px; color: inherit; text-decoration: none;">
 	<MudPaper Outlined Elevation="0" Class="pa-3">
 		<MudStack Row Reverse="@mirror" AlignItems="AlignItems.Center" Spacing="3">
 			@if (_clans.TryGetValue(tag, out ClanRating? clan) && clan.EmblemUrl is { } emblem)
@@ -185,9 +185,10 @@
 			}
 			<MudStack Spacing="0" Style="@("min-width: 0; flex: 1;" + (mirror ? " text-align: right;" : null))">
 				<MudText Typo="Typo.h6">[@tag]</MudText>
-				<MudText Typo="Typo.body2" Class="mud-text-secondary">
-					@(_clans.TryGetValue(tag, out ClanRating? named) ? named.Name + " · " : null)@(ownTag is not null && tag.Equals(ownTag, StringComparison.OrdinalIgnoreCase) ? "jouw clan" : "tegenstander")
-				</MudText>
+				@if (_clans.TryGetValue(tag, out ClanRating? named))
+				{
+					<MudText Typo="Typo.body2" Class="mud-text-secondary">@named.Name</MudText>
+				}
 			</MudStack>
 			<MudStack Spacing="0" Style="@("flex: none; text-align: " + (mirror ? "left" : "right") + ";")">
 				<MudText Typo="Typo.overline" Class="mud-text-secondary">Clanrating</MudText>
