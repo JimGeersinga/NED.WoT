@@ -58,7 +58,7 @@
 			<img src="@emblem" alt="" width="28" height="28" />
 		}
 		<a class="@BattleRow.TagClass(team, team == Report.OwnTeam, false)" href="@team.ClanUrl" target="_blank" rel="noopener" title="@(team.ClanUrl is null ? null : "Open de clanpagina")"><span class="tag-t">@(team.Abbreviation ?? "?")</span></a>
-		<ResultChip Result="team.Result" />
+		<span class="wot-chip-flush"><ResultChip Result="team.Result" /></span>
 		@if (team.Abbreviation is { } t && Clans is not null && Clans.TryGetValue(t, out ClanRating? rated) && rated.Rank is { } rank)
 		{
 			<MudText Typo="Typo.caption" Class="mud-text-secondary">Rang @rank</MudText>

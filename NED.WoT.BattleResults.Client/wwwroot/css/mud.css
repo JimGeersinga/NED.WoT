@@ -405,6 +405,12 @@ a.wot-clan-card[href]:focus-visible > .mud-paper { border-color: var(--mud-palet
 .mud-table.clan-match-table .mud-table-body .mud-table-row.wot-row-active > .mud-table-cell { background: var(--wot-primary-soft); }
 .mud-table.clan-match-table .mud-table-body .mud-table-row.wot-row-active > .mud-table-cell:first-child { box-shadow: inset 2px 0 0 var(--mud-palette-primary); }
 /* The row button (Datum cell) is the keyboard target: reset the look only, so the :focus-visible ring of wot.css stays. */
+/* The month group header: the whole cell is the button. */
+.mud-table.clan-match-table .wot-month-th { padding: 0; }
+.mud-table.clan-match-table .wot-month-btn { display: block; width: 100%; padding: 8px 16px; cursor: pointer; }
+.mud-table.clan-match-table .wot-month-btn:hover { background: var(--mud-palette-table-hover); }
+/* A ResultChip without MudBlazor's 4px chip margin (the clan match dialog and its battle dialog). */
+.wot-chip-flush .mud-chip { margin: 0; }
 .mud-table.clan-match-table .wot-row-btn { background: none; border: 0; padding: 0; font: inherit; color: inherit; text-align: inherit; cursor: inherit; }
 
 /* ==== MudTable (the battle table: .wot-battle-table; the rows, the day headers and the footer of the Gevechtslog) ==== */
