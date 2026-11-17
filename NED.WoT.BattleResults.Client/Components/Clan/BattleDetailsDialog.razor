@@ -1,19 +1,37 @@
 @using Microsoft.AspNetCore.Components.Authorization
 
-<MudDialog Class="wot-dialog overflow-hidden" ContentClass="overflow-y-auto" TitleClass="wot-dialog-bar">
+<MudDialog Class="wot-dialog wot-dlg-battle overflow-hidden" ContentClass="overflow-y-auto" TitleClass="wot-dialog-bar">
 	<TitleContent>
 		<WotDialogTitle Title="@Title" />
 	</TitleContent>
 	<DialogContent>
+		@{
+			Team first = Report.OwnTeam ?? Report.Team1;
+			Team second = first == Report.Team1 ? Report.Team2 : Report.Team1;
+		}
+		<MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Spacing="4" Class="pb-3 flex-wrap">
+			<MudStack Row AlignItems="AlignItems.Center" Spacing="3" Class="flex-wrap">
+				@TeamHead(first)
+				@if (Report.HasScore)
+				{
+					<span class="score">@Count(first)–@Count(second)</span>
+				}
+				<MudText Typo="Typo.h6" HtmlTag="span" Class="mud-text-secondary">vs</MudText>
+				@TeamHead(second)
+			</MudStack>
+			<MudText Typo="Typo.body2" Class="mud-text-secondary">
+				<b>@Report.MapName</b> · @Report.MatchStart.ToString("dd-MM-yyyy") · @Report.MatchStart.ToString("HH:mm")@(Report.MatchEnd is { } end ? $"–{end:HH:mm}" : null)@(Report.MatchDuration.HasValue ? " · " : null)@Report.MatchDurationDisplay
+			</MudText>
+		</MudStack>
 		@if (_canToggleBattleStats)
 		{
 			<div class="d-flex justify-end pb-2">
-				<button type="button" class="gl-imgbtn gl-icon-only gl-book" aria-pressed="@(_showBattleStats ? "true" : "false")" aria-label="Statistieken" title="Uitgebreide statistieken&#10;▲ hoog · ▬ gemiddeld · ▼ laag&#10;Geraakt: ≤ 50% laag, ≥ 70% hoog&#10;Gepenetreerd: ≤ 55% laag, ≥ 70% hoog&#10;Geblokt: ≥ 25% hoog" @onclick="() => _showBattleStats = !_showBattleStats">
-					<img src="@(_showBattleStats ? "images/book-open.png" : "images/book-closed.png")" alt="" />
+				<button type="button" class="gl-imgbtn gl-icon-only gl-book" style="height: 28px; width: 32px;" aria-pressed="@(_showBattleStats ? "true" : "false")" aria-label="Statistieken" title="Uitgebreide statistieken&#10;▲ hoog · ▬ gemiddeld · ▼ laag&#10;Geraakt: ≤ 50% laag, ≥ 70% hoog&#10;Gepenetreerd: ≤ 55% laag, ≥ 70% hoog&#10;Geblokt: ≥ 25% hoog" @onclick="() => _showBattleStats = !_showBattleStats">
+					<img src="@(_showBattleStats ? "images/book-open.png" : "images/book-closed.png")" alt="" style="width: 22px; height: 22px;" />
 				</button>
 			</div>
 		}
-		<Details Report="Report" ShowBattleStats="_showBattleStats" />
+		<Details Report="Report" ShowBattleStats="_showBattleStats" ExpandTeams="true" />
 	</DialogContent>
 	<DialogActions>
 		<MudButton OnClick="() => MudDialog.Close()">Sluiten</MudButton>
@@ -29,6 +47,13 @@
 
 	[Parameter]
 	public required BattleReport Report { get; set; }
+
+	private RenderFragment TeamHead(Team team) => @<span class="d-inline-flex align-center gap-2">
+		<a class="@BattleRow.TagClass(team, team == Report.OwnTeam, false)" href="@team.ClanUrl" target="_blank" rel="noopener" title="@(team.ClanUrl is null ? null : "Open de clanpagina")"><span class="tag-t">@(team.Abbreviation ?? "?")</span></a>
+		<ResultChip Result="team.Result" />
+	</span>;
+
+	private RenderFragment Count(Team team) => @<text>@if (team.Result is Result.Win) { <b>@Report.Destroyed(team)</b> } else { <span>@Report.Destroyed(team)</span> }</text>;
 
 	private bool _canToggleBattleStats;
 	private bool _showBattleStats;

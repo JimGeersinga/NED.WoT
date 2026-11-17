@@ -117,6 +117,11 @@
     border-top: 1px solid var(--mud-palette-divider);
 }
 
+/* Fixed dialog sizes: filtering, selecting or switching tabs never resizes the dialog; the content scrolls inside.
+   Height is capped at 90vh because MudBlazor leaves 64px of the viewport free (800px high: 720px). */
+.mud-dialog.wot-dlg-history { width: min(1320px, 96vw); max-width: none; height: min(780px, 90vh); }
+.mud-dialog.wot-dlg-battle { width: min(1240px, 96vw); max-width: none; height: min(700px, 90vh); }
+
 /* Not fullscreen: an unlayered .mud-dialog rule would also beat MudBlazor's .mud-dialog-fullscreen radius of 0. */
 .mud-dialog:not(.mud-dialog-fullscreen) { border-radius: 6px; }
 

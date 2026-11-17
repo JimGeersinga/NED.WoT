@@ -7,7 +7,7 @@
 @inject IBrowserViewportService ViewportService
 @inject IDialogService DialogService
 
-<MudDialog Class="wot-dialog overflow-hidden" ContentClass="overflow-y-auto" TitleClass="wot-dialog-bar">
+<MudDialog Class="wot-dialog wot-dlg-history overflow-hidden" ContentClass="overflow-y-auto" TitleClass="wot-dialog-bar">
 	<TitleContent>
 		<WotDialogTitle Title="Gevechtshistorie" />
 	</TitleContent>
@@ -56,13 +56,13 @@
 				else
 				{
 					<MudGrid Spacing="4">
-						<MudItem xs="7">
+						<MudItem xs="6">
 							<MudPaper Outlined Elevation="0" Class="overflow-hidden">
 								<MudText Typo="Typo.h6" Class="px-4 py-3">@OpponentsTitle</MudText>
 								@Opponents
 							</MudPaper>
 						</MudItem>
-						<MudItem xs="5">
+						<MudItem xs="6">
 							<MudPaper Outlined Elevation="0" Class="overflow-hidden">
 								@PastHeading
 								@Past
@@ -212,11 +212,12 @@
 	</a>;
 
 	private RenderFragment Past => @<MudTable Items="@_battles" Class="clan-match-table wot-clickable-rows" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Elevation="0"
+			  GroupBy="@_monthGroups"
 			  RowClassFunc="@((BattleReport x, int _) => IsSelected(x) ? "wot-row-active" : "")"
 			  OnRowClick="@((TableRowClickEventArgs<BattleReport> e) => Toggle(e.Item!))">
 		<HeaderContent>
 			<MudTh>
-				<MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<BattleReport, object>(x => x.MatchStart)">Datum</MudTableSortLabel>
+				<MudTableSortLabel InitialDirection="SortDirection.Descending" SortBy="new Func<BattleReport, object>(x => x.MatchStart)">Datum</MudTableSortLabel>
 			</MudTh>
 			<MudTh Style="text-align: right">
 				<MudTableSortLabel SortBy="new Func<BattleReport, object?>(x => x.MatchDuration)">Duur</MudTableSortLabel>
@@ -224,10 +225,24 @@
 			<MudTh>
 				<MudTableSortLabel SortBy="new Func<BattleReport, object>(x => x.MapName ?? string.Empty)">Map</MudTableSortLabel>
 			</MudTh>
-			<MudTh Style="text-align: right">Resultaat</MudTh>
 			<MudTh Style="text-align: center">Score</MudTh>
+			<MudTh Style="text-align: right">Resultaat</MudTh>
 			<MudTh Style="width: 1%"></MudTh>
 		</HeaderContent>
+		<GroupHeaderTemplate>
+			@{
+				var (year, month) = ((int, int))context.Key!;
+				List<string> keys = context.Items.Select(KeyOf).ToList();
+				bool all = keys.All(_selected.Contains);
+				string name = BattleReport.DutchCulture.DateTimeFormat.GetMonthName(month);
+			}
+			<MudTh colspan="6" Class="@(keys.Any(_selected.Contains) ? "wot-row-active" : null)">
+				@* Native button: Enter/Space select every battle of the month, or clear them when all are selected already. *@
+				<button type="button" class="wot-row-btn" aria-pressed="@(all ? "true" : "false")" @onclick="() => ToggleMonth(keys)">
+					<b>@($"{char.ToUpper(name[0], BattleReport.DutchCulture)}{name[1..]} {year}")</b> · @keys.Count @(keys.Count == 1 ? "gevecht" : "gevechten")
+				</button>
+			</MudTh>
+		</GroupHeaderTemplate>
 		<RowTemplate>
 			@{
 				Team? ownTeam = context.OwnTeam;
@@ -240,16 +255,6 @@
 			</MudTd>
 			<MudTd DataLabel="Duur" Style="text-align: right" Class="mud-text-secondary">@context.MatchDurationDisplay</MudTd>
 			<MudTd DataLabel="Map"><b>@context.MapName</b> @ownTeam?.Base</MudTd>
-			<MudTd DataLabel="Resultaat" Style="text-align: right">
-				@if (ownTeam is not null)
-				{
-					<ResultChip Result="ownTeam.Result" IconRight="true" />
-				}
-				else
-				{
-					@(context.Team1.IsWinner == true ? context.Team1.Abbreviation : context.Team2.Abbreviation)
-				}
-			</MudTd>
 			<MudTd DataLabel="Score" Style="text-align: center">
 				@if (context.HasScore)
 				{
@@ -259,6 +264,16 @@
 				else
 				{
 					<span class="mud-text-secondary">–</span>
+				}
+			</MudTd>
+			<MudTd DataLabel="Resultaat" Style="text-align: right">
+				@if (ownTeam is not null)
+				{
+					<ResultChip Result="ownTeam.Result" IconRight="true" />
+				}
+				else
+				{
+					@(context.Team1.IsWinner == true ? context.Team1.Abbreviation : context.Team2.Abbreviation)
 				}
 			</MudTd>
 			<MudTd Style="text-align: right">
@@ -306,6 +321,29 @@
 		if (!_selected.Remove(KeyOf(x)))
 		{
 			_selected.Add(KeyOf(x));
+		}
+
+		BuildOpponents();
+	}
+
+	// Newest month first: the Datum column starts descending, and the table keeps the groups in the order the sorted rows meet them.
+	private readonly TableGroupDefinition<BattleReport> _monthGroups = new()
+	{
+		Indentation = false,
+		Expandable = false,
+		IsInitiallyExpanded = true,
+		Selector = x => (x.MatchStart.Year, x.MatchStart.Month)
+	};
+
+	private void ToggleMonth(List<string> keys)
+	{
+		if (keys.All(_selected.Contains))
+		{
+			_selected.ExceptWith(keys);
+		}
+		else
+		{
+			_selected.UnionWith(keys);
 		}
 
 		BuildOpponents();
@@ -394,7 +432,7 @@
 	// Stacked on top of this dialog; Esc closes only the top one.
 	private Task OpenBattle(BattleReport report) => DialogService.ShowAsync<BattleDetailsDialog>(string.Empty,
 		new DialogParameters<BattleDetailsDialog> { { x => x.Report, report } },
-		new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, FullWidth = true, MaxWidth = MaxWidth.ExtraLarge });
+		new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, MaxWidth = MaxWidth.False });
 
 	void Cancel() => MudDialog.Close(DialogResult.Ok(true));
 

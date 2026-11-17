@@ -182,7 +182,15 @@
     /// <summary>The remaining HP of the player's tank in whole percent of its maximum, 0 to 100.</summary>
     private static int HealthPercent(Player player) => player.MaxHealth.GetValueOrDefault() <= 0 ? 0 : (int)Math.Clamp(Math.Round(100m * player.Health.GetValueOrDefault() / player.MaxHealth.GetValueOrDefault()), 0, 100);
 
-    protected override void OnInitialized() => SelfCheck();
+    /// <summary>True opens both team groups at first render (the battle dialog of the clan match); the main page keeps them closed.</summary>
+    [Parameter]
+    public bool ExpandTeams { get; set; }
+
+    protected override void OnInitialized()
+    {
+        SelfCheck();
+        _groupDefinition.IsInitiallyExpanded = ExpandTeams;
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
