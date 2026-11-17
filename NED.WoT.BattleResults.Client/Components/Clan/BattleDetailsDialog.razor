@@ -9,7 +9,7 @@
 			Team first = Report.OwnTeam ?? Report.Team1;
 			Team second = first == Report.Team1 ? Report.Team2 : Report.Team1;
 		}
-		<MudStack Row AlignItems="AlignItems.Stretch" Spacing="3" Class="pb-3">
+		<MudStack Row AlignItems="AlignItems.Stretch" Spacing="3" Class="pb-3 wot-battle-head">
 			<MudStack Row Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="3" Class="flex-wrap wot-battle-cards">
 				@TeamCard(first, false)
 				<MudStack Spacing="0" AlignItems="AlignItems.Center">
