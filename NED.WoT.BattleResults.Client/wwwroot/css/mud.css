@@ -669,3 +669,6 @@ a.wot-clan-card[href]:focus-visible > .mud-paper { border-color: var(--mud-palet
 /* MudIconButton (the tool buttons of the filter bar: the stats book, the clan members, the unknown names; game art inside). */
 .mud-icon-button.filter-tool-button img { width: 28px; height: 28px; object-fit: contain; }
 .mud-icon-button.stats-book-button img { width: 36px; }
+
+/* "Jij" (Details.razor): a MudIcon, so the scoped Details.razor.css can't reach it. It hangs in the expander column, left of the # cell (a sticky cell, so it is the anchor). */
+.mud-table.player-table .own-row-icon { position: absolute; right: 100%; top: 50%; transform: translateY(-50%); margin-right: 8px; }
