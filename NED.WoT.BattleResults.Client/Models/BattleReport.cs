@@ -55,6 +55,12 @@ public class BattleReport
     public Team Team2 { get; set; } = new Team();
     public Team? OwnTeam { get; set; }
 
+    /// <summary>Tanks <paramref name="team"/> destroyed: the opposing players with a death reason other than -1. The score of the battle table and of the clan match dialog.</summary>
+    public int Kills(Team team) => (team == Team1 ? Team2 : Team1).Players.Count(x => x.DeathReason.HasValue && x.DeathReason != -1);
+
+    /// <summary>False when no player carries a death reason: there is no score to show.</summary>
+    public bool HasScore => Team1.Players.Concat(Team2.Players).Any(x => x.DeathReason.HasValue);
+
     public Result Result { get; set; }
     public int? FinishReason { get; set; }
     public string? Error { get; internal set; }

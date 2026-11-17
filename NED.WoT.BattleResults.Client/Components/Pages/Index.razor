@@ -742,7 +742,7 @@
 	private async Task OpenClanMatchDialog((string, string) match)
 	{
 		_clanMatchDialog?.Close();
-		_clanMatchDialog = await DialogService.ShowAsync<ClanMatchDialog>("Clan gevecht",
+		_clanMatchDialog = await DialogService.ShowAsync<ClanMatchDialog>("Gevechtshistorie",
 			new DialogParameters<ClanMatchDialog>() { { x => x.Match, match } },
 			new DialogOptions
 			{

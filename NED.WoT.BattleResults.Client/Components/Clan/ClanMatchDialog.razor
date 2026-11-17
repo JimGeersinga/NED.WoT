@@ -5,19 +5,11 @@
 @inject WargamingApiClient WargamingApi
 @inject IdentityService Identity
 @inject IBrowserViewportService ViewportService
+@inject IDialogService DialogService
 
 <MudDialog Class="wot-dialog overflow-hidden" ContentClass="overflow-y-auto" TitleClass="wot-dialog-bar">
 	<TitleContent>
-		<WotDialogTitle Dialog="MudDialog">
-			@if (Match.HasValue)
-			{
-				<MudStack Row Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="4">
-					<MudText Typo="Typo.h4" HtmlTag="span">[@Sides.Left]</MudText>
-					<MudText Typo="Typo.h5" HtmlTag="span" Class="mud-text-secondary">vs</MudText>
-					<MudText Typo="Typo.h4" HtmlTag="span">[@Sides.Right]</MudText>
-				</MudStack>
-			}
-		</WotDialogTitle>
+		<WotDialogTitle Dialog="MudDialog" Title="Gevechtshistorie" />
 	</TitleContent>
 	<DialogContent>
 		@if (Match.HasValue)
@@ -233,10 +225,14 @@
 				<MudTableSortLabel SortBy="new Func<BattleReport, object>(x => x.MapName ?? string.Empty)">Map</MudTableSortLabel>
 			</MudTh>
 			<MudTh Style="text-align: right">Resultaat</MudTh>
+			<MudTh Style="text-align: center">Score</MudTh>
+			<MudTh Style="width: 1%"></MudTh>
 		</HeaderContent>
 		<RowTemplate>
 			@{
 				Team? ownTeam = context.OwnTeam;
+				Team first = ownTeam ?? context.Team1;
+				Team second = first == context.Team1 ? context.Team2 : context.Team1;
 			}
 			<MudTd DataLabel="Datum">
 				@* MudTable cannot put attributes on its rows, so the keyboard target is this native button (Enter/Space click bubbles to OnRowClick). *@
@@ -254,8 +250,28 @@
 					@(context.Team1.IsWinner == true ? context.Team1.Abbreviation : context.Team2.Abbreviation)
 				}
 			</MudTd>
+			<MudTd DataLabel="Score" Style="text-align: center">
+				@if (context.HasScore)
+				{
+					@* Same markup as the battle table (BattleRow); a draw dims neither count. *@
+					<span class="score">@Count(context, first)–@Count(context, second)</span>
+				}
+				else
+				{
+					<span class="mud-text-secondary">–</span>
+				}
+			</MudTd>
+			<MudTd Style="text-align: right">
+				<span @onclick:stopPropagation="true">
+					<MudTooltip Text="Open gevecht">
+						<MudIconButton Icon="@Icons.Material.Outlined.OpenInNew" Size="Size.Small" aria-label="Open gevecht" OnClick="@(() => OpenBattle(context))" />
+					</MudTooltip>
+				</span>
+			</MudTd>
 		</RowTemplate>
 	</MudTable>;
+
+	private RenderFragment Count(BattleReport report, Team team) => @<text>@if (team.Result is Result.Win or Result.Draw) { <b>@report.Kills(team)</b> } else { <span>@report.Kills(team)</span> }</text>;
 
 	[CascadingParameter]
 	public required IMudDialogInstance MudDialog { get; set; }
@@ -374,6 +390,11 @@
 
 		await InvokeAsync(StateHasChanged);
 	}
+
+	// Stacked on top of this dialog; Esc closes only the top one.
+	private Task OpenBattle(BattleReport report) => DialogService.ShowAsync<BattleDetailsDialog>(string.Empty,
+		new DialogParameters<BattleDetailsDialog> { { x => x.Report, report } },
+		new DialogOptions { CloseOnEscapeKey = true, FullWidth = true, MaxWidth = MaxWidth.ExtraLarge });
 
 	void Cancel() => MudDialog.Close(DialogResult.Ok(true));
 

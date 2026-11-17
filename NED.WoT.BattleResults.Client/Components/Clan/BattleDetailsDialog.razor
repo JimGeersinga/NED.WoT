@@ -1,0 +1,46 @@
+@using Microsoft.AspNetCore.Components.Authorization
+
+<MudDialog Class="wot-dialog overflow-hidden" ContentClass="overflow-y-auto" TitleClass="wot-dialog-bar">
+	<TitleContent>
+		<WotDialogTitle Dialog="MudDialog" Title="@Title" />
+	</TitleContent>
+	<DialogContent>
+		<div class="gl-details">
+			<Details Report="Report" ShowBattleStats="_showBattleStats" />
+		</div>
+	</DialogContent>
+	<DialogActions>
+		<MudButton OnClick="() => MudDialog.Close()">Sluiten</MudButton>
+	</DialogActions>
+</MudDialog>
+
+@code {
+	[CascadingParameter]
+	public required IMudDialogInstance MudDialog { get; set; }
+
+	[CascadingParameter]
+	public Task<AuthenticationState>? AuthenticationState { get; set; }
+
+	[Parameter]
+	public required BattleReport Report { get; set; }
+
+	private bool _showBattleStats;
+
+	// Map, date and score, own team first as in the clan match dialog.
+	private string Title
+	{
+		get
+		{
+			Team first = Report.OwnTeam ?? Report.Team1;
+			Team second = first == Report.Team1 ? Report.Team2 : Report.Team1;
+			string score = Report.HasScore ? $"{Report.Kills(first)} – {Report.Kills(second)}" : "–";
+			return $"{Report.MapName} · {Report.MatchTimeDisplay} · {score}";
+		}
+	}
+
+	// Same claim as Index: the dialog has no toggle, so the claim decides.
+	protected override async Task OnInitializedAsync()
+	{
+		_showBattleStats = AuthenticationState is not null && (await AuthenticationState).User.HasClaim(Claims.CanSeeBattleStats, bool.TrueString);
+	}
+}
