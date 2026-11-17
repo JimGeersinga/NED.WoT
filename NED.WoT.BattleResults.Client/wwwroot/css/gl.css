@@ -30,7 +30,7 @@ a.tag.own[href]:hover { border-color: var(--mud-palette-primary); }
 .gl-page { display: flex; flex-direction: column; height: calc(100vh - var(--mud-appbar-height)); min-height: 0; }
 .gl-bar { flex: none; display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 8px 16px; background: var(--mud-palette-surface); border-bottom: 1px solid var(--mud-palette-lines-default); }
 .gl-bar .wot-vsep { height: 32px; }
-.filter-bar-tools { display: flex; align-items: center; gap: 8px; margin-left: auto; flex: none; }
+.filter-bar-tools { display: flex; align-items: center; gap: 20px; margin-left: auto; flex: none; }
 
 .gl-sorted { display: flex; align-items: center; gap: 2px; color: inherit; font: inherit; padding: 0; border: 0; background: none; cursor: pointer; }
 .gl-sorted svg { width: 16px; height: 16px; fill: currentColor; }
@@ -130,8 +130,8 @@ a.tag.own[href]:hover { border-color: var(--mud-palette-primary); }
 
 /* Replay folder list (SettingsDialog): a row holds Titel, Pad and the up, down and delete buttons (small icon buttons). */
 .replay-folder-row { display: grid; grid-template-columns: 180px minmax(0, 1fr) auto auto auto; gap: 8px; align-items: start; padding: 8px; border-radius: 4px; background: var(--mud-palette-surface); }
-/* (56px filled field - 26px small icon button) / 2 */
-.replay-folder-row > .mud-icon-button { margin-top: 15px; }
+/* (56px filled field - 48px icon button) / 2 */
+.replay-folder-row > .mud-icon-button { margin-top: 4px; }
 
 /* Folder carousel in the app bar (FolderCarousel.razor; design gl.css .car): arrows, the dimmed neighbours, the current title (a button that opens the folder menu) and position dots. */
 .car { display: inline-flex; align-items: stretch; height: 44px; border: 1px solid var(--mud-palette-lines-default); border-radius: 4px; background: var(--wot-car-bg); overflow: hidden; flex: none; }
