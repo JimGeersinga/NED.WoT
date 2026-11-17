@@ -49,6 +49,12 @@
     color: var(--wot-skipped);
 }
 
+/* ResultChip with ShowBackground="false" (the Resultaat list): icon and word only, as the design (.chip.tx) has it. */
+.mud-chip.result-chip-without-background { background: none; padding: 0; margin: 0; }
+
+/* The base chip of a map in the battle row: the base column of .mapc is 26px. */
+.mud-chip.map-base-chip { width: 26px; margin: 0; padding: 0; justify-content: center; }
+
 /* ResultChip with IconRight (the battle row): the icon after the word; Mud's icon margins are mirrored to match. */
 .mud-chip.wot-chip-icon-right {
     flex-direction: row-reverse;
@@ -104,13 +110,6 @@
 
 .mud-dialog-title.wot-dialog-bar .wot-dialog-title { flex: 1; min-width: 0; }
 
-/* MudBlazor pins the close button absolutely (top/right 8px); in the bar it is a flex item, so a long title never runs under it. */
-.mud-dialog-title.wot-dialog-bar .mud-button-close {
-    position: static;
-    flex: none;
-    margin-left: 8px;
-}
-
 /* The dialog's own divider line over its actions (design .dlg-act). */
 .wot-dialog .mud-dialog-actions {
     padding: 12px 16px 16px;
@@ -124,91 +123,92 @@
 .mud-dialog,
 .mud-popover {
     background-color: var(--wot-surface-dialog);
-    box-shadow: var(--wot-shadow-dialog);
 }
+
+/* MudBlazor 9.12.0 draws the dialog's shadow as a fixed value and puts no mud-elevation class on it, so the theme's index 24 is applied here. */
+.mud-dialog { box-shadow: var(--mud-elevation-24); }
+
+/* One edge for every popover (menus, selects, pickers); the shadow is Shadows.Elevation[8] in WotTheme.cs. A tooltip sets its own edge below. */
+.mud-popover:not(.mud-tooltip) { border: 1px solid var(--mud-palette-lines-default); border-radius: 6px; overflow: hidden; }
 
 /* ==== MudInput ==== */
 /* The filled input surface at rest: MudBlazor's own tint on hover and focus still wins, as before the layer. */
 .mud-input-filled:not(:hover):not(.mud-focused) { background-color: var(--wot-surface-input); }
 
-/* ==== MudAutocomplete (the Clan and Speler boxes of the filter bar: wot-filter on its input control, wot-filter-pop on its popover) ==== */
+/* ==== MudAutocomplete (the Clan and Speler boxes of the filter bar: filter-field on its input control, filter-popover on its popover) ==== */
 /* One width for the four boxes (Clan, Speler, Map, Resultaat): 190px when empty (it fits "Alle resultaten" and "Speler zoeken" with the icon), growing with the text up to 320px (the input sizes to its text). */
-.mud-autocomplete:has(> .wot-filter), .mud-menu.wot-pick, .mud-select:not(.mud-autocomplete):has(> .wot-result) { flex: 0 0 auto; width: fit-content; min-width: 190px; max-width: 320px; }
-.mud-input-control.wot-filter input.mud-input-slot { field-sizing: content; min-width: 0; }
-.mud-input-control.wot-filter .mud-input-filled { height: 40px; min-height: 40px; font: 400 14px/1.4 var(--wot-font-text); }
-.mud-input-control.wot-filter .mud-input-filled > input { height: 40px; padding: 0 8px 0 0; font: inherit; }
-.mud-input-control.wot-filter .mud-input-adornment-start { height: 100%; margin: 0; align-items: center; }
-.mud-input-control.wot-filter .mud-input-adornment-icon-button { width: 40px; height: 40px; padding: 0; }
-/* A MudAutocomplete draws its icon as a 40px icon button (10px each side); a MudTextField or MudSelect draws the bare icon, so it gets 10px after it, and -2px before it to cancel the 12px that MudBlazor pads the filled input with (the icon button has its own negative margin): the icon is 10px from the box edge and the text 10px from the icon in all four boxes. */
-.mud-input-control.wot-filter .mud-input-adornment-start > svg.mud-input-adornment-icon { margin: 0 10px 0 -2px; }
-.mud-input-control.wot-filter .mud-input-adornment .mud-icon-root { width: 20px; height: 20px; color: var(--mud-palette-tertiary); }
-.mud-input-control.wot-filter.filled .mud-input-filled { box-shadow: inset 0 -2px 0 var(--mud-palette-primary); }
-/* The clan tag of the Speler box is the adornment text (bronze), and the helmet is drawn in front of it because the icon is ignored next to a text. The -2px puts that helmet where the icon of the box without a tag sits (10px from the left), so it does not move when the tag appears. */
-.mud-input-control.wot-filter .mud-input-adornment-text { display: inline-flex; align-items: center; margin: 0 8px 0 -2px; font: 600 15px/1 var(--wot-font-display); letter-spacing: .03em; color: var(--mud-palette-tertiary); }
-.mud-input-control.wot-filter .mud-input-adornment-text::before { content: ""; flex: none; width: 20px; height: 20px; margin-right: 8px; background: var(--mud-palette-primary); mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M12 3C7.6 3 4.5 6.4 4.5 10.8V15l1.5 1.5V19h12v-2.5l1.5-1.5v-4.2C19.5 6.4 16.4 3 12 3zM6.8 10.4h10.4v3.2H6.8z'/%3E%3C/svg%3E") center / contain no-repeat; }
-.mud-input-control.wot-filter.filled .mud-input-adornment .mud-icon-root { color: var(--mud-palette-primary); }
-.mud-popover.wot-filter-pop { overflow: hidden; min-width: 280px; border: 1px solid var(--mud-palette-lines-default); border-radius: 6px; box-shadow: var(--wot-shadow-menu); }
-.wot-filter-pop .mud-list-item { min-height: 38px; padding: 0 14px; }
-.wot-filter-pop .wot-opt { display: flex; align-items: center; justify-content: flex-start; gap: 10px; width: 100%; }
-.wot-filter-pop .wot-opt b { font-weight: 700; color: var(--mud-palette-text-primary); }
-.wot-filter-pop .wot-opt-tag { font: 600 15px/1 var(--wot-font-display); letter-spacing: .03em; color: var(--mud-palette-text-secondary); }
-.wot-filter-pop .wot-opt-n, .wot-filter-pop .wot-opt-more { font-size: 12px; color: var(--mud-palette-text-secondary); }
-.wot-filter-pop .wot-opt-n { margin-left: auto; }
-.wot-filter-pop .mud-list-item.mud-list-item-disabled { opacity: 1; }
-.wot-filter-pop .wot-opt-h { font: 600 12px/1.6 var(--wot-font-display); letter-spacing: .12em; text-transform: uppercase; color: var(--mud-palette-tertiary); }
+.mud-autocomplete:has(> .filter-field), .mud-menu.map-filter, .mud-select:not(.mud-autocomplete):has(> .result-filter) { flex: 0 0 auto; width: fit-content; min-width: 190px; max-width: 320px; }
+.mud-input-control.filter-field input.mud-input-slot { field-sizing: content; min-width: 0; }
+.mud-input-control.filter-field .mud-input-filled { height: 40px; min-height: 40px; font: 400 14px/1.4 var(--wot-font-text); }
+.mud-input-control.filter-field .mud-input-filled > input { height: 40px; padding: 0 8px 0 0; font: inherit; }
+/* MudBlazor pushes a start adornment of a filled, shrunk input 16px down (margin-top), 7-8px below the text: put it back. */
+.mud-input-control.filter-field .mud-input-adornment-start { margin-top: 0; }
+/* A MudAutocomplete draws its icon as a 40px icon button, a MudTextField or MudSelect the bare icon: without this the text starts 12px closer to the icon in Map and Resultaat (measured 40px against 52px from the box edge). */
+.mud-input-control.filter-field .mud-input-adornment-start > svg.mud-input-adornment-icon { margin-right: 12px; }
+.mud-input-control.filter-field .mud-input-adornment .mud-icon-root { width: 20px; height: 20px; color: var(--mud-palette-tertiary); }
+.mud-input-control.filter-field.filter-field-active .mud-input-filled { box-shadow: inset 0 -2px 0 var(--mud-palette-primary); }
+/* The clan tag of the Speler box is the adornment text (bronze); MudBlazor shows it instead of the icon. */
+.mud-input-control.filter-field .mud-input-adornment-text { font: 600 15px/1 var(--wot-font-display); letter-spacing: .03em; color: var(--mud-palette-tertiary); }
+.mud-input-control.filter-field.filter-field-active .mud-input-adornment .mud-icon-root { color: var(--mud-palette-primary); }
+.mud-popover.filter-popover { min-width: 280px; }
+.filter-popover .mud-list-item { min-height: 38px; padding: 0 14px; }
+.filter-popover .filter-option { display: flex; align-items: center; justify-content: flex-start; gap: 10px; width: 100%; }
+.filter-popover .filter-option b { font-weight: 700; color: var(--mud-palette-text-primary); }
+.filter-popover .filter-option-clan-tag { font: 600 15px/1 var(--wot-font-display); letter-spacing: .03em; color: var(--mud-palette-text-secondary); }
+.filter-popover .filter-option-count, .filter-popover .filter-option-note { font-size: 12px; color: var(--mud-palette-text-secondary); }
+.filter-popover .filter-option-count { margin-left: auto; }
+.filter-popover .mud-list-item.mud-list-item-disabled { opacity: 1; }
+.filter-popover .filter-option-header { font: 600 12px/1.6 var(--wot-font-display); letter-spacing: .12em; text-transform: uppercase; color: var(--mud-palette-tertiary); }
 
-/* The Map and Resultaat boxes use the same wot-filter look. The Map box is a MudMenu whose activator is a read-only MudTextField; its popover (wot-map-pop) holds a search box, a checkbox list and the Wissen and Alles buttons. */
-.mud-menu.wot-pick > .mud-menu-activator { width: 100%; }
-.mud-input-control.wot-filter .mud-input-filled > input[readonly] { cursor: pointer; }
-.wot-pick-field { position: relative; flex: 1 1 auto; min-width: 0; }
-.wot-pick-field .mud-input-control, .wot-pick-field .mud-input { width: 100%; }
-.wot-pick-field .mud-input-control.wot-filter .mud-input-filled > input { padding-right: 36px; }
+/* The Map and Resultaat boxes use the same filter-field look. The Map box is a MudMenu whose activator is a read-only MudTextField; its popover (map-filter-popover) holds a search box, a checkbox list and the Wissen and Alles buttons. */
+.mud-menu.map-filter > .mud-menu-activator { width: 100%; }
+.mud-input-control.filter-field .mud-input-filled > input[readonly] { cursor: pointer; }
+.map-filter-field { position: relative; flex: 1 1 auto; min-width: 0; }
+.map-filter-field .mud-input-control, .map-filter-field .mud-input { width: 100%; }
+.map-filter-field .mud-input-control.filter-field .mud-input-filled > input { padding-right: 36px; }
 /* The wisknop of the Map box: a read-only MudTextField has no Clearable of its own, so this MudIconButton (with MudBlazor's clear-button class, so size, icon and hover are the same) sits over the box. */
-.mud-icon-button.wot-pick-clear { position: absolute; top: 50%; right: 8px; transform: translateY(-50%); } /* the centre of the field, 8px from its right edge, as MudBlazor places its own clear button */
-.mud-input-control.wot-filter .mud-select-input input { cursor: pointer; }
-.mud-popover.wot-map-pop { width: 280px; }
-.wot-map-pop .mud-list { padding: 0; }
-.wot-map-pop .wot-map-search { padding: 8px 10px; border-bottom: 1px solid var(--mud-palette-lines-default); }
-.wot-map-pop .wot-map-search .mud-input-outlined-border { border-radius: 4px; }
-.wot-map-pop .wot-map-list { max-height: 320px; overflow-y: auto; padding: 4px 0; }
-.wot-map-pop .wot-map-list .mud-input-control-boolean-input { width: 100%; }
-.wot-map-pop .wot-map-list label.mud-checkbox { display: flex; width: 100%; min-height: 38px; margin: 0; padding: 0 14px 0 6px; }
-.wot-map-pop .wot-map-list .mud-checkbox .mud-typography { flex: 1; }
-.wot-map-pop .wot-map-list label.mud-checkbox:hover { background: var(--mud-palette-action-default-hover); }
-.wot-map-pop .wot-map-none { display: block; padding: 10px 14px; }
-.wot-map-pop .wot-map-foot { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-top: 1px solid var(--mud-palette-lines-default); }
-.wot-map-pop .wot-map-foot > span { flex: 1; }
-.wot-filter-pop .mud-list-item .mud-checkbox { margin: 0 6px 0 -8px; }
+.mud-icon-button.map-filter-clear-button { position: absolute; top: 50%; right: 8px; transform: translateY(-50%); } /* the centre of the field, 8px from its right edge, as MudBlazor places its own clear button */
+.mud-input-control.filter-field .mud-select-input input { cursor: pointer; }
+.mud-popover.map-filter-popover { width: 280px; }
+.map-filter-popover .mud-list { padding: 0; }
+.map-filter-popover .map-filter-search { padding: 8px 10px; border-bottom: 1px solid var(--mud-palette-lines-default); }
+.map-filter-popover .map-filter-search .mud-input-outlined-border { border-radius: 4px; }
+.map-filter-popover .map-filter-list { max-height: 320px; overflow-y: auto; padding: 4px 0; }
+.map-filter-popover .map-filter-list .mud-input-control-boolean-input { width: 100%; }
+.map-filter-popover .map-filter-list label.mud-checkbox { display: flex; width: 100%; min-height: 38px; margin: 0; padding: 0 14px 0 6px; }
+.map-filter-popover .map-filter-list .mud-checkbox .mud-typography { flex: 1; }
+.map-filter-popover .map-filter-list label.mud-checkbox:hover { background: var(--mud-palette-action-default-hover); }
+.map-filter-popover .map-filter-empty { display: block; padding: 10px 14px; }
+.map-filter-popover .map-filter-footer { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-top: 1px solid var(--mud-palette-lines-default); }
+.map-filter-popover .map-filter-footer > span { flex: 1; }
+.filter-popover .mud-list-item .mud-checkbox { margin: 0 6px 0 -8px; }
 /* The Resultaat popover fits its rows (checkbox, chip, count) instead of the 280px of the other lists, and the tick sits close to the chip (MudBlazor gives a list item icon 56px). */
-.mud-popover.wot-result-pop { min-width: 0; }
-.wot-result-pop .mud-list-item-icon { min-width: 0; margin-right: 8px; }
+.mud-popover.result-filter-popover { min-width: 0; }
+.result-filter-popover .mud-list-item-icon { min-width: 0; margin-right: 8px; }
 /* The tick of a multi-select item (MudSelect draws it as the list item icon, no Color parameter reaches it): Primary when ticked. */
-.wot-filter-pop .mud-list-item.mud-selected-item .mud-list-item-icon { color: var(--mud-palette-primary); }
-/* The result chip in the Resultaat list: icon and word only, as the design (.chip.tx) has it. */
-.wot-filter-pop .mud-list-item .mud-chip { background: none; padding: 0; margin: 0; }
+.filter-popover .mud-list-item.mud-selected-item .mud-list-item-icon { color: var(--mud-palette-primary); }
 
-/* ==== MudMenu and MudIcon in the folder carousel (the .car rules of gl.css): the menu wrapper holds the current title, the icons are sized here ==== */
-.car .nv .mud-icon-root { width: 24px; height: 24px; }
-.car .wot-car-menu { display: flex; align-self: stretch; } /* MudBlazor centres the menu wrapper */
-.car .wot-car-menu .mud-menu-activator { display: flex; flex: 1; }
-.car .mid .ttl .mud-icon-root { flex: none; width: 18px; height: 18px; color: var(--mud-palette-tertiary); }
+/* ==== MudIcon ==== */
+/* The icon of an empty state (EmptyState): 48px has no MudBlazor size. */
+.mud-icon-root.empty-state-icon { font-size: 48px; color: var(--mud-palette-text-secondary); }
+
+/* ==== MudMenu and MudIcon in the folder carousel (the .folder-carousel rules of gl.css): the menu wrapper holds the current title, the icons are sized here ==== */
+.folder-carousel-arrow .mud-icon-root { width: 24px; height: 24px; }
+.folder-carousel-menu { display: flex; align-self: stretch; } /* MudBlazor centres the menu wrapper */
+.folder-carousel-menu .mud-menu-activator { display: flex; flex: 1; }
+.folder-carousel-title .mud-icon-root { flex: none; width: 18px; height: 18px; color: var(--mud-palette-tertiary); }
 
 /* ==== MudMenu (the folder menu of the carousel: design "Replaymappen: navigatie") ==== */
-/* 480px, below the current title. A row is a radio (the check, the title over the path, the number of battles once the folder is read); the last row opens the settings. */
-.mud-popover.wot-folder-pop { width: max-content; min-width: 480px; max-width: min(760px, calc(100vw - 32px)); padding: 6px 0; border: 1px solid var(--mud-palette-lines-default); border-radius: 6px; box-shadow: var(--wot-shadow-menu); overflow: hidden; }
-.wot-folder-pop .fm-row { display: flex; align-items: center; justify-content: flex-start; gap: 12px; width: 100%; min-height: 56px; padding: 0 16px; border: 0; background: none; color: var(--mud-palette-text-primary); font: 400 15px/1.55 var(--wot-font-text); text-align: left; cursor: pointer; }
-.wot-folder-pop .fm-row:hover { background: var(--mud-palette-action-default-hover); }
-.wot-folder-pop .fm-row:focus-visible { outline-offset: -2px; }
-.wot-folder-pop .fm-row .mud-icon-root { flex: none; width: 20px; height: 20px; }
-.wot-folder-pop .fm-check { color: transparent; }
-.wot-folder-pop .fm-row[aria-checked="true"] .fm-check { color: var(--mud-palette-primary); }
-.wot-folder-pop .fm-text { display: flex; flex-direction: column; flex: 1; gap: 2px; min-width: 0; }
-.wot-folder-pop .fm-title { font: 500 15px/1.3 var(--wot-font-text); overflow-wrap: anywhere; }
+/* 480px, below the current title. A row is a MudMenuItem (the check on the current folder, the title over the path, the number of battles once the folder is read); the last row opens the settings. */
+.mud-popover.folder-menu-popover { width: max-content; min-width: 480px; max-width: min(760px, calc(100vw - 32px)); padding: 6px 0; }
+.folder-menu-popover .mud-menu-item { min-height: 56px; padding: 0 16px; }
+.folder-menu-popover .mud-menu-item .mud-icon-root { flex: none; width: 20px; height: 20px; }
+.folder-menu-popover .mud-menu-item:last-child .mud-icon-root { color: var(--mud-palette-text-secondary); } /* the icon of "Mappen beheren" (the row is 56px like the folder rows) */
+.folder-menu-popover .mud-menu-item-text { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; } /* the chip sits beside the text, not under it */
+.folder-menu-item-text { display: flex; flex-direction: column; flex: 1; gap: 2px; min-width: 0; }
+.folder-menu-item-title { font: 500 15px/1.3 var(--wot-font-text); overflow-wrap: anywhere; }
 /* A long path is cut at the start, not the end: the folder name is the part that tells the folders apart. rtl puts the ellipsis on the left, the bdo keeps the characters in reading order. */
-.wot-folder-pop .fm-path { font: 400 12px/1.3 var(--wot-font-text); color: var(--mud-palette-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; direction: rtl; text-align: left; }
-.wot-folder-pop .fm-div { height: 1px; margin: 6px 0; background: var(--mud-palette-lines-default); }
-.wot-folder-pop .fm-manage { min-height: 48px; }
-.wot-folder-pop .fm-manage .mud-icon-root { color: var(--mud-palette-text-secondary); }
+.folder-menu-item-path { font: 400 12px/1.3 var(--wot-font-text); color: var(--mud-palette-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; direction: rtl; text-align: left; }
 
 /* ==== MudTabs (design .tabs / .tab) ==== */
 /* No band behind the tabs, one divider line under the whole bar; each tab is as wide as its text. */
@@ -442,16 +442,20 @@ a.wot-clan-card[href]:focus-visible > .mud-paper { border-color: var(--mud-palet
     font: 600 13px/1.45 var(--wot-font-text);
 }
 
-/* The day header sticks under the column header (36px). */
-.wot-battle-table > .mud-table-container > .mud-table-root > tbody > tr.gl-day > .mud-table-cell {
-    position: sticky;
-    top: 36px;
-    z-index: 2;
+/* The day header: a line of the list (it scrolls) and the second row of the thead (tr.gl-current: it sticks under the column header, 36px, and shows the day of the first visible row). */
+.wot-battle-table > .mud-table-container > .mud-table-root > :is(tbody, thead) > tr:is(.gl-day, .gl-current) > .mud-table-cell {
     height: 44px;
     padding: 0 12px 0 16px;
     background: var(--wot-appbar-top);
     border-top: 1px solid var(--mud-palette-lines-default);
     border-bottom: 1px solid var(--mud-palette-lines-default);
+}
+
+.wot-battle-table > .mud-table-container > .mud-table-root > thead > tr.gl-current > .mud-table-cell {
+    top: 36px;
+    color: var(--mud-palette-text-primary);
+    font: inherit;
+    font-size: 14px;
 }
 
 .wot-battle-table > .mud-table-container > .mud-table-root > tfoot > tr > .mud-table-cell {
@@ -474,6 +478,8 @@ a.wot-clan-card[href]:focus-visible > .mud-paper { border-color: var(--mud-palet
 @media (prefers-reduced-motion: reduce) { .wot-battle-table > .mud-table-container > .mud-table-root > tbody > tr.gl-row.gl-new > .mud-table-cell { animation: none; background-color: color-mix(in srgb, var(--mud-palette-text-primary) 16%, transparent); } }
 
 .wot-battle-table > .mud-table-container > .mud-table-root > :is(thead, tbody, tfoot) > tr > .mud-table-cell.p4 { padding: 0 4px; text-align: center; }
+/* The row's right-click menus open at the cursor; out of the flow, they don't push the copy button off the day header's. */
+.wot-battle-table > .mud-table-container > .mud-table-root > tbody > tr > .mud-table-cell.p4 > .mud-menu { position: absolute; }
 .wot-battle-table > .mud-table-container > .mud-table-root > :is(thead, tbody, tfoot) > tr > .mud-table-cell.c { text-align: center; }
 .wot-battle-table > .mud-table-container > .mud-table-root > :is(thead, tbody, tfoot) > tr > .mud-table-cell.s { padding: 0 8px; }
 .wot-battle-table > .mud-table-container > .mud-table-root > :is(thead, tbody, tfoot) > tr > .mud-table-cell.r { text-align: right; }
@@ -499,8 +505,8 @@ a.wot-clan-card[href]:focus-visible > .mud-paper { border-color: var(--mud-palet
         linear-gradient(to bottom, transparent 47px, var(--mud-palette-table-lines) 47px) 0 0 / 100% 48px repeat-y;
 }
 
-/* Loading="true" makes MudBlazor add a second head row (a th with colspan 1000 and an indeterminate bar). The page has its own progress bar, and a 1000-column cell would make the fixed layout collapse the Team column: no row, no layout. */
-.wot-battle-table > .mud-table-container > .mud-table-root > thead > tr + tr { display: none; }
+/* Loading="true" makes MudBlazor add another head row (a th with colspan 1000 and an indeterminate bar). The page has its own progress bar, and a 1000-column cell would make the fixed layout collapse the Team column: no row, no layout. */
+.wot-battle-table > .mud-table-container > .mud-table-root > thead > tr:not(:first-child, .gl-current) { display: none; }
 
 /* ==== MudAlert (the warning row of an unreadable replay: design .alert.c-warn on the table's row) ==== */
 .mud-alert.wot-row-alert {
@@ -535,13 +541,12 @@ a.wot-clan-card[href]:focus-visible > .mud-paper { border-color: var(--mud-palet
 .mud-snackbar {
     --wot-snack: var(--mud-palette-text-primary);
     align-items: flex-start;
-    min-width: 288px;
     max-width: 440px;
     padding: 12px 16px;
-    border: 1px solid var(--mud-palette-lines-default);
-    border-radius: 4px;
+    /* only the colour: the 1px width and style come from the Outlined variant (MauiProgram.cs) */
+    border-color: var(--mud-palette-lines-default);
     background: linear-gradient(color-mix(in srgb, var(--wot-snack) 13%, transparent), color-mix(in srgb, var(--wot-snack) 13%, transparent)), var(--wot-surface-dialog);
-    box-shadow: var(--wot-shadow-menu);
+    box-shadow: var(--mud-elevation-8);
     color: var(--mud-palette-text-primary);
     font-size: 14px;
     line-height: 1.5;
@@ -573,13 +578,13 @@ a.wot-clan-card[href]:focus-visible > .mud-paper { border-color: var(--mud-palet
 .mud-image.gl-unauth-mark { width: 64px; height: 64px; }
 
 /* ==== MudTooltip and the right-click menu of a battle row ==== */
-.mud-tooltip { padding: 0; border: 1px solid var(--mud-palette-lines-inputs); border-radius: 4px; background: var(--wot-surface-dialog); box-shadow: var(--wot-shadow-menu); color: var(--mud-palette-text-primary); font: 500 13px/1.4 var(--wot-font-text); }
+.mud-tooltip { padding: 0; border: 1px solid var(--mud-palette-lines-inputs); border-radius: 4px; background: var(--wot-surface-dialog); box-shadow: var(--mud-elevation-8); color: var(--mud-palette-text-primary); font: 500 13px/1.4 var(--wot-font-text); }
 /* The time tooltip reads like the team list of the details: a bronze display-font header, then numbered-style rows with a dim label. */
 .wot-tt { display: grid; grid-template-columns: 1fr auto; min-width: 200px; column-gap: 24px; row-gap: 3px; padding: 8px 14px 10px; }
 .wot-tt b { grid-column: 1 / -1; padding-bottom: 6px; margin-bottom: 3px; border-bottom: 1px solid var(--mud-palette-lines-default); font: 600 15px/1.3 var(--wot-font-display); letter-spacing: .06em; text-transform: uppercase; color: var(--mud-palette-tertiary); }
 .wot-tt span { color: var(--mud-palette-text-secondary); text-align:left; }
 .wot-tt i { font-style: normal; font-weight: 600; text-align: right; }
-.mud-popover.wot-ctx-pop { min-width: 240px; max-width: 420px; border: 1px solid var(--mud-palette-lines-default); border-radius: 6px; box-shadow: var(--wot-shadow-menu); overflow: hidden; }
+.mud-popover.wot-ctx-pop { min-width: 240px; max-width: 420px; }
 .wot-ctx-pop .wot-ctx-file { display: flex; flex-direction: column; gap: 2px; padding: 8px 16px; border-bottom: 1px solid var(--mud-palette-lines-default); user-select: text; }
 .wot-ctx-pop .wot-ctx-file span { font: 600 11px/1.4 var(--wot-font-display); letter-spacing: .12em; text-transform: uppercase; color: var(--mud-palette-tertiary); }
 .wot-ctx-pop .wot-ctx-file code { font: 400 12px/1.4 ui-monospace, Consolas, monospace; color: var(--mud-palette-text-primary); overflow-wrap: anywhere; }
@@ -618,9 +623,6 @@ a.wot-clan-card[href]:focus-visible > .mud-paper { border-color: var(--mud-palet
     left: auto !important; /* beats the inline left MudBlazor computes from the anchor */
     right: 16px;
     width: 260px;
-    border: 1px solid var(--mud-palette-lines-default);
-    border-radius: 6px;
-    box-shadow: var(--wot-shadow-menu);
     padding: 6px 0;
 }
 
@@ -646,3 +648,15 @@ a.wot-clan-card[href]:focus-visible > .mud-paper { border-color: var(--mud-palet
 }
 
 .wot-menu .mud-menu-item > p { margin: 0; }
+
+/* An outlined icon button in the default colour gets the inputs' grey edge, not MudBlazor's text-coloured one; on hover the edge lightens with the background. */
+.mud-icon-button.mud-button-outlined-default:not(:disabled) { border-color: var(--mud-palette-lines-inputs); }
+.mud-icon-button.mud-button-outlined-default:not(:disabled):hover { border-color: var(--mud-palette-text-secondary); }
+
+/* MudIconButton (the tool buttons of the filter bar: the stats book, the clan members, the unknown names; game art inside). */
+.mud-icon-button.filter-tool-button { padding: 5px 12px; }
+.mud-icon-button.filter-tool-button img { width: 28px; height: 28px; object-fit: contain; }
+.mud-icon-button.stats-book-button img { width: 36px; }
+
+/* "Jij" (Details.razor): a MudIcon, so the scoped Details.razor.css can't reach it. It hangs in the expander column, left of the # cell (a sticky cell, so it is the anchor). */
+.mud-table.player-table .own-row-icon { position: absolute; right: 100%; top: 50%; transform: translateY(-50%); margin-right: 8px; }

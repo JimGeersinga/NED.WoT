@@ -139,13 +139,19 @@ Titles match the GitHub milestones one to one.
 | 02 | Filter dropdowns | #13–#14 | Clan, Speler, Map and Resultaat dropdowns and the Clangevechten \| Alles switch. |
 | 03 | Sign in with Wargaming | #10–#12, #75, #116 | Wargaming login in the desktop app (#10, #11); access and identity from WoT HQ replace the Excel check (#75); the account menu and the removal of the clan and player Settings fields (#12); the battle list shows on every cold start (#116). |
 | 04 | Replay folders | #15–#16 | Several replay folders in Settings and a folder carousel in the app bar. |
-| 05 | Live battle | #17 | A separate temp-replay path for the live clan lookup. |
+| 05 | Live battle | #17 | A separate temp-replay path for the live clan lookup; #120: the lookup reads the clan tags from the `opponents` block of the live packet stream. |
 | 06 | Clan battle statistics | #18–#19 | Clan rating and PR in the Clan battle dialog, from Wargaming's public API. |
-| 07 | Speed and memory | #41–#45 | A reload frees the old battle list; replays are read by block and parsed into a typed model; analyzers run as errors. |
+| 07 | Speed and memory | #41–#45, #73 | A reload frees the old battle list; replays are read by block and parsed into a typed model; analyzers run as errors; startup options measured: the SDK's ReadyToRun default stays, trimming does not pay off. |
 | 08 | Fewer MudBlazor overrides | #54–#60 | Hand-made buttons, icons, chips and menu rows become MudBlazor components; unused and leaking CSS goes; shadows move into the theme. |
 | 09 | Teams | #65–#70 | Per-team statistics: lobbies grouped into teams, a team filter and results per map per team. |
 | 10 | .NET 11 | #78 | Upgrade to .NET 11. |
 | 11 | Component structure | #108–#114 | Components in feature folders; `Index`, the Clan battle dialog, the filter bar and `Details` split so each has one job. |
+
+Release publishing keeps the SDK defaults, with nothing set in the csproj (#73, measured 2026-11-16). For this framework-dependent MSIX publish, the SDK already turns ReadyToRun on and leaves trimming off.
+- **Turning ReadyToRun off** makes the cold start slower: a median of 7.1 s to the first battle rows, against 5.0 s with it.
+- **Partial trimming** needs `PublishTrimmed=true` plus `JsonSerializerIsReflectionEnabledByDefault=true`, because the settings and the Wargaming clients use reflection-based System.Text.Json. Without ReadyToRun it starts in 8.7 s; with ReadyToRun the `.msix` grows from 46.1 to 49.1 MB, for a gain within noise.
+- **Full trimming** fails the build with 13 trim errors, from our JSON calls, the generated `Routes`, Blazor WebView and MudBlazor. Even with the errors off, the trimmed app hangs while loading.
+- **Native AOT** is not available for MAUI on Windows.
 
 Order inside and across milestones follows each issue's `Depends on:` line
 (CLAUDE.md), not the table.

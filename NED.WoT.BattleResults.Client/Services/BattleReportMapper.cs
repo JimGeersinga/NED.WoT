@@ -101,7 +101,7 @@ public class BattleReportMapper
     private static long? ClanId(ReplayResults? results, Team team) =>
         results?.AccountPlayers?.Values.FirstOrDefault(x => x.ClanDbid > 0 && x.Team == team.Number && x.ClanAbbrev == team.Abbreviation)?.ClanDbid;
 
-    internal static string GetMostMentionedClanAbbreviation(Team team)
+    private static string GetMostMentionedClanAbbreviation(Team team)
     {
         if (team.Players == null || team.Players.Count == 0)
         {

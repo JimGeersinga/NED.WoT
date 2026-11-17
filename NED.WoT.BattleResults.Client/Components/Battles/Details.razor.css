@@ -31,23 +31,8 @@
     display: block;
 }
 
-.wot-name svg {
+.wot-name .mud-icon-root {
     flex: none;
-    width: 18px;
-    height: 18px;
-    fill: currentColor;
-}
-
-/* "Jij": hangs in the expander column, left of the # cell (a sticky cell, so it is the anchor). */
-.wot-name-person {
-    position: absolute;
-    right: 100%;
-    top: 50%;
-    transform: translateY(-50%);
-    margin-right: 8px;
-    width: 18px;
-    height: 18px;
-    fill: var(--mud-palette-primary);
 }
 
 .wot-name-text {
@@ -62,8 +47,7 @@
 }
 
 /* A team-killer: the info colour, plus the Report icon (colour is never alone). */
-.wot-name-text.tk,
-.wot-name-tk {
+.wot-name-text.tk {
     color: var(--mud-palette-info);
 }
 

@@ -9,9 +9,8 @@ public sealed class BattleFilters
     /// <summary>One line of a dropdown. A clan: Name is its tag, Clan the same tag, Battles the battles it is in. A player: Name, Clan the tag of their latest battle (null when they had none) and, with a clan chosen, Battles the battles with that clan. A section header: only Header is set.</summary>
     public sealed record Choice(string Name, string? Clan, int Battles, string? Header = null);
 
-    /// <summary>The icons of the two boxes: the game-art glyphs of the design board, as markup like the MudBlazor icons.</summary>
+    /// <summary>The icon of the Clan box: the game-art glyph of the design board, as markup like the MudBlazor icons.</summary>
     public const string Shield = "<path fill-rule=\"evenodd\" d=\"M12 2.5l7.5 2.8v6.2c0 4.6-3.1 8.6-7.5 10.5-4.4-1.9-7.5-5.9-7.5-10.5V5.3zM12 7.4L8 9.9v1.3l4-2.2 4 2.2V9.9zM12 12.2l-4 2.5V16l4-2.2 4 2.2v-1.3z\"/>";
-    public const string Helmet = "<path fill-rule=\"evenodd\" d=\"M12 3C7.6 3 4.5 6.4 4.5 10.8V15l1.5 1.5V19h12v-2.5l1.5-1.5v-4.2C19.5 6.4 16.4 3 12 3zM6.8 10.4h10.4v3.2H6.8z\"/>";
 
     private Lazy<Tables> _tables;
     private int _version;
@@ -142,7 +141,7 @@ public sealed class BattleFilters
         return rows;
     }
 
-    /// <summary>The clan tag in front of the Speler field, only while a player is picked: the chosen clan's, otherwise that player's latest clan. Null (the field shows only the helmet icon) without a player, also with a clan chosen, and for a player with no clan tag and no clan chosen.</summary>
+    /// <summary>The clan tag in front of the Speler field, only while a player is picked: the chosen clan's, otherwise that player's latest clan. Null (the field shows only the Person icon) without a player, also with a clan chosen, and for a player with no clan tag and no clan chosen.</summary>
     public static string? SpelerTag(string? chosenClan, Choice? player) => player == null ? null : chosenClan ?? (string.IsNullOrEmpty(player.Clan) ? null : player.Clan);
 
     /// <summary>The Speler list for the typed term. With a clan: only the players who were ever on that clan's team, each with the battles with that clan. Without: every player once, your own clan's players first, then the others, each A to Z.</summary>
@@ -267,7 +266,7 @@ public sealed class BattleFilters
         // The tag of the Speler field, only with a player picked: the chosen clan, else the player's latest clan; none at all without either.
         Choice picked = new("KlompKees", "DUTCH", 0);
         Debug.Assert(SpelerTag(null, null) == null && SpelerTag("RHINE", null) == null, "Speler tag: no player, no tag, also with a clan chosen");
-        Debug.Assert(SpelerTag(null, picked) == "DUTCH" && SpelerTag("RHINE", picked) == "RHINE" && SpelerTag(null, new Choice("Zonder", null, 0)) == null && SpelerTag("RHINE", new Choice("Zonder", null, 0)) == "RHINE", "Speler tag: the chosen clan, else the player's clan, else no tag (helmet icon only)");
+        Debug.Assert(SpelerTag(null, picked) == "DUTCH" && SpelerTag("RHINE", picked) == "RHINE" && SpelerTag(null, new Choice("Zonder", null, 0)) == null && SpelerTag("RHINE", new Choice("Zonder", null, 0)) == "RHINE", "Speler tag: the chosen clan, else the player's clan, else no tag (Person icon only)");
 
         // Choosing a clan keeps a player who was ever on it and drops one who never was.
         Debug.Assert(filters.PlayerAfterClan("KlompKees", "DUTCH") == "KlompKees" && filters.PlayerAfterClan("klompkees", "RHINE") == null && filters.PlayerAfterClan("Kapitein_Kees", "RHINE") == "Kapitein_Kees", "a chosen player stays only when they were on the chosen clan");

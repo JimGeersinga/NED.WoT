@@ -7,7 +7,7 @@
 @* The player table of an opened battle (canvas "Component: gevechtsdetails"): two header tiers, the first five columns sticky, one group per team, the HP-bar name cell, the own row and the team-killer.
    The table and its cells are MudBlazor's, so their rules are in mud.css (".mud-table.player-table"); the elements rendered here are styled in Details.razor.css. *@
 <MudPaper Elevation="0" Outlined="true" Class="wot-details">
-    <MudTable Items="@players"
+    <MudTable @ref="_table" Items="@players"
               RowClassFunc="@RowClass"
               GroupBy="@_groupDefinition"
               SortLabel="Sort By"
@@ -43,17 +43,17 @@
             <MudTHeadRow>
                 <MudTh Class="sticky-left lead" />
                 <MudTh Class="sticky-left num">#</MudTh>
-                <MudTh Class="sticky-left name"><MudTableSortLabel SortBy="new Func<Player, object>(x=>x.DisplayName)">Naam</MudTableSortLabel></MudTh>
-                <MudTh Class="sticky-left vehicle"><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.Vehicle)">Tank</MudTableSortLabel></MudTh>
-                <MudTh Class="sticky-left lifetime r"><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.LifeTime)">Speeltijd</MudTableSortLabel></MudTh>
-                <MudTh Class="r"><MudTableSortLabel InitialDirection="SortDirection.Descending" SortBy="new Func<Player, object?>(x=>x.ExperienceEarned)">XP</MudTableSortLabel></MudTh>
-                <MudTh Class="r"><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.Kills)">Kills</MudTableSortLabel></MudTh>
-                <MudTh Class="r"><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.DamageDealt)">Gedaan</MudTableSortLabel></MudTh>
-                <MudTh Class="r"><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.DamageBlocked)">Geblokt</MudTableSortLabel></MudTh>
-                <MudTh Class="r"><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.DamageReceived)">Ontvangen</MudTableSortLabel></MudTh>
-                <MudTh Class="r"><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.Shots)">Geschoten</MudTableSortLabel></MudTh>
-                <MudTh Class="r"><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.DirectHits)">Geraakt</MudTableSortLabel></MudTh>
-                <MudTh Class="r"><MudTableSortLabel SortBy="new Func<Player, object?>(x=>x.Piercings)">Gepenetreerd</MudTableSortLabel></MudTh>
+                <MudTh Class="sticky-left name"><MudTableSortLabel SortBy="By(x=>x.DisplayName)">Naam</MudTableSortLabel></MudTh>
+                <MudTh Class="sticky-left vehicle"><MudTableSortLabel SortBy="By(x=>x.Vehicle)">Tank</MudTableSortLabel></MudTh>
+                <MudTh Class="sticky-left lifetime r"><MudTableSortLabel SortBy="By(x=>x.LifeTime)">Speeltijd</MudTableSortLabel></MudTh>
+                <MudTh Class="r"><MudTableSortLabel InitialDirection="SortDirection.Descending" SortBy="By(x=>x.ExperienceEarned)">XP</MudTableSortLabel></MudTh>
+                <MudTh Class="r"><MudTableSortLabel SortBy="By(x=>x.Kills)">Kills</MudTableSortLabel></MudTh>
+                <MudTh Class="r"><MudTableSortLabel SortBy="By(x=>x.DamageDealt)">Gedaan</MudTableSortLabel></MudTh>
+                <MudTh Class="r"><MudTableSortLabel SortBy="By(x=>x.DamageBlocked)">Geblokt</MudTableSortLabel></MudTh>
+                <MudTh Class="r"><MudTableSortLabel SortBy="By(x=>x.DamageReceived)">Ontvangen</MudTableSortLabel></MudTh>
+                <MudTh Class="r"><MudTableSortLabel SortBy="By(x=>x.Shots)">Geschoten</MudTableSortLabel></MudTh>
+                <MudTh Class="r"><MudTableSortLabel SortBy="By(x=>x.DirectHits)">Geraakt</MudTableSortLabel></MudTh>
+                <MudTh Class="r"><MudTableSortLabel SortBy="By(x=>x.Piercings)">Gepenetreerd</MudTableSortLabel></MudTh>
             </MudTHeadRow>
         </HeaderContent>
         <GroupHeaderTemplate>
@@ -80,7 +80,7 @@
             <MudTd DataLabel="Number" Class="sticky-left num">
                 @if (own)
                 {
-                    <svg class="wot-name-person" viewBox="0 0 24 24" role="img" aria-label="Jij"><title>Jij</title>@((MarkupString)Icons.Material.Filled.Person)</svg>
+                    <MudIcon Icon="@Icons.Material.Filled.Person" Color="Color.Primary" Size="Size.Small" Title="Jij" aria-label="Jij" Class="own-row-icon" />
                 }
                 @context.Number
             </MudTd>
@@ -95,7 +95,7 @@
                     <span class="@("wot-name-text" + (own ? " me" : string.Empty) + (teamKiller ? " tk" : string.Empty))">@context.DisplayName</span>           
                     @if (teamKiller)
                     {
-                        <svg class="wot-name-tk" viewBox="0 0 24 24" role="img" aria-label="Teamkiller"><title>Teamkiller</title>@((MarkupString)Icons.Material.Filled.Report)</svg>
+                        <MudIcon Icon="@Icons.Material.Filled.Report" Color="Color.Info" Size="Size.Small" Title="Teamkiller" aria-label="Teamkiller" />
                     }
                 </div>
             </MudTd>
@@ -197,6 +197,23 @@
                 // Opening the own team is cosmetic: a missing row must not fail the render.
             }
         }
+    }
+
+    private MudTable<Player>? _table;
+
+    /// <summary>
+    /// MudTable orders the groups by their first row in the sorted list, so a column sort alone can put the other team first.
+    /// Every sort key is therefore prefixed with a rank that puts the own team's rows first in either direction; the order inside a group is the column's own.
+    /// </summary>
+    private Func<Player, object?> By(Func<Player, object?> key) => player =>
+    {
+        int rank = player.Team?.IsOwnTeam == true ? (_table?.Context.SortDirection == SortDirection.Descending ? 1 : -1) : 0;
+        return new Ranked(rank, key(player));
+    };
+
+    private sealed record Ranked(int Rank, object? Value) : IComparable
+    {
+        public int CompareTo(object? other) => other is Ranked r && r.Rank != Rank ? Rank.CompareTo(r.Rank) : Comparer<object>.Default.Compare(Value, (other as Ranked)?.Value);
     }
 
     private TableGroupDefinition<Player> _groupDefinition = new()

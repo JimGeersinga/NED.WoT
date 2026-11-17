@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
 
@@ -11,8 +12,46 @@ public static class ReplayReader
 {
     private const uint MAGIC = 0x11343212;
 
-    /// <summary>The header block and, when the replay has one, the results block (null for a replay that ended without results).</summary>
-    public sealed record ReplayBlocks(byte[] Header, byte[]? Results);
+    /// <summary>
+    /// The header block and, when the replay has one, the results block. Both live in buffers rented from <see cref="ArrayPool{T}.Shared"/>:
+    /// dispose this when the blocks are parsed, and keep nothing that points into <see cref="Header"/> or <see cref="Results"/> after that.
+    /// </summary>
+    public sealed class ReplayBlocks : IDisposable
+    {
+        private byte[]? _header;
+        private byte[]? _results;
+        private readonly int _headerLength;
+        private readonly int _resultsLength;
+
+        internal ReplayBlocks(byte[] header, int headerLength, byte[]? results, int resultsLength)
+        {
+            _header = header;
+            _headerLength = headerLength;
+            _results = results;
+            _resultsLength = resultsLength;
+        }
+
+        /// <summary>The block's real bytes (the rented buffer is longer).</summary>
+        public ReadOnlyMemory<byte> Header => _header.AsMemory(0, _headerLength);
+
+        /// <summary>The block's real bytes; empty for a replay without (or with a damaged or zero-length) results block.</summary>
+        public ReadOnlyMemory<byte> Results => _results.AsMemory(0, _resultsLength);
+
+        public void Dispose()
+        {
+            if (_header is not null)
+            {
+                ArrayPool<byte>.Shared.Return(_header);
+                _header = null;
+            }
+
+            if (_results is not null)
+            {
+                ArrayPool<byte>.Shared.Return(_results);
+                _results = null;
+            }
+        }
+    }
 
     /// <exception cref="InvalidDataException">Wrong magic, no blocks, or a header block that runs past the end of the file.</exception>
     public static ReplayBlocks Read(string path)
@@ -43,14 +82,23 @@ public static class ReplayReader
             throw new InvalidDataException("The replay has no blocks.");
         }
 
-        byte[] header = ReadBlock(stream) ?? throw new InvalidDataException("The header block is missing or runs past the end of the replay.");
-        byte[]? results = count > 1 ? ReadBlock(stream) : null;
+        (byte[] Buffer, int Length) header = ReadBlock(stream) ?? throw new InvalidDataException("The header block is missing or runs past the end of the replay.");
+        (byte[] Buffer, int Length)? results;
+        try
+        {
+            results = count > 1 ? ReadBlock(stream) : null;
+        }
+        catch
+        {
+            ArrayPool<byte>.Shared.Return(header.Buffer);
+            throw;
+        }
 
-        return new ReplayBlocks(header, results);
+        return new ReplayBlocks(header.Buffer, header.Length, results?.Buffer, results?.Length ?? 0);
     }
 
-    /// <returns>The block, or null when its length field is missing or the block runs past the end of the stream.</returns>
-    private static byte[]? ReadBlock(Stream stream)
+    /// <returns>A rented buffer (longer than the block) with the block's length, or null when its length field is missing or the block runs past the end of the stream.</returns>
+    private static (byte[] Buffer, int Length)? ReadBlock(Stream stream)
     {
         Span<byte> lengthBytes = stackalloc byte[4];
         if (stream.ReadAtLeast(lengthBytes, lengthBytes.Length, throwOnEndOfStream: false) != lengthBytes.Length)
@@ -64,10 +112,18 @@ public static class ReplayReader
             return null;
         }
 
-        byte[] block = new byte[length];
-        stream.ReadExactly(block);
+        byte[] block = ArrayPool<byte>.Shared.Rent((int)length);
+        try
+        {
+            stream.ReadExactly(block.AsSpan(0, (int)length));
+        }
+        catch
+        {
+            ArrayPool<byte>.Shared.Return(block);
+            throw;
+        }
 
-        return block;
+        return (block, (int)length);
     }
 
     [Conditional("DEBUG")]
@@ -76,16 +132,16 @@ public static class ReplayReader
         byte[] a = [(byte)'a'];
         byte[] bc = "{}"u8.ToArray();
 
-        ReplayBlocks one = Read(Replay(MAGIC, a));
-        Debug.Assert(one.Header.SequenceEqual(a) && one.Results is null);
+        using ReplayBlocks one = Read(Replay(MAGIC, a));
+        Debug.Assert(one.Header.Span.SequenceEqual(a) && one.Results.IsEmpty);
 
-        ReplayBlocks two = Read(Replay(MAGIC, a, bc));
-        Debug.Assert(two.Header.SequenceEqual(a) && two.Results!.SequenceEqual(bc));
+        using ReplayBlocks two = Read(Replay(MAGIC, a, bc));
+        Debug.Assert(two.Header.Span.SequenceEqual(a) && two.Results.Span.SequenceEqual(bc));
 
         // Block 2 is never returned, and not read either: the position stays right behind block 1.
         MemoryStream three = Replay(MAGIC, a, bc, [1, 2, 3]);
-        ReplayBlocks threeBlocks = Read(three);
-        Debug.Assert(threeBlocks.Results!.SequenceEqual(bc) && three.Position == 8 + 4 + a.Length + 4 + bc.Length);
+        using ReplayBlocks threeBlocks = Read(three);
+        Debug.Assert(threeBlocks.Results.Span.SequenceEqual(bc) && three.Position == 8 + 4 + a.Length + 4 + bc.Length);
 
         Debug.Assert(Throws(Replay(0xDEADBEEF, a)));
         Debug.Assert(Throws(new MemoryStream(BitConverter.GetBytes(MAGIC)))); // no count
@@ -98,12 +154,28 @@ public static class ReplayReader
 
         MemoryStream resultsTooLong = Replay(MAGIC, a, bc);
         BinaryPrimitives.WriteUInt32LittleEndian(resultsTooLong.GetBuffer().AsSpan(8 + 4 + a.Length), 99);
-        ReplayBlocks damaged = Read(resultsTooLong);
-        Debug.Assert(damaged.Header.SequenceEqual(a) && damaged.Results is null);
+        using ReplayBlocks damaged = Read(resultsTooLong);
+        Debug.Assert(damaged.Header.Span.SequenceEqual(a) && damaged.Results.IsEmpty);
 
         MemoryStream lengthMissing = Replay(MAGIC, a, bc);
         lengthMissing.SetLength(8 + 4 + a.Length + 2); // the count says 2, block 1 has half a length field
-        Debug.Assert(Read(lengthMissing).Results is null);
+        using ReplayBlocks missing = Read(lengthMissing);
+        Debug.Assert(missing.Results.IsEmpty);
+
+        // Pooled path: the buffer is longer than the block, and a recycled (dirty) buffer of the same bucket must not leak into a shorter block.
+        // 100 and 99 bytes both rent from the 128-byte bucket, so the second read gets the first one's buffers back (on the same thread).
+        byte[] big = new byte[100];
+        Array.Fill(big, (byte)'x');
+        byte[] shorter = new byte[99];
+        Array.Fill(shorter, (byte)'y');
+        using (ReplayBlocks first = Read(Replay(MAGIC, big, big)))
+        {
+            Debug.Assert(first.Header.Length == 100 && first.Results.Length == 100);
+        }
+
+        using ReplayBlocks second = Read(Replay(MAGIC, shorter, shorter));
+        Debug.Assert(second.Header.Length == 99 && second.Results.Length == 99);
+        Debug.Assert(second.Header.Span.SequenceEqual(shorter) && second.Results.Span.SequenceEqual(shorter));
 
         static bool Throws(Stream stream)
         {

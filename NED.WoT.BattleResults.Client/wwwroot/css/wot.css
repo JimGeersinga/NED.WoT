@@ -129,13 +129,6 @@ body {
     justify-self: end;
 }
 
-.wot-ratio-value > svg {
-    width: 16px;
-    height: 16px;
-    fill: currentColor;
-    margin-left: -2px;
-}
-
 /* The account menu (ported from WoT HQ's UserMenu): the square initials avatar, the name and role, the emblem. */
 .wot-avatar {
     width: 32px;
