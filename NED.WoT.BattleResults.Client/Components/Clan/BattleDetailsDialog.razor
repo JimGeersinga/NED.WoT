@@ -9,8 +9,8 @@
 			Team first = Report.OwnTeam ?? Report.Team1;
 			Team second = first == Report.Team1 ? Report.Team2 : Report.Team1;
 		}
-		<MudStack Spacing="3" Class="pb-3">
-			<MudStack Row Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="3" Class="flex-wrap">
+		<MudStack Row AlignItems="AlignItems.Stretch" Spacing="3" Class="pb-3">
+			<MudStack Row Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="3" Class="flex-wrap" Style="flex: 1 1 0; min-width: 0;">
 				@TeamCard(first)
 				@if (Report.HasScore)
 				{
@@ -22,17 +22,13 @@
 				}
 				@TeamCard(second)
 			</MudStack>
-			<MudStack Row AlignItems="AlignItems.Center" Justify="Justify.Center" Spacing="3">
-				<MudText Typo="Typo.body2" Class="mud-text-secondary">
-					<b>@Report.MapName</b> · @Report.MatchStart.ToString("dd-MM-yyyy") · @Report.MatchStart.ToString("HH:mm")@(Report.MatchEnd is { } end ? $"–{end:HH:mm}" : null)@(Report.MatchDuration.HasValue ? " · " : null)@Report.MatchDurationDisplay
-				</MudText>
-				@if (_canToggleBattleStats)
-				{
-					<button type="button" class="gl-imgbtn gl-icon-only gl-book" style="height: 28px; width: 32px;" aria-pressed="@(_showBattleStats ? "true" : "false")" aria-label="Statistieken" title="Uitgebreide statistieken&#10;▲ hoog · ▬ gemiddeld · ▼ laag&#10;Geraakt: ≤ 50% laag, ≥ 70% hoog&#10;Gepenetreerd: ≤ 55% laag, ≥ 70% hoog&#10;Geblokt: ≥ 25% hoog" @onclick="() => _showBattleStats = !_showBattleStats">
-						<img src="@(_showBattleStats ? "images/book-open.png" : "images/book-closed.png")" alt="" style="width: 22px; height: 22px;" />
-					</button>
-				}
-			</MudStack>
+			@if (_canToggleBattleStats)
+			{
+				@* The main page's stats button (BattleFilterBar), stretched to the height of the card row. *@
+				<MudIconButton Variant="Variant.Outlined" Color="@(_showBattleStats ? Color.Primary : Color.Default)" Class="filter-tool-button stats-book-button" Style="height: auto;" aria-pressed="@(_showBattleStats ? "true" : "false")" aria-label="Statistieken" title="@StatsTooltip" OnClick="() => _showBattleStats = !_showBattleStats">
+					<img src="@(_showBattleStats ? "images/book-open.png" : "images/book-closed.png")" alt="" />
+				</MudIconButton>
+			}
 		</MudStack>
 		<Details Report="Report" ShowBattleStats="_showBattleStats" ExpandTeams="true" />
 	</DialogContent>
@@ -72,13 +68,18 @@
 						@(clan is not null ? clan.Name + " · " : null)@(team == Report.OwnTeam ? "jouw clan" : "tegenstander")
 					</MudText>
 				</MudStack>
-				<MudStack Spacing="1" AlignItems="AlignItems.End">
-					<span class="wot-chip-flush"><ResultChip Result="team.Result" /></span>
-					@if (clan?.Rank is { } rank)
-					{
-						<MudText Typo="Typo.caption" Class="mud-text-secondary">Rang @rank</MudText>
-					}
-				</MudStack>
+				<span class="wot-chip-flush"><ResultChip Result="team.Result" /></span>
+				@if (clan?.Rating is { } rating)
+				{
+					<MudStack Spacing="0" Style="text-align: right;">
+						<MudText Typo="Typo.overline" Class="mud-text-secondary">Clanrating</MudText>
+						<MudText Style="font: 700 30px/1.1 var(--wot-font-display); font-variant-numeric: tabular-nums;">@NumberFormat.Fmt(rating)</MudText>
+						@if (clan.Rank is { } rank)
+						{
+							<MudText Typo="Typo.caption" Class="mud-text-secondary">Rang @rank</MudText>
+						}
+					</MudStack>
+				}
 			</MudStack>
 		</MudPaper>
 	</a>;
@@ -88,17 +89,17 @@
 	private bool _canToggleBattleStats;
 	private bool _showBattleStats;
 
-	// Map, date and score, own team first as in the clan match dialog.
-	private string Title
+	/// <summary>The tooltip of the stats book (same text as BattleFilterBar): a title attribute on a component needs a real newline.</summary>
+	private const string StatsTooltip = "Uitgebreide statistieken\n▲ hoog · ▬ gemiddeld · ▼ laag\nGeraakt: ≤ 50% laag, ≥ 70% hoog\nGepenetreerd: ≤ 55% laag, ≥ 70% hoog\nGeblokt: ≥ 25% hoog";
+
+	// Map, date, start–end time and duration: "Ensk · 04-04-2026 · 21:45–21:48 · 2m 20s".
+	private string Title => string.Join(" · ", new[]
 	{
-		get
-		{
-			Team first = Report.OwnTeam ?? Report.Team1;
-			Team second = first == Report.Team1 ? Report.Team2 : Report.Team1;
-			string score = Report.HasScore ? $"{Report.Destroyed(first)} – {Report.Destroyed(second)}" : "–";
-			return $"{Report.MapName} · {Report.MatchTimeDisplay} · {score}";
-		}
-	}
+		Report.MapName,
+		Report.MatchStart.ToString("dd-MM-yyyy"),
+		Report.MatchStart.ToString("HH:mm") + (Report.MatchEnd is { } end ? $"–{end:HH:mm}" : null),
+		Report.MatchDuration.HasValue ? Report.MatchDurationDisplay.ToString() : null,
+	}.Where(x => !string.IsNullOrEmpty(x)));
 
 	// Same claim as Index; the stats columns start off.
 	protected override async Task OnInitializedAsync()
