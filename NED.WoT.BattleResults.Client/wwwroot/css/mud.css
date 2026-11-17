@@ -406,6 +406,8 @@ a.wot-clan-card[href]:focus-visible > .mud-paper { border-color: var(--mud-palet
 .mud-table.clan-match-table .mud-table-body .mud-table-row.wot-row-active > .mud-table-cell:first-child { box-shadow: inset 2px 0 0 var(--mud-palette-primary); }
 /* The row button (Datum cell) is the keyboard target: reset the look only, so the :focus-visible ring of wot.css stays. */
 /* The month group header: the whole cell is the button. */
+/* A right-aligned header (Map, PR): the sort arrow goes left of the text, so the text ends at the cell's right edge, above the right-aligned values. */
+.mud-table.clan-match-table th.wot-th-end .mud-table-sort-label { flex-direction: row-reverse; }
 .mud-table.clan-match-table .wot-month-th { padding: 0; }
 .mud-table.clan-match-table .wot-row-btn.wot-month-btn { display: block; width: 100%; padding: 8px 16px; cursor: pointer; }
 .mud-table.clan-match-table .wot-row-btn.wot-month-btn:hover { background: var(--mud-palette-table-hover); }

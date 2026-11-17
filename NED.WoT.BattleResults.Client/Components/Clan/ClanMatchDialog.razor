@@ -99,7 +99,7 @@
 				<MudTableSortLabel SortBy="new Func<IGrouping<string?, Player>, object>(x => x.Key ?? string.Empty)">Speler</MudTableSortLabel>
 			</MudTh>
 			<MudTh>Tanks</MudTh>
-			<MudTh Style="text-align: right" title="Persoonlijke rating (Wargaming)">
+			<MudTh Class="wot-th-end" Style="text-align: right" title="Persoonlijke rating (Wargaming)">
 				<MudTableSortLabel SortBy="new Func<IGrouping<string?, Player>, object>(x => RatingOf(x.Key)?.PersonalRating ?? -1)">PR</MudTableSortLabel>
 			</MudTh>
 			<MudTh Style="text-align: right; width: 112px" title="World of Tanks Rating">
@@ -224,7 +224,7 @@
 			<MudTh Style="text-align: right">
 				<MudTableSortLabel SortBy="new Func<BattleReport, object?>(x => x.MatchDuration)">Duur</MudTableSortLabel>
 			</MudTh>
-			<MudTh>
+			<MudTh Class="wot-th-end" Style="text-align: right">
 				<MudTableSortLabel SortBy="new Func<BattleReport, object>(x => x.MapName ?? string.Empty)">Map</MudTableSortLabel>
 			</MudTh>
 			<MudTh Style="text-align: center">Score</MudTh>
