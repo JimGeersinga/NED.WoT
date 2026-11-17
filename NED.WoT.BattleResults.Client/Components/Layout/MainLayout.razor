@@ -124,7 +124,7 @@
                 FullWidth = true,
                 BackdropClick = false,
                 CloseOnEscapeKey = canCancel,
-                CloseButton = false
+                CloseButton = canCancel
             });
 
         _ = RenderWhenClosedAsync(dialog);
@@ -145,7 +145,7 @@
                 FullWidth = true,
                 BackdropClick = false,
                 CloseOnEscapeKey = true,
-                CloseButton = false
+                CloseButton = true
             });
     }
 }

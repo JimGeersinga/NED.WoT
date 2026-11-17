@@ -39,6 +39,7 @@ public static class WotTheme
             TextSecondary = "#a2abb5",
             TextDisabled = "#5d6670",
             ActionDefault = "#a2abb5",
+            HoverOpacity = 0.12, // MudBlazor's 0.06 is as faint as TableHover, so a button in a hovered row showed no hover
             ActionDisabled = "#4f5761",
             ActionDisabledBackground = "#262c33",
             Divider = "#2a3139",
@@ -75,8 +76,8 @@ public static class WotTheme
         },
         Shadows = new MudBlazor.Shadow
         {
-            // MudBlazor indexes 0..25: none, then a 1px hairline for every elevation 1-25; the real shadow is on dialogs and popovers only (wwwroot/css/mud.css).
-            Elevation = ["none", .. Enumerable.Repeat("0 0 0 1px rgba(255,255,255,.06)", 25)],
+            // MudBlazor indexes 0..25: 0 none, 8 the popover shadow (menus, selects, pickers), 24 the dialog shadow, every other index the 1px hairline.
+            Elevation = [.. Enumerable.Range(0, 26).Select(i => i switch { 0 => "none", 8 => "0 16px 40px rgba(0,0,0,.55)", 24 => "0 24px 56px rgba(0,0,0,.6)", _ => "0 0 0 1px rgba(255,255,255,.06)" })],
         },
     };
 

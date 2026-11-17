@@ -233,15 +233,3 @@ html, body {
     outline: 2px solid var(--wot-error-bar-text);
     outline-offset: 2px;
 }
-
-.Win {
-    color: var(--mud-palette-success) !important;
-}
-
-.Lose {
-    color: var(--mud-palette-error) !important;
-}
-
-.Draw {
-    color: var(--mud-palette-warning) !important;
-}

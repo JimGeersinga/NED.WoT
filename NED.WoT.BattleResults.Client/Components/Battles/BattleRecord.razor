@@ -15,6 +15,6 @@
     public bool ShowIcons { get; set; }
 
     private RenderFragment Icon(string path) => ShowIcons
-        ? @<svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)path)</svg>
+        ? @<MudIcon Icon="@path" aria-hidden="true" />
         : @<text></text>;
 }

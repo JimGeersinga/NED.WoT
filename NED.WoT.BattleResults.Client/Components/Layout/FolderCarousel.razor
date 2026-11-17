@@ -15,66 +15,52 @@
 	ReplayFolder folder = folders[current];
 	int previous = Wrap(current - 1, count);
 	int next = Wrap(current + 1, count);
-	<nav class="@("car" + (count == 1 ? " car-1" : string.Empty))" aria-label="Replaymappen">
+	<nav class="@("folder-carousel" + (count == 1 ? " folder-carousel-single" : string.Empty))" aria-label="Replaymappen">
 		@if (count > 1)
 		{
-			<button type="button" class="nv" aria-label="@($"Vorige map: {folders[previous].Title}")" title="Vorige map" @onclick="() => SelectAsync(previous)">
-				<MudIcon Icon="@Icons.Material.Filled.ChevronLeft" />
-			</button>
-			<button type="button" class="side" tabindex="-1" aria-hidden="true" title="@folders[previous].Title" @onclick="() => SelectAsync(previous)">@folders[previous].Title</button>
+			<MudIconButton Icon="@Icons.Material.Filled.ChevronLeft" Class="folder-carousel-arrow" aria-label="@($"Vorige map: {folders[previous].Title}")" title="Vorige map" OnClick="() => SelectAsync(previous)" />
+			<MudButton Variant="Variant.Text" Class="folder-carousel-neighbour" tabindex="-1" aria-hidden="true" title="@folders[previous].Title" OnClick="() => SelectAsync(previous)">@folders[previous].Title</MudButton>
 		}
-		<MudMenu @bind-Open="_open" Class="wot-car-menu" PopoverClass="wot-folder-pop" AnchorOrigin="Origin.BottomCenter" TransformOrigin="Origin.TopCenter">
+		<MudMenu @ref="_menu" Open="_open" OpenChanged="OnOpenChanged" Class="folder-carousel-menu" PopoverClass="folder-menu-popover" AnchorOrigin="Origin.BottomCenter" TransformOrigin="Origin.TopCenter">
 			<ActivatorContent>
-				<button type="button" class="mid" aria-haspopup="menu" aria-expanded="@(_open ? "true" : "false")" aria-live="polite" title="@folder.Path" @ref="_mid" @onclick="() => context.ToggleAsync()">
-					<span class="ttl"><MudIcon Icon="@Icons.Material.Filled.FolderOpen" /><span class="t">@folder.Title</span></span>
+				<MudButton Variant="Variant.Text" Class="folder-carousel-current" @ref="_title" OnClick="@context.ToggleAsync" aria-live="polite" title="@folder.Path">
+					<span class="folder-carousel-title"><MudIcon Icon="@Icons.Material.Filled.FolderOpen" /><span class="folder-carousel-title-text">@folder.Title</span></span>
 					@if (count > 1)
 					{
-						<span class="dots" role="img" aria-label="@($"Map {current + 1} van {count}")">
+						<span class="folder-carousel-dots" role="img" aria-label="@($"Map {current + 1} van {count}")">
 							@for (int i = 0; i < count; i++)
 							{
-								<i class="@(i == current ? "on" : null)"></i>
+								<i class="@(i == current ? "folder-carousel-dot-current" : null)"></i>
 							}
 						</span>
 					}
-				</button>
+				</MudButton>
 			</ActivatorContent>
 			<ChildContent>
-				@if (_open)
+				@for (int i = 0; i < count; i++)
 				{
-					<div role="menu" aria-label="Replaymappen">
-						@for (int i = 0; i < count; i++)
+					int index = i;
+					ReplayFolder item = folders[i];
+					int? battles = Reports.GetBattleCount(item);
+					<MudMenuItem Icon="@Icons.Material.Filled.Check" IconColor="@(index == current ? Color.Primary : Color.Transparent)" role="menuitemradio" aria-checked="@(index == current ? "true" : "false")" OnClick="() => PickAsync(index)">
+						<span class="folder-menu-item-text">
+							<span class="folder-menu-item-title">@item.Title</span>
+							<span class="folder-menu-item-path" title="@item.Path"><bdo dir="ltr">@item.Path</bdo></span>
+						</span>
+						@if (battles is not null)
 						{
-							int index = i;
-							ReplayFolder item = folders[i];
-							int? battles = Reports.GetBattleCount(item);
-							<button type="button" role="menuitemradio" class="fm-row" aria-checked="@(index == current ? "true" : "false")" @ref="_rows[index]"
-									@onclick="() => PickAsync(index)" @onkeydown="e => Key(e, index)">
-								<MudIcon Icon="@Icons.Material.Filled.Check" Class="fm-check" />
-								<span class="fm-text">
-									<span class="fm-title">@item.Title</span>
-									<span class="fm-path" title="@item.Path"><bdo dir="ltr">@item.Path</bdo></span>
-								</span>
-								@if (battles is not null)
-								{
-									<span class="gl-chip" aria-label="@($"{battles} gevechten")">@battles</span>
-								}
-							</button>
+							<MudChip T="string" Size="Size.Small" Variant="Variant.Text" aria-label="@($"{battles} gevechten")">@battles</MudChip>
 						}
-						<div class="fm-div" role="separator"></div>
-						<button type="button" role="menuitem" class="fm-row fm-manage" @ref="_rows[count]" @onclick="ManageAsync" @onkeydown="e => Key(e, count)">
-							<MudIcon Icon="@Icons.Material.Filled.Tune" />
-							<span class="fm-title">Mappen beheren</span>
-						</button>
-					</div>
+					</MudMenuItem>
 				}
+				<MudDivider />
+				<MudMenuItem Icon="@Icons.Material.Filled.Tune" OnClick="ManageAsync">Mappen beheren</MudMenuItem>
 			</ChildContent>
 		</MudMenu>
 		@if (count > 1)
 		{
-			<button type="button" class="side" tabindex="-1" aria-hidden="true" title="@folders[next].Title" @onclick="() => SelectAsync(next)">@folders[next].Title</button>
-			<button type="button" class="nv" aria-label="@($"Volgende map: {folders[next].Title}")" title="Volgende map" @onclick="() => SelectAsync(next)">
-				<MudIcon Icon="@Icons.Material.Filled.ChevronRight" />
-			</button>
+			<MudButton Variant="Variant.Text" Class="folder-carousel-neighbour" tabindex="-1" aria-hidden="true" title="@folders[next].Title" OnClick="() => SelectAsync(next)">@folders[next].Title</MudButton>
+			<MudIconButton Icon="@Icons.Material.Filled.ChevronRight" Class="folder-carousel-arrow" aria-label="@($"Volgende map: {folders[next].Title}")" title="Volgende map" OnClick="() => SelectAsync(next)" />
 		}
 	</nav>
 }
@@ -85,9 +71,9 @@
 	public EventCallback OnManage { get; set; }
 
 	private bool _open;
-	private ElementReference _mid;
-	private bool _focused;
-	private readonly Dictionary<int, ElementReference> _rows = [];
+	private MudMenu? _menu;
+	private bool _managing;
+	private MudButton? _title;
 
 	protected override void OnInitialized()
 	{
@@ -111,46 +97,28 @@
 
 	private Task SelectAsync(int index) => Reports.SelectFolderAsync(index);
 
-	/// <summary>A row of the menu: the menu closes and the focus returns to the title that opened it (the row is gone with the menu).</summary>
+	/// <summary>MudMenu closes on Escape and after a pick but leaves the focus on the page: it returns to the current title (not for "Mappen beheren": the dialog takes it).</summary>
+	private async Task OnOpenChanged(bool open)
+	{
+		_open = open;
+		bool managing = _managing;
+		_managing = false;
+		if (!open && !managing)
+		{
+			await _title!.FocusAsync();
+		}
+	}
+
+	/// <summary>MudMenuItem awaits OnClick before it closes the menu: close first, so the menu does not wait for the folder to load.</summary>
 	private async Task PickAsync(int index)
 	{
-		_open = false;
-		await _mid.FocusAsync();
-		await Reports.SelectFolderAsync(index);
+		await _menu!.CloseMenuAsync();
+		await SelectAsync(index);
 	}
 
-	private async Task ManageAsync()
+	private Task ManageAsync()
 	{
-		_open = false;
-		await OnManage.InvokeAsync();
-	}
-
-	/// <summary>Arrow keys move through the rows of the menu, Escape closes it (the popover is outside the page, so MudMenu does not hear the keys of these rows).</summary>
-	private async Task Key(KeyboardEventArgs e, int index)
-	{
-		int rows = SettingService.Settings.ReplayFolders.Count + 1;
-		if (e.Key == "Escape")
-		{
-			_open = false;
-			await _mid.FocusAsync();
-		}
-		else if (e.Key is "ArrowDown" or "ArrowUp")
-		{
-			await _rows[Wrap(index + (e.Key == "ArrowDown" ? 1 : -1), rows)].FocusAsync();
-		}
-	}
-
-	/// <summary>When the menu opens, the focus goes to the current folder's row.</summary>
-	protected override async Task OnAfterRenderAsync(bool firstRender)
-	{
-		if (!_open)
-		{
-			_focused = false;
-		}
-		else if (!_focused && _rows.TryGetValue(Reports.CurrentFolder, out ElementReference row) && row.Context is not null)
-		{
-			_focused = true;
-			await row.FocusAsync();
-		}
+		_managing = true;
+		return OnManage.InvokeAsync();
 	}
 }

@@ -11,7 +11,7 @@
     <DataAnnotationsValidator />
     <MudDialog Class="wot-dialog overflow-hidden" ContentClass="overflow-y-auto" TitleClass="wot-dialog-bar" Style="max-width: 760px">
         <TitleContent>
-            <WotDialogTitle Dialog="MudDialog" Icon="@Icons.Material.Outlined.Settings" Title="Instellingen" Closable="CanCancel" />
+            <WotDialogTitle Icon="@Icons.Material.Outlined.Settings" Title="Instellingen" />
         </TitleContent>
         <DialogContent>
             <MudStack Spacing="3" Class="pt-2">
@@ -24,22 +24,16 @@
                     {
                         int index = modal.ReplayFolders.IndexOf(folder);
                         string name = string.IsNullOrWhiteSpace(folder.Title) ? "nieuwe map" : folder.Title;
-                        <div @key="folder" role="group" aria-label="@($"Map {index + 1}")" class="fr">
+                        <div @key="folder" role="group" aria-label="@($"Map {index + 1}")" class="replay-folder-row">
                             <MudTextField Label="Titel" Variant="Variant.Filled"
                                           @bind-Value="folder.Title" For="(() => folder.Title)" />
                             <MudTextField Label="Pad" Variant="Variant.Filled" Placeholder="C:\Games\World_of_Tanks_EU\replays"
                                           Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.FolderOpen"
                                           AdornmentAriaLabel="@($"Kies map voor {name}")" OnAdornmentClick="() => PickFolder(folder)"
                                           @bind-Value="folder.Path" For="(() => folder.Path)" />
-                            <button type="button" class="gl-ibtn" aria-label="@($"{name} omhoog")" disabled="@(index == 0)" @onclick="() => Move(folder, -1)">
-                                <svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Outlined.ArrowUpward)</svg>
-                            </button>
-                            <button type="button" class="gl-ibtn" aria-label="@($"{name} omlaag")" disabled="@(index == modal.ReplayFolders.Count - 1)" @onclick="() => Move(folder, 1)">
-                                <svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Outlined.ArrowDownward)</svg>
-                            </button>
-                            <button type="button" class="gl-ibtn" aria-label="@($"{name} verwijderen")" disabled="@(modal.ReplayFolders.Count == 1)" @onclick="() => Remove(folder)">
-                                <svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)Icons.Material.Outlined.Delete)</svg>
-                            </button>
+                            <MudIconButton Icon="@Icons.Material.Outlined.ArrowUpward" Disabled="@(index == 0)" OnClick="() => Move(folder, -1)" aria-label="@($"{name} omhoog")" />
+                            <MudIconButton Icon="@Icons.Material.Outlined.ArrowDownward" Disabled="@(index == modal.ReplayFolders.Count - 1)" OnClick="() => Move(folder, 1)" aria-label="@($"{name} omlaag")" />
+                            <MudIconButton Icon="@Icons.Material.Outlined.Delete" Disabled="@(modal.ReplayFolders.Count == 1)" OnClick="() => Remove(folder)" aria-label="@($"{name} verwijderen")" />
                         </div>
                     }
                 </MudStack>
