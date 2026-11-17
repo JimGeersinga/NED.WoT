@@ -19,18 +19,18 @@
 				<MudText Typo="Typo.h6" HtmlTag="span" Class="mud-text-secondary">vs</MudText>
 				@TeamHead(second)
 			</MudStack>
-			<MudText Typo="Typo.body2" Class="mud-text-secondary">
-				<b>@Report.MapName</b> · @Report.MatchStart.ToString("dd-MM-yyyy") · @Report.MatchStart.ToString("HH:mm")@(Report.MatchEnd is { } end ? $"–{end:HH:mm}" : null)@(Report.MatchDuration.HasValue ? " · " : null)@Report.MatchDurationDisplay
-			</MudText>
+			<MudStack Row AlignItems="AlignItems.Center" Spacing="3">
+				<MudText Typo="Typo.body2" Class="mud-text-secondary">
+					<b>@Report.MapName</b> · @Report.MatchStart.ToString("dd-MM-yyyy") · @Report.MatchStart.ToString("HH:mm")@(Report.MatchEnd is { } end ? $"–{end:HH:mm}" : null)@(Report.MatchDuration.HasValue ? " · " : null)@Report.MatchDurationDisplay
+				</MudText>
+				@if (_canToggleBattleStats)
+				{
+					<button type="button" class="gl-imgbtn gl-icon-only gl-book" style="height: 28px; width: 32px;" aria-pressed="@(_showBattleStats ? "true" : "false")" aria-label="Statistieken" title="Uitgebreide statistieken&#10;▲ hoog · ▬ gemiddeld · ▼ laag&#10;Geraakt: ≤ 50% laag, ≥ 70% hoog&#10;Gepenetreerd: ≤ 55% laag, ≥ 70% hoog&#10;Geblokt: ≥ 25% hoog" @onclick="() => _showBattleStats = !_showBattleStats">
+						<img src="@(_showBattleStats ? "images/book-open.png" : "images/book-closed.png")" alt="" style="width: 22px; height: 22px;" />
+					</button>
+				}
+			</MudStack>
 		</MudStack>
-		@if (_canToggleBattleStats)
-		{
-			<div class="d-flex justify-end pb-2">
-				<button type="button" class="gl-imgbtn gl-icon-only gl-book" style="height: 28px; width: 32px;" aria-pressed="@(_showBattleStats ? "true" : "false")" aria-label="Statistieken" title="Uitgebreide statistieken&#10;▲ hoog · ▬ gemiddeld · ▼ laag&#10;Geraakt: ≤ 50% laag, ≥ 70% hoog&#10;Gepenetreerd: ≤ 55% laag, ≥ 70% hoog&#10;Geblokt: ≥ 25% hoog" @onclick="() => _showBattleStats = !_showBattleStats">
-					<img src="@(_showBattleStats ? "images/book-open.png" : "images/book-closed.png")" alt="" style="width: 22px; height: 22px;" />
-				</button>
-			</div>
-		}
 		<Details Report="Report" ShowBattleStats="_showBattleStats" ExpandTeams="true" />
 	</DialogContent>
 	<DialogActions>
@@ -48,9 +48,21 @@
 	[Parameter]
 	public required BattleReport Report { get; set; }
 
+	/// <summary>The clan ratings the clan match dialog already fetched (emblem, rank); null while they are missing or failed: the header then shows the tag only.</summary>
+	[Parameter]
+	public IReadOnlyDictionary<string, ClanRating>? Clans { get; set; }
+
 	private RenderFragment TeamHead(Team team) => @<span class="d-inline-flex align-center gap-2">
+		@if (team.Abbreviation is { } tag && Clans is not null && Clans.TryGetValue(tag, out ClanRating? clan) && clan.EmblemUrl is { } emblem)
+		{
+			<img src="@emblem" alt="" width="28" height="28" />
+		}
 		<a class="@BattleRow.TagClass(team, team == Report.OwnTeam, false)" href="@team.ClanUrl" target="_blank" rel="noopener" title="@(team.ClanUrl is null ? null : "Open de clanpagina")"><span class="tag-t">@(team.Abbreviation ?? "?")</span></a>
 		<ResultChip Result="team.Result" />
+		@if (team.Abbreviation is { } t && Clans is not null && Clans.TryGetValue(t, out ClanRating? rated) && rated.Rank is { } rank)
+		{
+			<MudText Typo="Typo.caption" Class="mud-text-secondary">Rang @rank</MudText>
+		}
 	</span>;
 
 	private RenderFragment Count(Team team) => @<text>@if (team.Result is Result.Win) { <b>@Report.Destroyed(team)</b> } else { <span>@Report.Destroyed(team)</span> }</text>;

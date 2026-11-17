@@ -431,7 +431,7 @@
 
 	// Stacked on top of this dialog; Esc closes only the top one.
 	private Task OpenBattle(BattleReport report) => DialogService.ShowAsync<BattleDetailsDialog>(string.Empty,
-		new DialogParameters<BattleDetailsDialog> { { x => x.Report, report } },
+		new DialogParameters<BattleDetailsDialog> { { x => x.Report, report }, { x => x.Clans, _state is RatingState.Ok ? _clans : null } },
 		new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, MaxWidth = MaxWidth.False });
 
 	void Cancel() => MudDialog.Close(DialogResult.Ok(true));
