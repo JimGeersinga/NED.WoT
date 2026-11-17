@@ -491,6 +491,8 @@ a.wot-clan-card[href]:focus-visible > .mud-paper { border-color: var(--mud-palet
 @media (prefers-reduced-motion: reduce) { .wot-battle-table > .mud-table-container > .mud-table-root > tbody > tr.gl-row.gl-new > .mud-table-cell { animation: none; background-color: color-mix(in srgb, var(--mud-palette-text-primary) 16%, transparent); } }
 
 .wot-battle-table > .mud-table-container > .mud-table-root > :is(thead, tbody, tfoot) > tr > .mud-table-cell.p4 { padding: 0 4px; text-align: center; }
+/* The row's right-click menus open at the cursor; out of the flow, they don't push the copy button off the day header's. */
+.wot-battle-table > .mud-table-container > .mud-table-root > tbody > tr > .mud-table-cell.p4 > .mud-menu { position: absolute; }
 .wot-battle-table > .mud-table-container > .mud-table-root > :is(thead, tbody, tfoot) > tr > .mud-table-cell.c { text-align: center; }
 .wot-battle-table > .mud-table-container > .mud-table-root > :is(thead, tbody, tfoot) > tr > .mud-table-cell.s { padding: 0 8px; }
 .wot-battle-table > .mud-table-container > .mud-table-root > :is(thead, tbody, tfoot) > tr > .mud-table-cell.r { text-align: right; }
@@ -659,6 +661,10 @@ a.wot-clan-card[href]:focus-visible > .mud-paper { border-color: var(--mud-palet
 }
 
 .wot-menu .mud-menu-item > p { margin: 0; }
+
+/* An outlined icon button in the default colour gets the inputs' grey edge, not MudBlazor's text-coloured one; on hover the edge lightens with the background. */
+.mud-icon-button.mud-button-outlined-default:not(:disabled) { border-color: var(--mud-palette-lines-inputs); }
+.mud-icon-button.mud-button-outlined-default:not(:disabled):hover { border-color: var(--mud-palette-text-secondary); }
 
 /* MudIconButton (the tool buttons of the filter bar: the stats book, the clan members, the unknown names; game art inside). */
 .mud-icon-button.filter-tool-button img { width: 28px; height: 28px; object-fit: contain; }
