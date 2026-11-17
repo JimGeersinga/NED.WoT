@@ -27,10 +27,12 @@
 			</MudStack>
 			@if (_canToggleBattleStats)
 			{
-				@* The main page's stats button (BattleFilterBar): a square as high as the card row (stretch + aspect-ratio), the book scaled to 65% of it. *@
-				<MudIconButton Variant="Variant.Outlined" Color="@(_showBattleStats ? Color.Primary : Color.Default)" Class="filter-tool-button stats-book-button" Style="flex: none; align-self: stretch; height: auto; aspect-ratio: 1; padding: 0;" aria-pressed="@(_showBattleStats ? "true" : "false")" aria-label="Statistieken" title="@StatsTooltip" OnClick="() => _showBattleStats = !_showBattleStats">
-					<img src="@(_showBattleStats ? "images/book-open.png" : "images/book-closed.png")" alt="" style="width: 65%; height: 65%; max-width: none; max-height: 65%; object-fit: contain;" />
-				</MudIconButton>
+				@* The main page's stats button (BattleFilterBar) as a third card: the wrapper is as high as the card row and 120px wide; the button fills it (.wot-dlg-battle .stats-book-button, mud.css). *@
+				<div style="flex: none; align-self: stretch; width: 120px; display: flex;">
+					<MudIconButton Variant="Variant.Outlined" Color="@(_showBattleStats ? Color.Primary : Color.Default)" Class="filter-tool-button stats-book-button" aria-pressed="@(_showBattleStats ? "true" : "false")" aria-label="Statistieken" title="@StatsTooltip" OnClick="() => _showBattleStats = !_showBattleStats">
+						<img src="@(_showBattleStats ? "images/book-open.png" : "images/book-closed.png")" alt="" />
+					</MudIconButton>
+				</div>
 			}
 		</MudStack>
 		<Details Report="Report" ShowBattleStats="_showBattleStats" ExpandTeams="true" />
