@@ -683,8 +683,6 @@ a.wot-clan-card[href]:focus-visible > .mud-paper { border-color: var(--mud-palet
 .wot-dlg-battle .mud-icon-button.stats-book-button img { width: 65%; height: 65%; max-width: none; max-height: none; object-fit: contain; }
 /* The card row of the battle dialog is centred in the full width; the equal side padding keeps it clear of the stats slot (120px + gap) on the right. Global: the rule sits on a MudStack root, where scoped css is not reliable. */
 .wot-dlg-battle .wot-battle-head { position: relative; }
-/* Stats mode in the battle dialog: the count sits against the ratio on the right, not at the far left of the wide column (the main page keeps the count on the left, wot.css .wot-ratio-count). */
-.wot-dlg-battle .wot-ratio-count { justify-self: end; }
 .wot-dlg-battle .wot-battle-cards { flex: 1 1 0; min-width: 0; padding-inline: 132px; }
 
 /* "Jij" (Details.razor): a MudIcon, so the scoped Details.razor.css can't reach it. It hangs in the expander column, left of the # cell (a sticky cell, so it is the anchor). */

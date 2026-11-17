@@ -105,7 +105,7 @@ body {
     font-family: var(--wot-font-display);
 }
 
-/* Ratio cell of stats mode (RatioCell.razor): the count on the left, the ratio (or Detail) on the right with its level icon. The level colour is inline. */
+/* Ratio cell of stats mode (RatioCell.razor): the count on the right next to the ratio, the ratio (or Detail) on the right with its level icon. The level colour is inline. */
 .wot-ratio {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
@@ -115,7 +115,7 @@ body {
 }
 
 .wot-ratio-count {
-    justify-self: start;
+    justify-self: end;
 }
 
 .wot-ratio-value {
