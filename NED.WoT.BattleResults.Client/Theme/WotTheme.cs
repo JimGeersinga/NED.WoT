@@ -39,6 +39,7 @@ public static class WotTheme
             TextSecondary = "#a2abb5",
             TextDisabled = "#5d6670",
             ActionDefault = "#a2abb5",
+            HoverOpacity = 0.12, // MudBlazor's 0.06 is as faint as TableHover, so a button in a hovered row showed no hover
             ActionDisabled = "#4f5761",
             ActionDisabledBackground = "#262c33",
             Divider = "#2a3139",
