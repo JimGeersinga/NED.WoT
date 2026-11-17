@@ -1,0 +1,18 @@
+@* The stats book: the battle table's filter bar and the clan match's battle dialog show it. Class adds to the button's own classes. *@
+<MudIconButton Variant="Variant.Outlined" Color="@(Pressed ? Color.Primary : Color.Default)" Class="@(Class is null ? "filter-tool-button stats-book-button" : "filter-tool-button stats-book-button " + Class)" aria-pressed="@(Pressed ? "true" : "false")" aria-label="Statistieken" title="@Tooltip" OnClick="() => PressedChanged.InvokeAsync(!Pressed)">
+	<img src="@(Pressed ? "images/book-open.png" : "images/book-closed.png")" alt="" />
+</MudIconButton>
+
+@code {
+	/// <summary>The tooltip of the stats book: a title attribute on a component needs a real newline, not an HTML entity.</summary>
+	private const string Tooltip = "Uitgebreide statistieken\n▲ hoog · ▬ gemiddeld · ▼ laag\nGeraakt: ≤ 50% laag, ≥ 70% hoog\nGepenetreerd: ≤ 55% laag, ≥ 70% hoog\nGeblokt: ≥ 25% hoog";
+
+	[Parameter]
+	public bool Pressed { get; set; }
+
+	[Parameter]
+	public EventCallback<bool> PressedChanged { get; set; }
+
+	[Parameter]
+	public string? Class { get; set; }
+}

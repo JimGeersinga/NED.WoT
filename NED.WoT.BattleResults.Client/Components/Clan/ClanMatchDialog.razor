@@ -5,28 +5,20 @@
 @inject WargamingApiClient WargamingApi
 @inject IdentityService Identity
 @inject IBrowserViewportService ViewportService
+@inject IDialogService DialogService
 
-<MudDialog Class="wot-dialog overflow-hidden" ContentClass="overflow-y-auto" TitleClass="wot-dialog-bar">
+<MudDialog Class="wot-dialog wot-dlg-history overflow-hidden" ContentClass="overflow-y-auto" TitleClass="wot-dialog-bar">
 	<TitleContent>
-		<WotDialogTitle>
-			@if (Match.HasValue)
-			{
-				<MudStack Row Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="4">
-					<MudText Typo="Typo.h4" HtmlTag="span">[@Sides.Left]</MudText>
-					<MudText Typo="Typo.h5" HtmlTag="span" Class="mud-text-secondary">vs</MudText>
-					<MudText Typo="Typo.h4" HtmlTag="span">[@Sides.Right]</MudText>
-				</MudStack>
-			}
-		</WotDialogTitle>
+		<WotDialogTitle Title="Gevechtshistorie" />
 	</TitleContent>
 	<DialogContent>
 		@if (Match.HasValue)
 		{
 			<MudStack Spacing="4" Class="pt-2">
 				<MudStack Row Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="3" Class="flex-wrap">
-					@ClanCard(Sides.Left, OwnTag)
+					@ClanCardOf(Sides.Left, false)
 					<MudText Typo="Typo.h6" HtmlTag="span" Class="mud-text-secondary">vs</MudText>
-					@ClanCard(Sides.Right, OwnTag)
+					@ClanCardOf(Sides.Right, true)
 				</MudStack>
 				@if (_state is RatingState.Failed)
 				{
@@ -64,13 +56,13 @@
 				else
 				{
 					<MudGrid Spacing="4">
-						<MudItem xs="7">
+						<MudItem xs="6">
 							<MudPaper Outlined Elevation="0" Class="overflow-hidden">
 								<MudText Typo="Typo.h6" Class="px-4 py-3">@OpponentsTitle</MudText>
 								@Opponents
 							</MudPaper>
 						</MudItem>
-						<MudItem xs="5">
+						<MudItem xs="6">
 							<MudPaper Outlined Elevation="0" Class="overflow-hidden">
 								@PastHeading
 								@Past
@@ -98,84 +90,9 @@
 		}
 	</MudStack>;
 
-	private RenderFragment Opponents => @<MudTable Items="@_enemyPlayers" Class="clan-match-table" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Elevation="0">
-		<HeaderContent>
-			<MudTh Style="text-align: right; width: 1%; white-space: nowrap" title="Gevechten" aria-label="Gevechten">
-				<MudTableSortLabel InitialDirection="SortDirection.Descending" SortBy="new Func<IGrouping<string?, Player>, object>(x => x.Count())">#</MudTableSortLabel>
-			</MudTh>
-			<MudTh>
-				<MudTableSortLabel SortBy="new Func<IGrouping<string?, Player>, object>(x => x.Key ?? string.Empty)">Speler</MudTableSortLabel>
-			</MudTh>
-			<MudTh>Tanks</MudTh>
-			<MudTh Style="text-align: right" title="Persoonlijke rating (Wargaming)">
-				<MudTableSortLabel SortBy="new Func<IGrouping<string?, Player>, object>(x => RatingOf(x.Key)?.PersonalRating ?? -1)">PR</MudTableSortLabel>
-			</MudTh>
-			<MudTh Style="text-align: right; width: 112px" title="World of Tanks Rating">
-				<MudTableSortLabel SortBy="new Func<IGrouping<string?, Player>, object>(x => RatingOf(x.Key)?.Wtr ?? -1)">WTR</MudTableSortLabel>
-			</MudTh>
-		</HeaderContent>
-		<RowTemplate>
-			<MudTd DataLabel="Gevechten" Style="text-align: right; vertical-align: top;">@context.Count()</MudTd>
-			<MudTd DataLabel="Speler" Style="vertical-align: top;">@context.Key</MudTd>
-			<MudTd DataLabel="Tanks">
-				@foreach (var vehicle in context.GroupBy(x => x.Vehicle).OrderByDescending(x => x.Count()))
-				{
-					<div class="d-flex justify-space-between gap-3">
-						<span>@vehicle.Key</span>
-						<MudText Typo="Typo.body2" Class="mud-text-secondary">@((int)Math.Round(100.0 * vehicle.Count() / context.Count(), MidpointRounding.AwayFromZero))%</MudText>
-					</div>
-				}
-			</MudTd>
-			<MudTd DataLabel="PR" Style="text-align: right; vertical-align: top; font-variant-numeric: tabular-nums;">@PlayerRatingCell(context.Key)</MudTd>
-			<MudTd DataLabel="WTR" Style="text-align: right; vertical-align: top;">@WtrCell(context.Key)</MudTd>
-		</RowTemplate>
-	</MudTable>;
+	private RenderFragment Opponents => @<OpponentsTable Items="_enemyPlayers" Loading="_state is RatingState.Loading" Players="@(_state is RatingState.Ok ? _players : null)" />;
 
-	// Null while loading, on failure, for an unknown nickname; the sorts treat that as the lowest (-1).
-	private PlayerRating? RatingOf(string? name) => _state is RatingState.Ok && name is not null && _players.TryGetValue(name, out PlayerRating? rating) ? rating : null;
-
-	private RenderFragment WtrCell(string? name) => @<text>
-		@if (_state is RatingState.Loading)
-		{
-			<MudSkeleton Width="70px" Class="ml-auto" />
-		}
-		else if (_state is RatingState.Ok && name is not null && _players.TryGetValue(name, out PlayerRating? rating) && rating.Wtr is { } wtr)
-		{
-			string level = WtrLevel.Name(WtrLevel.Index(wtr));
-			<span class="gl-wtr">
-				<img src="@WtrLevel.IconPath(WtrLevel.Index(wtr))" alt="@level" title="@level" width="24" height="24" style="flex: none;" />
-				@NumberFormat.Fmt(wtr)
-			</span>
-		}
-		else
-		{
-			<span class="mud-text-secondary">–</span>
-		}
-	</text>;
-
-	private RenderFragment PlayerRatingCell(string? name) => @<text>
-		@if (_state is RatingState.Loading)
-		{
-			<MudSkeleton Width="48px" Class="ml-auto" />
-		}
-		else if (_state is RatingState.Ok && name is not null && _players.TryGetValue(name, out PlayerRating? rating) && rating.PersonalRating is { } pr)
-		{
-			@NumberFormat.Fmt(pr)
-		}
-		else if (_state is RatingState.Ok && name is not null && _players.TryGetValue(name, out PlayerRating? hidden) && hidden.StatsHidden)
-		{
-			<MudTooltip Text="Deze speler verbergt zijn statistieken, dus er is geen rating.">
-				<span class="d-inline-flex align-center gap-1 mud-text-secondary" aria-label="Deze speler verbergt zijn statistieken, dus er is geen rating.">–<MudIcon Icon="@Icons.Material.Outlined.VisibilityOff" Size="Size.Small" /></span>
-			</MudTooltip>
-		}
-		else
-		{
-			<span class="mud-text-secondary">–</span>
-		}
-	</text>;
-
-	// The design's rating value (ClanMatch board): display font, 700 30px/1.1, tabular figures.
-	private const string RatingValueStyle = "font: 700 30px/1.1 var(--wot-font-display); font-variant-numeric: tabular-nums;";
+	private RenderFragment Past => @<PastBattlesTable Items="_battles" Selected="_selected" OnToggle="Toggle" OnToggleMonth="ToggleMonth" OnOpen="OpenBattle" />;
 
 	// The clan page: the id from the rating lookup, else the id the battles carry for that tag; no link when neither is known.
 	private string? ClanPageUrl(string tag) =>
@@ -183,79 +100,30 @@
 			? url
 			: _battles.SelectMany(x => new[] { x.Team1, x.Team2 }).FirstOrDefault(x => x.ClanUrl is not null && string.Equals(x.Abbreviation, tag, StringComparison.OrdinalIgnoreCase))?.ClanUrl;
 
-	private RenderFragment ClanCard(string tag, string? ownTag) => @<a href="@ClanPageUrl(tag)" target="_blank" rel="noopener" title="@(ClanPageUrl(tag) is null ? null : "Open de clanpagina")" class="d-block wot-clan-card" style="min-width: 300px; flex: 1 1 300px; max-width: 460px; color: inherit; text-decoration: none;">
-	<MudPaper Outlined Elevation="0" Class="pa-3">
-		<MudStack Row AlignItems="AlignItems.Center" Spacing="3">
-			@if (_clans.TryGetValue(tag, out ClanRating? clan) && clan.EmblemUrl is { } emblem)
-			{
-				<img src="@emblem" alt="" width="40" height="40" />
-			}
-			<MudStack Spacing="0" Style="min-width: 0; flex: 1">
-				<MudText Typo="Typo.h6">[@tag]</MudText>
-				<MudText Typo="Typo.body2" Class="mud-text-secondary">
-					@(_clans.TryGetValue(tag, out ClanRating? named) ? named.Name + " · " : null)@(ownTag is not null && tag.Equals(ownTag, StringComparison.OrdinalIgnoreCase) ? "jouw clan" : "tegenstander")
-				</MudText>
-			</MudStack>
-			<MudStack Spacing="0" Style="text-align: right;">
-				<MudText Typo="Typo.overline" Class="mud-text-secondary">Clanrating</MudText>
-				@if (_state is RatingState.Loading)
-				{
-					<MudSkeleton Width="64px" Height="33px" Class="ml-auto" />
-				}
-				else if (_state is RatingState.Ok && _clans.TryGetValue(tag, out ClanRating? rated) && rated.Rating is { } value)
-				{
-					<MudText Style="@RatingValueStyle">@NumberFormat.Fmt(value)</MudText>
-					@if (rated.Rank is { } rank)
-					{
-						<MudText Typo="Typo.caption" Class="mud-text-secondary">Rang @rank</MudText>
-					}
-				}
-				else
-				{
-					<MudText Class="mud-text-secondary" Style="@RatingValueStyle">–</MudText>
-				}
-			</MudStack>
-		</MudStack>
-	</MudPaper>
-	</a>;
+	private ClanRating? ClanOf(string tag) => _clans.TryGetValue(tag, out ClanRating? clan) ? clan : null;
 
-	private RenderFragment Past => @<MudTable Items="@_battles" Class="clan-match-table wot-clickable-rows" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Elevation="0"
-			  RowClassFunc="@((BattleReport x, int _) => IsSelected(x) ? "wot-row-active" : "")"
-			  OnRowClick="@((TableRowClickEventArgs<BattleReport> e) => Toggle(e.Item!))">
-		<HeaderContent>
-			<MudTh>
-				<MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<BattleReport, object>(x => x.MatchStart)">Datum</MudTableSortLabel>
-			</MudTh>
-			<MudTh Style="text-align: right">
-				<MudTableSortLabel SortBy="new Func<BattleReport, object?>(x => x.MatchDuration)">Duur</MudTableSortLabel>
-			</MudTh>
-			<MudTh>
-				<MudTableSortLabel SortBy="new Func<BattleReport, object>(x => x.MapName ?? string.Empty)">Map</MudTableSortLabel>
-			</MudTh>
-			<MudTh Style="text-align: right">Resultaat</MudTh>
-		</HeaderContent>
-		<RowTemplate>
-			@{
-				Team? ownTeam = context.OwnTeam;
+	// mirror = the right card: its emblem is on the outer edge and the rating towards the "vs".
+	private RenderFragment ClanCardOf(string tag, bool mirror) => @<ClanCard Tag="@tag" ClanUrl="@ClanPageUrl(tag)" Name="@ClanOf(tag)?.Name" EmblemUrl="@ClanOf(tag)?.EmblemUrl" Mirror="@mirror" Aside="@RatingAside(tag, mirror)" />;
+
+	private RenderFragment RatingAside(string tag, bool mirror) => @<text>
+		<MudText Typo="Typo.overline" Class="mud-text-secondary">Clanrating</MudText>
+		@if (_state is RatingState.Loading)
+		{
+			<MudSkeleton Width="64px" Height="33px" Class="@(mirror ? "mr-auto" : "ml-auto")" />
+		}
+		else if (_state is RatingState.Ok && ClanOf(tag) is { Rating: { } value } rated)
+		{
+			<MudText Class="wot-rating-value">@NumberFormat.Fmt(value)</MudText>
+			@if (rated.Rank is { } rank)
+			{
+				<MudText Typo="Typo.caption" Class="mud-text-secondary">Rang @rank</MudText>
 			}
-			<MudTd DataLabel="Datum">
-				@* MudTable cannot put attributes on its rows, so the keyboard target is this native button (Enter/Space click bubbles to OnRowClick). *@
-				<button type="button" aria-pressed="@(IsSelected(context) ? "true" : "false")" class="wot-row-btn">@context.MatchTimeDisplay</button>
-			</MudTd>
-			<MudTd DataLabel="Duur" Style="text-align: right" Class="mud-text-secondary">@context.MatchDurationDisplay</MudTd>
-			<MudTd DataLabel="Map"><b>@context.MapName</b> @ownTeam?.Base</MudTd>
-			<MudTd DataLabel="Resultaat" Style="text-align: right">
-				@if (ownTeam is not null)
-				{
-					<ResultChip Result="ownTeam.Result" IconRight="true" />
-				}
-				else
-				{
-					@(context.Team1.IsWinner == true ? context.Team1.Abbreviation : context.Team2.Abbreviation)
-				}
-			</MudTd>
-		</RowTemplate>
-	</MudTable>;
+		}
+		else
+		{
+			<MudText Class="mud-text-secondary wot-rating-value">–</MudText>
+		}
+	</text>;
 
 	[CascadingParameter]
 	public required IMudDialogInstance MudDialog { get; set; }
@@ -281,15 +149,27 @@
 	private string[] _allOpponentNames = [];
 	private readonly HashSet<string> _selected = new(StringComparer.Ordinal); // BattleReport.FileName of the selected battles (union filter)
 
-	private static string KeyOf(BattleReport x) => x.FileName ?? string.Empty;
-
-	private bool IsSelected(BattleReport x) => _selected.Contains(KeyOf(x));
+	private bool IsSelected(BattleReport x) => _selected.Contains(PastBattlesTable.KeyOf(x));
 
 	private void Toggle(BattleReport x)
 	{
-		if (!_selected.Remove(KeyOf(x)))
+		if (!_selected.Remove(PastBattlesTable.KeyOf(x)))
 		{
-			_selected.Add(KeyOf(x));
+			_selected.Add(PastBattlesTable.KeyOf(x));
+		}
+
+		BuildOpponents();
+	}
+
+	private void ToggleMonth(IReadOnlyList<string> keys)
+	{
+		if (keys.All(_selected.Contains))
+		{
+			_selected.ExceptWith(keys);
+		}
+		else
+		{
+			_selected.UnionWith(keys);
 		}
 
 		BuildOpponents();
@@ -374,6 +254,11 @@
 
 		await InvokeAsync(StateHasChanged);
 	}
+
+	// Stacked on top of this dialog; Esc closes only the top one.
+	private Task OpenBattle(BattleReport report) => DialogService.ShowAsync<BattleDetailsDialog>(string.Empty,
+		new DialogParameters<BattleDetailsDialog> { { x => x.Report, report }, { x => x.Clans, _state is RatingState.Ok ? _clans : null } },
+		new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, MaxWidth = MaxWidth.False });
 
 	void Cancel() => MudDialog.Close(DialogResult.Ok(true));
 

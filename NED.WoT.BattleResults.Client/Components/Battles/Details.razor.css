@@ -54,7 +54,7 @@
 /* Geblokt in stats mode: the damage right-aligned in the room that is left, then the ratio cell (shots blocked / received and the ratio) in a fixed column, so every row lines up. */
 .wot-pair {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 108px;
+    grid-template-columns: minmax(0, 1fr) 164px;
     align-items: center;
     column-gap: 10px;
 }

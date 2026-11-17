@@ -1,0 +1,7 @@
+/* The stats button as a third card at the right edge of the header: as high as the card row (the header's 12px bottom padding stays free), 120px wide; the button fills it (mud.css: .wot-dlg-battle .stats-book-button). It is out of the flow, so the cards stay centred whether it is there or not. */
+.wot-stats-slot {
+    position: absolute;
+    inset: 0 0 12px auto;
+    width: 120px;
+    display: flex;
+}

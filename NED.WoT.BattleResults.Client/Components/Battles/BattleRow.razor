@@ -23,8 +23,8 @@ else
 	var ownTeam = Report.OwnTeam;
 	var left = Report.Team1;
 	var right = Report.Team2;
-	var leftKills = right.Players.Count(x => x.DeathReason.HasValue && x.DeathReason != -1);
-	var rightKills = left.Players.Count(x => x.DeathReason.HasValue && x.DeathReason != -1);
+	var leftKills = Report.Destroyed(left);
+	var rightKills = Report.Destroyed(right);
 	var onlyOwn = SettingService.Settings.OnlyHighlistOwnMatches;
 
 	<MudTd Class="p4" data-day="@Report.Group">

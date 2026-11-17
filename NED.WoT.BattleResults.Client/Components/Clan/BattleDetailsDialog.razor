@@ -1,0 +1,87 @@
+@using Microsoft.AspNetCore.Components.Authorization
+
+<MudDialog Class="wot-dialog wot-dlg-battle overflow-hidden" ContentClass="overflow-y-auto" TitleClass="wot-dialog-bar">
+	<TitleContent>
+		<WotDialogTitle Title="@Title" />
+	</TitleContent>
+	<DialogContent>
+		@{
+			Team first = Report.OwnTeam ?? Report.Team1;
+			Team second = first == Report.Team1 ? Report.Team2 : Report.Team1;
+		}
+		<MudStack Row AlignItems="AlignItems.Stretch" Spacing="3" Class="pb-3 wot-battle-head">
+			<MudStack Row Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="3" Class="flex-wrap wot-battle-cards">
+				@TeamCard(first, false)
+				<MudStack Spacing="0" AlignItems="AlignItems.Center">
+					<MudText Typo="Typo.h6" HtmlTag="span" Class="mud-text-secondary">VS</MudText>
+					@if (Report.HasScore)
+					{
+						<BattleScore Left="Report.Destroyed(first)" Right="Report.Destroyed(second)" LeftResult="first.Result" RightResult="second.Result" Large="true" />
+					}
+				</MudStack>
+				@TeamCard(second, true)
+			</MudStack>
+			@if (_canToggleBattleStats)
+			{
+				@* The main page's stats button as a third card: the slot is as high as the card row and 120px wide; the button fills it (.wot-stats-slot, .wot-dlg-battle .stats-book-button in mud.css). *@
+				<div class="wot-stats-slot">
+					<StatsToggle @bind-Pressed="_showBattleStats" />
+				</div>
+			}
+		</MudStack>
+		<Details Report="Report" ShowBattleStats="_showBattleStats" ExpandTeams="true" />
+	</DialogContent>
+	<DialogActions>
+		<MudButton OnClick="() => MudDialog.Close()">Sluiten</MudButton>
+	</DialogActions>
+</MudDialog>
+
+@code {
+	[CascadingParameter]
+	public required IMudDialogInstance MudDialog { get; set; }
+
+	[CascadingParameter]
+	public Task<AuthenticationState>? AuthenticationState { get; set; }
+
+	[Parameter]
+	public required BattleReport Report { get; set; }
+
+	/// <summary>The clan ratings the clan match dialog already fetched (emblem, rank); null while they are missing or failed: the header then shows the tag only.</summary>
+	[Parameter]
+	public IReadOnlyDictionary<string, ClanRating>? Clans { get; set; }
+
+	// The right card is mirrored: the emblem is on the outside and the rating towards the score. The clan name, emblem and rating come from Clans when it is there.
+	private RenderFragment TeamCard(Team team, bool mirror) => @<ClanCard Tag="@(team.Abbreviation ?? "?")" ClanUrl="@team.ClanUrl" Name="@ClanOf(team)?.Name" EmblemUrl="@ClanOf(team)?.EmblemUrl" Mirror="@mirror"
+			Aside="@(ClanOf(team) is { Rating: not null } clan ? RatingAside(clan) : null)">
+		<Lines><span class="wot-chip-flush mt-1"><ResultChip Result="team.Result" ShowBackground="false" /></span></Lines>
+	</ClanCard>;
+
+	private ClanRating? ClanOf(Team team) => team.Abbreviation is { } tag && Clans is not null && Clans.TryGetValue(tag, out ClanRating? clan) ? clan : null;
+
+	private static RenderFragment RatingAside(ClanRating clan) => @<text>
+		<MudText Typo="Typo.overline" Class="mud-text-secondary">Clanrating</MudText>
+		<MudText Class="wot-rating-value">@NumberFormat.Fmt(clan.Rating)</MudText>
+		@if (clan.Rank is { } rank)
+		{
+			<MudText Typo="Typo.caption" Class="mud-text-secondary">Rang @rank</MudText>
+		}
+	</text>;
+
+	private bool _canToggleBattleStats;
+	private bool _showBattleStats;
+
+	// Map, date, start–end time and duration: "Ensk · 04-04-2026 · 21:45–21:48 · 2m 20s".
+	private string Title => string.Join(" · ", new[]
+	{
+		Report.MapName,
+		Report.MatchStart.ToString("dd-MM-yyyy"),
+		Report.MatchStart.ToString("HH:mm") + (Report.MatchEnd is { } end ? $" – {end:HH:mm}" : null),
+		Report.MatchDuration.HasValue ? Report.MatchDurationDisplay.ToString() : null,
+	}.Where(x => !string.IsNullOrEmpty(x)));
+
+	// Same claim as Index; the stats columns start off.
+	protected override async Task OnInitializedAsync()
+	{
+		_canToggleBattleStats = AuthenticationState is not null && (await AuthenticationState).User.HasClaim(Claims.CanSeeBattleStats, bool.TrueString);
+	}
+}

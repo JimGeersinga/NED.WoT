@@ -117,6 +117,11 @@
     border-top: 1px solid var(--mud-palette-divider);
 }
 
+/* Fixed dialog sizes: filtering, selecting or switching tabs never resizes the dialog; the content scrolls inside.
+   Heights stay 80px under the viewport (MudBlazor itself leaves 64px free): 800px high gives 720px. */
+.mud-dialog.wot-dlg-history { width: min(1800px, 98vw); max-width: none; height: calc(100vh - 80px); }
+.mud-dialog.wot-dlg-battle { width: min(1600px, 98vw); max-width: none; height: min(960px, calc(100vh - 80px)); }
+
 /* Not fullscreen: an unlayered .mud-dialog rule would also beat MudBlazor's .mud-dialog-fullscreen radius of 0. */
 .mud-dialog:not(.mud-dialog-fullscreen) { border-radius: 6px; }
 
@@ -400,6 +405,21 @@ a.wot-clan-card[href]:focus-visible > .mud-paper { border-color: var(--mud-palet
 .mud-table.clan-match-table .mud-table-body .mud-table-row.wot-row-active > .mud-table-cell { background: var(--wot-primary-soft); }
 .mud-table.clan-match-table .mud-table-body .mud-table-row.wot-row-active > .mud-table-cell:first-child { box-shadow: inset 2px 0 0 var(--mud-palette-primary); }
 /* The row button (Datum cell) is the keyboard target: reset the look only, so the :focus-visible ring of wot.css stays. */
+/* The month group header: the whole cell is the button. */
+/* Cell alignment of the two tables. A right-aligned header (.wot-end): the sort arrow goes left of the text, so the text ends at the cell's right edge, above the right-aligned values. */
+.mud-table.clan-match-table th.wot-end, .mud-table.clan-match-table td.wot-end { text-align: right; }
+.mud-table.clan-match-table th.wot-center, .mud-table.clan-match-table td.wot-center { text-align: center; }
+.mud-table.clan-match-table td.wot-top { vertical-align: top; }
+.mud-table.clan-match-table td.wot-tabular { font-variant-numeric: tabular-nums; }
+.mud-table.clan-match-table th.wot-shrink { width: 1%; white-space: nowrap; }
+.mud-table.clan-match-table th.wot-col-wtr { width: 112px; }
+.mud-table.clan-match-table th.wot-end .mud-table-sort-label { flex-direction: row-reverse; }
+.mud-table.clan-match-table .gl-wtr > img { flex: none; }
+.mud-table.clan-match-table .wot-month-th { padding: 0; }
+.mud-table.clan-match-table .wot-row-btn.wot-month-btn { display: block; width: 100%; padding: 8px 16px; cursor: pointer; }
+.mud-table.clan-match-table .wot-row-btn.wot-month-btn:hover { background: var(--mud-palette-table-hover); }
+/* A ResultChip without MudBlazor's 4px chip margin (the clan match dialog and its battle dialog). */
+.wot-chip-flush .mud-chip { margin: 0; }
 .mud-table.clan-match-table .wot-row-btn { background: none; border: 0; padding: 0; font: inherit; color: inherit; text-align: inherit; cursor: inherit; }
 
 /* ==== MudTable (the battle table: .wot-battle-table; the rows, the day headers and the footer of the Gevechtslog) ==== */
@@ -657,6 +677,19 @@ a.wot-clan-card[href]:focus-visible > .mud-paper { border-color: var(--mud-palet
 .mud-icon-button.filter-tool-button { padding: 5px 12px; }
 .mud-icon-button.filter-tool-button img { width: 28px; height: 28px; object-fit: contain; }
 .mud-icon-button.stats-book-button img { width: 36px; }
+/* The stats book in the battle dialog's card row: it fills its wrapper (a flex child as high as the cards), the book at 65% of the box.
+   (0,3,x) beats MudBlazor's .mud-icon-button padding/size rules and the filter bar's .filter-tool-button rules above. */
+.wot-dlg-battle .mud-icon-button.stats-book-button { width: 100%; height: 100%; min-width: 0; min-height: 0; padding: 0; }
+.wot-dlg-battle .mud-icon-button.stats-book-button img { width: 65%; height: 65%; max-width: none; max-height: none; object-fit: contain; }
+/* The card row of the battle dialog is centred in the full width; the equal side padding keeps it clear of the stats slot (120px + gap) on the right. Global: the rule sits on a MudStack root, where scoped css is not reliable. */
+.wot-dlg-battle .wot-battle-head { position: relative; }
+.wot-dlg-battle .wot-battle-cards { flex: 1 1 0; min-width: 0; padding-inline: 132px; }
 
 /* "Jij" (Details.razor): a MudIcon, so the scoped Details.razor.css can't reach it. It hangs in the expander column, left of the # cell (a sticky cell, so it is the anchor). */
 .mud-table.player-table .own-row-icon { position: absolute; right: 100%; top: 50%; transform: translateY(-50%); margin-right: 8px; }
+
+/* The clan rating value (clan cards of the clan match and battle dialogs): display font, 700 30px/1.1, tabular figures. Two classes so it beats MudText's own font. */
+.mud-typography.wot-rating-value { font: 700 30px/1.1 var(--wot-font-display); font-variant-numeric: tabular-nums; }
+
+/* One line that is cut off with an ellipsis. */
+.wot-ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

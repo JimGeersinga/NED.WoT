@@ -1,0 +1,52 @@
+@* One clan as a card (the clan match dialog's two sides, the battle dialog's two teams): emblem, [TAG], clan name, then Lines; Aside is the block on the other side (the rating).
+   Mirror is the right-hand card: Reverse puts the emblem on the outer edge and the aside towards the score. The card is the link to the clan page. *@
+<a href="@ClanUrl" target="_blank" rel="noopener" title="@(ClanUrl is null ? null : "Open de clanpagina")" class="@("d-block wot-clan-card clan-card" + (Mirror ? " mirror" : null))">
+	<MudPaper Outlined Elevation="0" Class="pa-3">
+		@* Reverse, not an inline flex-direction: MudBlazor's .flex-row utility is !important and would win. *@
+		<MudStack Row Reverse="@Mirror" AlignItems="AlignItems.Center" Spacing="3">
+			@if (EmblemUrl is not null)
+			{
+				<img src="@EmblemUrl" alt="" width="40" height="40" />
+			}
+			<MudStack Spacing="0" Class="clan-card-text">
+				<MudText Typo="Typo.h6">[@Tag]</MudText>
+				@if (Name is not null)
+				{
+					<MudText Typo="Typo.body2" Class="mud-text-secondary wot-ellipsis">@Name</MudText>
+				}
+				@Lines
+			</MudStack>
+			@if (Aside is not null)
+			{
+				<MudStack Spacing="0" Class="clan-card-aside">@Aside</MudStack>
+			}
+		</MudStack>
+	</MudPaper>
+</a>
+
+@code {
+	[Parameter, EditorRequired]
+	public required string Tag { get; set; }
+
+	/// <summary>The clan page; null: the card is no link.</summary>
+	[Parameter]
+	public string? ClanUrl { get; set; }
+
+	/// <summary>The clan name; null while the ratings are missing: the line is left out.</summary>
+	[Parameter]
+	public string? Name { get; set; }
+
+	[Parameter]
+	public string? EmblemUrl { get; set; }
+
+	[Parameter]
+	public bool Mirror { get; set; }
+
+	/// <summary>More lines under the tag and the name (the result chip).</summary>
+	[Parameter]
+	public RenderFragment? Lines { get; set; }
+
+	/// <summary>The block on the inner side of the card (the clan rating); null leaves it out.</summary>
+	[Parameter]
+	public RenderFragment? Aside { get; set; }
+}

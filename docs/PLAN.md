@@ -30,8 +30,8 @@ is a second project in `NED.WoT.slnx`.
 |---|---|
 | `Components/Layout` | `MainLayout.razor` (app bar and page frame), `AccountMenu`, `FolderCarousel`, `Splash`, `UpdateDialog` |
 | `Components/Pages` | `Index.razor` (the battle table), `Login.razor`, `Unauthorized.razor` |
-| `Components/Battles` | the battle table and what it shows: `BattleFilterBar`, `BattleRow`, `BattleGroupHeader`, `BattleTotals`, `BattleRecord`, `Details`, `RatioCell`, `EmptyState`, `UndefinedNamesDialog` |
-| `Components/Clan` | `ClanMatchDialog`, `ClanMembersDialog` |
+| `Components/Battles` | the battle table and what it shows: `BattleFilterBar`, `BattleRow`, `BattleGroupHeader`, `BattleTotals`, `BattleRecord`, `Details`, `StatsToggle`, `RatioCell`, `EmptyState`, `UndefinedNamesDialog` |
+| `Components/Clan` | `ClanMatchDialog` (with `OpponentsTable` and `PastBattlesTable`), `BattleDetailsDialog`, `ClanCard`, `BattleScore`, `ClanMembersDialog` |
 | `Components/Setup` | `SettingsDialog` |
 | `Components/Shared` | `WotDialogTitle`, `ResultChip`, `NumberFormat`: used by more than one feature |
 | `Services` | `BattleReportService`, `BattleReportMapper`, `SettingService`, `HqAuthenticationStateProvider`, `UpdateCheckService`, `MapNameResolver`, `TankNameResolver`, `ColorHelper` |
