@@ -241,7 +241,11 @@
 			<MudTh colspan="6" Class="@("wot-month-th" + (keys.Any(_selected.Contains) ? " wot-row-active" : null))">
 				@* Native button: Enter/Space select every battle of the month, or clear them when all are selected already. *@
 				<button type="button" class="wot-row-btn wot-month-btn" aria-pressed="@(all ? "true" : "false")" @onclick="() => ToggleMonth(keys)">
-					<b>@($"{char.ToUpper(name[0], BattleReport.DutchCulture)}{name[1..]} {year}")</b> · @keys.Count @(keys.Count == 1 ? "gevecht" : "gevechten")
+					@* The main page's day header: .gl-dayname / .gl-daydate (gl.css, uppercase) and the count chip of BattleTotals. *@
+					<span class="gl-dayname">
+						<span class="gl-daydate">@($"{name} {year}")</span>
+						<MudChip T="string" Size="Size.Small" Variant="Variant.Text">@keys.Count @(keys.Count == 1 ? "gevecht" : "gevechten")</MudChip>
+					</span>
 				</button>
 			</MudTh>
 		</GroupHeaderTemplate>
