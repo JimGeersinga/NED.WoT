@@ -9,17 +9,20 @@
 			Team first = Report.OwnTeam ?? Report.Team1;
 			Team second = first == Report.Team1 ? Report.Team2 : Report.Team1;
 		}
-		<MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Spacing="4" Class="pb-3 flex-wrap">
-			<MudStack Row AlignItems="AlignItems.Center" Spacing="3" Class="flex-wrap">
-				@TeamHead(first)
+		<MudStack Spacing="3" Class="pb-3">
+			<MudStack Row Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="3" Class="flex-wrap">
+				@TeamCard(first)
 				@if (Report.HasScore)
 				{
-					<span class="score">@Count(first)–@Count(second)</span>
+					<span class="score" style="font-size: 32px; min-width: 96px;">@Count(first)–@Count(second)</span>
 				}
-				<MudText Typo="Typo.h6" HtmlTag="span" Class="mud-text-secondary">vs</MudText>
-				@TeamHead(second)
+				else
+				{
+					<MudText Typo="Typo.h6" HtmlTag="span" Class="mud-text-secondary">vs</MudText>
+				}
+				@TeamCard(second)
 			</MudStack>
-			<MudStack Row AlignItems="AlignItems.Center" Spacing="3">
+			<MudStack Row AlignItems="AlignItems.Center" Justify="Justify.Center" Spacing="3">
 				<MudText Typo="Typo.body2" Class="mud-text-secondary">
 					<b>@Report.MapName</b> · @Report.MatchStart.ToString("dd-MM-yyyy") · @Report.MatchStart.ToString("HH:mm")@(Report.MatchEnd is { } end ? $"–{end:HH:mm}" : null)@(Report.MatchDuration.HasValue ? " · " : null)@Report.MatchDurationDisplay
 				</MudText>
@@ -52,18 +55,33 @@
 	[Parameter]
 	public IReadOnlyDictionary<string, ClanRating>? Clans { get; set; }
 
-	private RenderFragment TeamHead(Team team) => @<span class="d-inline-flex align-center gap-2">
-		@if (team.Abbreviation is { } tag && Clans is not null && Clans.TryGetValue(tag, out ClanRating? clan) && clan.EmblemUrl is { } emblem)
-		{
-			<img src="@emblem" alt="" width="28" height="28" />
-		}
-		<a class="@BattleRow.TagClass(team, team == Report.OwnTeam, false)" href="@team.ClanUrl" target="_blank" rel="noopener" title="@(team.ClanUrl is null ? null : "Open de clanpagina")"><span class="tag-t">@(team.Abbreviation ?? "?")</span></a>
-		<span class="wot-chip-flush"><ResultChip Result="team.Result" /></span>
-		@if (team.Abbreviation is { } t && Clans is not null && Clans.TryGetValue(t, out ClanRating? rated) && rated.Rank is { } rank)
-		{
-			<MudText Typo="Typo.caption" Class="mud-text-secondary">Rang @rank</MudText>
-		}
-	</span>;
+	// Like ClanMatchDialog's ClanCard (the card is the link to the clan page); the clan name, emblem and rank come from Clans when it is there.
+	private RenderFragment TeamCard(Team team) => @<a href="@team.ClanUrl" target="_blank" rel="noopener" title="@(team.ClanUrl is null ? null : "Open de clanpagina")" class="d-block wot-clan-card" style="min-width: 280px; flex: 1 1 280px; max-width: 460px; color: inherit; text-decoration: none;">
+		<MudPaper Outlined Elevation="0" Class="pa-3">
+			@{
+				ClanRating? clan = team.Abbreviation is { } tag && Clans is not null && Clans.TryGetValue(tag, out ClanRating? found) ? found : null;
+			}
+			<MudStack Row AlignItems="AlignItems.Center" Spacing="3">
+				@if (clan?.EmblemUrl is { } emblem)
+				{
+					<img src="@emblem" alt="" width="40" height="40" />
+				}
+				<MudStack Spacing="0" Style="min-width: 0; flex: 1">
+					<MudText Typo="Typo.h6">[@(team.Abbreviation ?? "?")]</MudText>
+					<MudText Typo="Typo.body2" Class="mud-text-secondary" Style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+						@(clan is not null ? clan.Name + " · " : null)@(team == Report.OwnTeam ? "jouw clan" : "tegenstander")
+					</MudText>
+				</MudStack>
+				<MudStack Spacing="1" AlignItems="AlignItems.End">
+					<span class="wot-chip-flush"><ResultChip Result="team.Result" /></span>
+					@if (clan?.Rank is { } rank)
+					{
+						<MudText Typo="Typo.caption" Class="mud-text-secondary">Rang @rank</MudText>
+					}
+				</MudStack>
+			</MudStack>
+		</MudPaper>
+	</a>;
 
 	private RenderFragment Count(Team team) => @<text>@if (team.Result is Result.Win) { <b>@Report.Destroyed(team)</b> } else { <span>@Report.Destroyed(team)</span> }</text>;
 
