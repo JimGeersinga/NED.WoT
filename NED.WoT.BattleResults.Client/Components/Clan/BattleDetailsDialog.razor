@@ -9,32 +9,26 @@
 			Team first = Report.OwnTeam ?? Report.Team1;
 			Team second = first == Report.Team1 ? Report.Team2 : Report.Team1;
 		}
-		<MudStack Row AlignItems="AlignItems.Stretch" Spacing="3" Class="pb-3">
-			<MudStack Row Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="3" Class="flex-wrap" Style="flex: 1 1 0; min-width: 0;">
+		<div class="d-flex align-stretch gap-3 pb-3">
+			<div class="d-flex flex-wrap justify-center align-center gap-3 wot-battle-cards">
 				@TeamCard(first, false)
-				@if (Report.HasScore)
-				{
-					<MudStack Spacing="0" AlignItems="AlignItems.Center">
-						<MudText Typo="Typo.overline" Class="mud-text-secondary">VS</MudText>
-						<span class="score" style="font-size: 32px; min-width: 96px;">@Count(first)–@Count(second)</span>
-					</MudStack>
-				}
-				else
-				{
-					<MudText Typo="Typo.h6" HtmlTag="span" Class="mud-text-secondary">vs</MudText>
-				}
+				<MudStack Spacing="0" AlignItems="AlignItems.Center">
+					<MudText Typo="Typo.h6" HtmlTag="span" Class="mud-text-secondary">VS</MudText>
+					@if (Report.HasScore)
+					{
+						<BattleScore Left="Report.Destroyed(first)" Right="Report.Destroyed(second)" LeftResult="first.Result" RightResult="second.Result" Large="true" />
+					}
+				</MudStack>
 				@TeamCard(second, true)
-			</MudStack>
+			</div>
 			@if (_canToggleBattleStats)
 			{
-				@* The main page's stats button (BattleFilterBar) as a third card: the wrapper is as high as the card row and 120px wide; the button fills it (.wot-dlg-battle .stats-book-button, mud.css). *@
-				<div style="flex: none; align-self: stretch; width: 120px; display: flex;">
-					<MudIconButton Variant="Variant.Outlined" Color="@(_showBattleStats ? Color.Primary : Color.Default)" Class="filter-tool-button stats-book-button" aria-pressed="@(_showBattleStats ? "true" : "false")" aria-label="Statistieken" title="@StatsTooltip" OnClick="() => _showBattleStats = !_showBattleStats">
-						<img src="@(_showBattleStats ? "images/book-open.png" : "images/book-closed.png")" alt="" />
-					</MudIconButton>
+				@* The main page's stats button as a third card: the slot is as high as the card row and 120px wide; the button fills it (.wot-battle-stats-slot, .wot-dlg-battle .stats-book-button in mud.css). *@
+				<div class="wot-stats-slot">
+					<StatsToggle @bind-Pressed="_showBattleStats" />
 				</div>
 			}
-		</MudStack>
+		</div>
 		<Details Report="Report" ShowBattleStats="_showBattleStats" ExpandTeams="true" />
 	</DialogContent>
 	<DialogActions>
@@ -56,47 +50,25 @@
 	[Parameter]
 	public IReadOnlyDictionary<string, ClanRating>? Clans { get; set; }
 
-	// Mirrored for the right card, so the emblem is on the outside and the result and rating on the inside, towards the score. Like ClanMatchDialog's ClanCard (the card is the link to the clan page); the clan name, emblem and rank come from Clans when it is there.
-	private RenderFragment TeamCard(Team team, bool mirror) => @<a href="@team.ClanUrl" target="_blank" rel="noopener" title="@(team.ClanUrl is null ? null : "Open de clanpagina")" class="d-block wot-clan-card" style="min-width: 240px; flex: 1 1 240px; max-width: 460px; color: inherit; text-decoration: none;">
-		<MudPaper Outlined Elevation="0" Class="pa-3">
-			@{
-				ClanRating? clan = team.Abbreviation is { } tag && Clans is not null && Clans.TryGetValue(tag, out ClanRating? found) ? found : null;
-			}
-			@* Reverse (not an inline flex-direction: MudBlazor's .flex-row utility is !important and would win). *@
-			<MudStack Row Reverse="@mirror" AlignItems="AlignItems.Center" Spacing="3">
-				@if (clan?.EmblemUrl is { } emblem)
-				{
-					<img src="@emblem" alt="" width="40" height="40" />
-				}
-				<MudStack Spacing="0" Style="@("min-width: 0; flex: 1;" + (mirror ? " text-align: right;" : null))">
-					<MudText Typo="Typo.h6">[@(team.Abbreviation ?? "?")]</MudText>
-					<MudText Typo="Typo.body2" Class="mud-text-secondary" Style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-						@clan?.Name
-					</MudText>
-					<span class="wot-chip-flush mt-1" style="@("align-self: " + (mirror ? "flex-end" : "flex-start"))"><ResultChip Result="team.Result" ShowBackground="false" /></span>
-				</MudStack>
-				@if (clan?.Rating is { } rating)
-				{
-					<MudStack Spacing="0" Style="@("text-align: " + (mirror ? "left" : "right") + "; flex: none;")">
-						<MudText Typo="Typo.overline" Class="mud-text-secondary">Clanrating</MudText>
-						<MudText Style="font: 700 30px/1.1 var(--wot-font-display); font-variant-numeric: tabular-nums;">@NumberFormat.Fmt(rating)</MudText>
-						@if (clan.Rank is { } rank)
-						{
-							<MudText Typo="Typo.caption" Class="mud-text-secondary">Rang @rank</MudText>
-						}
-					</MudStack>
-				}
-			</MudStack>
-		</MudPaper>
-	</a>;
+	// The right card is mirrored: the emblem is on the outside and the rating towards the score. The clan name, emblem and rating come from Clans when it is there.
+	private RenderFragment TeamCard(Team team, bool mirror) => @<ClanCard Tag="@(team.Abbreviation ?? "?")" ClanUrl="@team.ClanUrl" Name="@ClanOf(team)?.Name" EmblemUrl="@ClanOf(team)?.EmblemUrl" Mirror="@mirror"
+			Aside="@(ClanOf(team) is { Rating: not null } clan ? RatingAside(clan) : null)">
+		<Lines><span class="wot-chip-flush mt-1"><ResultChip Result="team.Result" ShowBackground="false" /></span></Lines>
+	</ClanCard>;
 
-	private RenderFragment Count(Team team) => @<text>@if (team.Result is Result.Win) { <b>@Report.Destroyed(team)</b> } else { <span>@Report.Destroyed(team)</span> }</text>;
+	private ClanRating? ClanOf(Team team) => team.Abbreviation is { } tag && Clans is not null && Clans.TryGetValue(tag, out ClanRating? clan) ? clan : null;
+
+	private static RenderFragment RatingAside(ClanRating clan) => @<text>
+		<MudText Typo="Typo.overline" Class="mud-text-secondary">Clanrating</MudText>
+		<MudText Class="wot-rating-value">@NumberFormat.Fmt(clan.Rating)</MudText>
+		@if (clan.Rank is { } rank)
+		{
+			<MudText Typo="Typo.caption" Class="mud-text-secondary">Rang @rank</MudText>
+		}
+	</text>;
 
 	private bool _canToggleBattleStats;
 	private bool _showBattleStats;
-
-	/// <summary>The tooltip of the stats book (same text as BattleFilterBar): a title attribute on a component needs a real newline.</summary>
-	private const string StatsTooltip = "Uitgebreide statistieken\n▲ hoog · ▬ gemiddeld · ▼ laag\nGeraakt: ≤ 50% laag, ≥ 70% hoog\nGepenetreerd: ≤ 55% laag, ≥ 70% hoog\nGeblokt: ≥ 25% hoog";
 
 	// Map, date, start–end time and duration: "Ensk · 04-04-2026 · 21:45–21:48 · 2m 20s".
 	private string Title => string.Join(" · ", new[]

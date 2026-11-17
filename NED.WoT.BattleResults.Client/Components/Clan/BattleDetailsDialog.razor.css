@@ -1,0 +1,13 @@
+/* The card row takes the room the stats slot leaves. */
+.wot-battle-cards {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+/* The stats button as a third card: as high as the card row, 120px wide; the button fills it (mud.css: .wot-dlg-battle .stats-book-button). */
+.wot-stats-slot {
+    flex: none;
+    align-self: stretch;
+    width: 120px;
+    display: flex;
+}

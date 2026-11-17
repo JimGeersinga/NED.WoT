@@ -117,9 +117,7 @@
 	<div class="filter-bar-tools">
 		@if (CanToggleBattleStats)
 		{
-			<MudIconButton Variant="Variant.Outlined" Color="@(ShowBattleStats ? Color.Primary : Color.Default)" Class="filter-tool-button stats-book-button" aria-pressed="@(ShowBattleStats ? "true" : "false")" aria-label="Statistieken" title="@StatsTooltip" OnClick="() => ShowBattleStatsChanged.InvokeAsync(!ShowBattleStats)">
-				<img src="@(ShowBattleStats ? "images/book-open.png" : "images/book-closed.png")" alt="" />
-			</MudIconButton>
+			<StatsToggle Pressed="ShowBattleStats" PressedChanged="ShowBattleStatsChanged" />
 		}
 
 		<MudBadge Content="@clanMembers" Overlap="true" Bordered="true" Color="Color.Dark">
@@ -140,8 +138,6 @@
 </section>
 
 @code {
-	/// <summary>The tooltip of the stats book: a title attribute on a component needs a real newline, not an HTML entity.</summary>
-	private const string StatsTooltip = "Uitgebreide statistieken\n▲ hoog · ▬ gemiddeld · ▼ laag\nGeraakt: ≤ 50% laag, ≥ 70% hoog\nGepenetreerd: ≤ 55% laag, ≥ 70% hoog\nGeblokt: ≥ 25% hoog";
 
 	/// <summary>The lookup of the clans and players in the battles, built once by Index and dropped when the battles change.</summary>
 	[Parameter, EditorRequired]

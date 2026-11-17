@@ -1,0 +1,28 @@
+/* The card is a flex child of a wrapping row: it shrinks to 240px and grows to 460px. */
+.clan-card {
+    min-width: 240px;
+    flex: 1 1 240px;
+    max-width: 460px;
+    color: inherit;
+    text-decoration: none;
+}
+
+/* The tag and the lines under it take the room the emblem and the aside leave; the mirrored card right-aligns them. */
+.clan-card ::deep .clan-card-text {
+    min-width: 0;
+    flex: 1;
+}
+
+.clan-card.mirror ::deep .clan-card-text {
+    text-align: right;
+}
+
+/* The rating block keeps its width; its text sits against the emblem side's opposite edge (towards the score). */
+.clan-card ::deep .clan-card-aside {
+    flex: none;
+    text-align: right;
+}
+
+.clan-card.mirror ::deep .clan-card-aside {
+    text-align: left;
+}

@@ -1,0 +1,23 @@
+@* The score of a battle, as in the battle table (.score, gl.css): the winner's count bold, the other dimmed; a draw dims both. *@
+<span class="@("score" + (Large ? " large" : null))">@Side(Left, LeftResult)–@Side(Right, RightResult)</span>
+
+@code {
+	/// <summary>Tanks the left side destroyed.</summary>
+	[Parameter, EditorRequired]
+	public int Left { get; set; }
+
+	[Parameter, EditorRequired]
+	public int Right { get; set; }
+
+	[Parameter, EditorRequired]
+	public Result LeftResult { get; set; }
+
+	[Parameter, EditorRequired]
+	public Result RightResult { get; set; }
+
+	/// <summary>The big score between the two team cards.</summary>
+	[Parameter]
+	public bool Large { get; set; }
+
+	private static RenderFragment Side(int count, Result result) => @<text>@if (result is Result.Win) { <b>@count</b> } else { <span>@count</span> }</text>;
+}

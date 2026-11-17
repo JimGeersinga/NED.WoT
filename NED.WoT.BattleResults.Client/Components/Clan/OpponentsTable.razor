@@ -1,0 +1,89 @@
+@* The opponents of the clan match dialog: one row per player name across the shown battles, with the Wargaming ratings. *@
+<MudTable Items="@Items" Class="clan-match-table" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Elevation="0">
+	<HeaderContent>
+		<MudTh Class="wot-end wot-shrink" title="Gevechten" aria-label="Gevechten">
+			<MudTableSortLabel InitialDirection="SortDirection.Descending" SortBy="new Func<IGrouping<string?, Player>, object>(x => x.Count())">#</MudTableSortLabel>
+		</MudTh>
+		<MudTh>
+			<MudTableSortLabel SortBy="new Func<IGrouping<string?, Player>, object>(x => x.Key ?? string.Empty)">Speler</MudTableSortLabel>
+		</MudTh>
+		<MudTh>Tanks</MudTh>
+		<MudTh Class="wot-end" title="Persoonlijke rating (Wargaming)">
+			<MudTableSortLabel SortBy="new Func<IGrouping<string?, Player>, object>(x => RatingOf(x.Key)?.PersonalRating ?? -1)">PR</MudTableSortLabel>
+		</MudTh>
+		<MudTh Class="wot-end wot-col-wtr" title="World of Tanks Rating">
+			<MudTableSortLabel SortBy="new Func<IGrouping<string?, Player>, object>(x => RatingOf(x.Key)?.Wtr ?? -1)">WTR</MudTableSortLabel>
+		</MudTh>
+	</HeaderContent>
+	<RowTemplate>
+		<MudTd DataLabel="Gevechten" Class="wot-end wot-top">@context.Count()</MudTd>
+		<MudTd DataLabel="Speler" Class="wot-top">@context.Key</MudTd>
+		<MudTd DataLabel="Tanks">
+			@foreach (var vehicle in context.GroupBy(x => x.Vehicle).OrderByDescending(x => x.Count()))
+			{
+				<div class="d-flex justify-space-between gap-3">
+					<span>@vehicle.Key</span>
+					<MudText Typo="Typo.body2" Class="mud-text-secondary">@((int)Math.Round(100.0 * vehicle.Count() / context.Count(), MidpointRounding.AwayFromZero))%</MudText>
+				</div>
+			}
+		</MudTd>
+		<MudTd DataLabel="PR" Class="wot-end wot-top wot-tabular">@PlayerRatingCell(context.Key)</MudTd>
+		<MudTd DataLabel="WTR" Class="wot-end wot-top">@WtrCell(context.Key)</MudTd>
+	</RowTemplate>
+</MudTable>
+
+@code {
+	[Parameter, EditorRequired]
+	public required IReadOnlyList<IGrouping<string?, Player>> Items { get; set; }
+
+	/// <summary>True while the ratings are being fetched: skeletons in the rating cells.</summary>
+	[Parameter]
+	public bool Loading { get; set; }
+
+	/// <summary>The fetched ratings by nickname; null while loading or after a failure (the cells then show a dash).</summary>
+	[Parameter]
+	public IReadOnlyDictionary<string, PlayerRating>? Players { get; set; }
+
+	// Null while loading, on failure, for an unknown nickname; the sorts treat that as the lowest (-1).
+	private PlayerRating? RatingOf(string? name) => name is not null && Players is not null && Players.TryGetValue(name, out PlayerRating? rating) ? rating : null;
+
+	private RenderFragment WtrCell(string? name) => @<text>
+		@if (Loading)
+		{
+			<MudSkeleton Width="70px" Class="ml-auto" />
+		}
+		else if (RatingOf(name) is { Wtr: { } wtr })
+		{
+			string level = WtrLevel.Name(WtrLevel.Index(wtr));
+			<span class="gl-wtr">
+				<img src="@WtrLevel.IconPath(WtrLevel.Index(wtr))" alt="@level" title="@level" width="24" height="24" />
+				@NumberFormat.Fmt(wtr)
+			</span>
+		}
+		else
+		{
+			<span class="mud-text-secondary">–</span>
+		}
+	</text>;
+
+	private RenderFragment PlayerRatingCell(string? name) => @<text>
+		@if (Loading)
+		{
+			<MudSkeleton Width="48px" Class="ml-auto" />
+		}
+		else if (RatingOf(name) is { PersonalRating: { } pr })
+		{
+			@NumberFormat.Fmt(pr)
+		}
+		else if (RatingOf(name) is { StatsHidden: true })
+		{
+			<MudTooltip Text="Deze speler verbergt zijn statistieken, dus er is geen rating.">
+				<span class="d-inline-flex align-center gap-1 mud-text-secondary" aria-label="Deze speler verbergt zijn statistieken, dus er is geen rating.">–<MudIcon Icon="@Icons.Material.Outlined.VisibilityOff" Size="Size.Small" /></span>
+			</MudTooltip>
+		}
+		else
+		{
+			<span class="mud-text-secondary">–</span>
+		}
+	</text>;
+}

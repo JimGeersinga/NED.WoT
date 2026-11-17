@@ -1,0 +1,113 @@
+@* The earlier battles of the clan match dialog, grouped by month (newest first). A row selects its battle, a month header selects the month; the dialog owns the selection. *@
+<MudTable Items="@Items" Class="clan-match-table wot-clickable-rows" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Elevation="0"
+		  GroupBy="@_monthGroups"
+		  RowClassFunc="@((BattleReport x, int _) => IsSelected(x) ? "wot-row-active" : "")"
+		  OnRowClick="@((TableRowClickEventArgs<BattleReport> e) => OnToggle.InvokeAsync(e.Item!))">
+	<HeaderContent>
+		<MudTh>
+			<MudTableSortLabel InitialDirection="SortDirection.Descending" SortBy="new Func<BattleReport, object>(x => x.MatchStart)">Datum</MudTableSortLabel>
+		</MudTh>
+		<MudTh Class="wot-end">
+			<MudTableSortLabel SortBy="new Func<BattleReport, object?>(x => x.MatchDuration)">Duur</MudTableSortLabel>
+		</MudTh>
+		<MudTh Class="wot-end">
+			<MudTableSortLabel SortBy="new Func<BattleReport, object>(x => x.MapName ?? string.Empty)">Map</MudTableSortLabel>
+		</MudTh>
+		<MudTh Class="wot-center">Score</MudTh>
+		<MudTh Class="wot-end">Resultaat</MudTh>
+		<MudTh Class="wot-shrink"></MudTh>
+	</HeaderContent>
+	<GroupHeaderTemplate>
+		@{
+			var (year, month) = ((int, int))context.Key!;
+			List<string> keys = context.Items.Select(KeyOf).ToList();
+			bool all = keys.All(Selected.Contains);
+			string name = BattleReport.DutchCulture.DateTimeFormat.GetMonthName(month);
+		}
+		<MudTh colspan="6" Class="@("wot-month-th" + (keys.Any(Selected.Contains) ? " wot-row-active" : null))">
+			@* Native button: Enter/Space select every battle of the month, or clear them when all are selected already. *@
+			<button type="button" class="wot-row-btn wot-month-btn" aria-pressed="@(all ? "true" : "false")" @onclick="() => OnToggleMonth.InvokeAsync(keys)">
+				@* The main page's day header: .gl-dayname / .gl-daydate (gl.css, uppercase) and the count chip of BattleTotals. *@
+				<span class="gl-dayname">
+					<span class="gl-daydate">@($"{name} {year}")</span>
+					<MudChip T="string" Size="Size.Small" Variant="Variant.Text">@keys.Count @(keys.Count == 1 ? "gevecht" : "gevechten")</MudChip>
+				</span>
+			</button>
+		</MudTh>
+	</GroupHeaderTemplate>
+	<RowTemplate>
+		@{
+			Team? ownTeam = context.OwnTeam;
+			Team first = ownTeam ?? context.Team1;
+			Team second = first == context.Team1 ? context.Team2 : context.Team1;
+		}
+		<MudTd DataLabel="Datum">
+			@* MudTable cannot put attributes on its rows, so the keyboard target is this native button (Enter/Space click bubbles to OnRowClick). *@
+			<button type="button" aria-pressed="@(IsSelected(context) ? "true" : "false")" class="wot-row-btn">@context.MatchTimeDisplay</button>
+		</MudTd>
+		<MudTd DataLabel="Duur" Class="wot-end mud-text-secondary">@context.MatchDurationDisplay</MudTd>
+		<MudTd DataLabel="Map"><div class="mapc"><b title="@context.MapName">@context.MapName</b><MudChip T="string" Size="Size.Small" Variant="Variant.Text" Class="map-base-chip">@ownTeam?.Base</MudChip></div></MudTd>
+		<MudTd DataLabel="Score" Class="wot-center">
+			@if (context.HasScore)
+			{
+				<BattleScore Left="context.Destroyed(first)" Right="context.Destroyed(second)" LeftResult="first.Result" RightResult="second.Result" />
+			}
+			else
+			{
+				<span class="mud-text-secondary">–</span>
+			}
+		</MudTd>
+		<MudTd DataLabel="Resultaat" Class="wot-end">
+			@if (ownTeam is not null)
+			{
+				<span class="wot-chip-flush"><ResultChip Result="ownTeam.Result" IconRight="true" /></span>
+			}
+			else
+			{
+				@(context.Team1.IsWinner == true ? context.Team1.Abbreviation : context.Team2.Abbreviation)
+			}
+		</MudTd>
+		<MudTd Class="wot-end">
+			<span @onclick:stopPropagation="true">
+				<MudTooltip Text="Open gevecht">
+					<MudIconButton Icon="@Icons.Material.Outlined.Visibility" Size="Size.Small" aria-label="Open gevecht" OnClick="@(() => OnOpen.InvokeAsync(context))" />
+				</MudTooltip>
+			</span>
+		</MudTd>
+	</RowTemplate>
+</MudTable>
+
+@code {
+	[Parameter, EditorRequired]
+	public required IReadOnlyList<BattleReport> Items { get; set; }
+
+	/// <summary>The <see cref="KeyOf"/> of the selected battles.</summary>
+	[Parameter, EditorRequired]
+	public required IReadOnlySet<string> Selected { get; set; }
+
+	/// <summary>A row was clicked: select or deselect that battle.</summary>
+	[Parameter]
+	public EventCallback<BattleReport> OnToggle { get; set; }
+
+	/// <summary>A month header was clicked, with the keys of all its battles: select them, or deselect them when all are selected already.</summary>
+	[Parameter]
+	public EventCallback<IReadOnlyList<string>> OnToggleMonth { get; set; }
+
+	/// <summary>The eye button of a row.</summary>
+	[Parameter]
+	public EventCallback<BattleReport> OnOpen { get; set; }
+
+	/// <summary>The identity of a battle in <see cref="Selected"/>.</summary>
+	public static string KeyOf(BattleReport x) => x.FileName ?? string.Empty;
+
+	private bool IsSelected(BattleReport x) => Selected.Contains(KeyOf(x));
+
+	// Newest month first: the Datum column starts descending, and the table keeps the groups in the order the sorted rows meet them.
+	private readonly TableGroupDefinition<BattleReport> _monthGroups = new()
+	{
+		Indentation = false,
+		Expandable = false,
+		IsInitiallyExpanded = true,
+		Selector = x => (x.MatchStart.Year, x.MatchStart.Month)
+	};
+}
