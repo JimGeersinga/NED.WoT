@@ -9,7 +9,7 @@
 			Team first = Report.OwnTeam ?? Report.Team1;
 			Team second = first == Report.Team1 ? Report.Team2 : Report.Team1;
 		}
-		<MudStack Row AlignItems="AlignItems.Stretch" Spacing="3" Class="pb-3">
+		<MudStack Row AlignItems="AlignItems.Center" Spacing="3" Class="pb-3">
 			<MudStack Row Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="3" Class="flex-wrap" Style="flex: 1 1 0; min-width: 0;">
 				@TeamCard(first, false)
 				@if (Report.HasScore)
@@ -24,8 +24,8 @@
 			</MudStack>
 			@if (_canToggleBattleStats)
 			{
-				@* The main page's stats button (BattleFilterBar), stretched to the height of the card row. *@
-				<MudIconButton Variant="Variant.Outlined" Color="@(_showBattleStats ? Color.Primary : Color.Default)" Class="filter-tool-button stats-book-button" Style="height: auto;" aria-pressed="@(_showBattleStats ? "true" : "false")" aria-label="Statistieken" title="@StatsTooltip" OnClick="() => _showBattleStats = !_showBattleStats">
+				@* The main page's stats button (BattleFilterBar): its natural compact size, centred at the right end of the card row. *@
+				<MudIconButton Variant="Variant.Outlined" Color="@(_showBattleStats ? Color.Primary : Color.Default)" Class="filter-tool-button stats-book-button" Style="flex: none;" aria-pressed="@(_showBattleStats ? "true" : "false")" aria-label="Statistieken" title="@StatsTooltip" OnClick="() => _showBattleStats = !_showBattleStats">
 					<img src="@(_showBattleStats ? "images/book-open.png" : "images/book-closed.png")" alt="" />
 				</MudIconButton>
 			}
@@ -52,12 +52,13 @@
 	public IReadOnlyDictionary<string, ClanRating>? Clans { get; set; }
 
 	// Mirrored for the right card, so the emblem is on the outside and the result and rating on the inside, towards the score. Like ClanMatchDialog's ClanCard (the card is the link to the clan page); the clan name, emblem and rank come from Clans when it is there.
-	private RenderFragment TeamCard(Team team, bool mirror) => @<a href="@team.ClanUrl" target="_blank" rel="noopener" title="@(team.ClanUrl is null ? null : "Open de clanpagina")" class="d-block wot-clan-card" style="min-width: 280px; flex: 1 1 280px; max-width: 460px; color: inherit; text-decoration: none;">
+	private RenderFragment TeamCard(Team team, bool mirror) => @<a href="@team.ClanUrl" target="_blank" rel="noopener" title="@(team.ClanUrl is null ? null : "Open de clanpagina")" class="d-block wot-clan-card" style="min-width: 240px; flex: 1 1 240px; max-width: 460px; color: inherit; text-decoration: none;">
 		<MudPaper Outlined Elevation="0" Class="pa-3">
 			@{
 				ClanRating? clan = team.Abbreviation is { } tag && Clans is not null && Clans.TryGetValue(tag, out ClanRating? found) ? found : null;
 			}
-			<MudStack Row AlignItems="AlignItems.Center" Spacing="3" Style="@(mirror ? "flex-direction: row-reverse;" : null)">
+			@* Reverse (not an inline flex-direction: MudBlazor's .flex-row utility is !important and would win). *@
+			<MudStack Row Reverse="@mirror" AlignItems="AlignItems.Center" Spacing="3">
 				@if (clan?.EmblemUrl is { } emblem)
 				{
 					<img src="@emblem" alt="" width="40" height="40" />
@@ -67,11 +68,11 @@
 					<MudText Typo="Typo.body2" Class="mud-text-secondary" Style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
 						@(clan is not null ? clan.Name + " · " : null)@(team == Report.OwnTeam ? "jouw clan" : "tegenstander")
 					</MudText>
+					<span class="wot-chip-flush mt-1" style="@("align-self: " + (mirror ? "flex-end" : "flex-start"))"><ResultChip Result="team.Result" /></span>
 				</MudStack>
-				<span class="wot-chip-flush"><ResultChip Result="team.Result" /></span>
 				@if (clan?.Rating is { } rating)
 				{
-					<MudStack Spacing="0" Style="text-align: right;">
+					<MudStack Spacing="0" Style="@("text-align: " + (mirror ? "left" : "right") + "; flex: none;")">
 						<MudText Typo="Typo.overline" Class="mud-text-secondary">Clanrating</MudText>
 						<MudText Style="font: 700 30px/1.1 var(--wot-font-display); font-variant-numeric: tabular-nums;">@NumberFormat.Fmt(rating)</MudText>
 						@if (clan.Rank is { } rank)
