@@ -9,8 +9,8 @@
 			Team first = Report.OwnTeam ?? Report.Team1;
 			Team second = first == Report.Team1 ? Report.Team2 : Report.Team1;
 		}
-		<div class="d-flex align-stretch gap-3 pb-3">
-			<div class="d-flex flex-wrap justify-center align-center gap-3 wot-battle-cards">
+		<MudStack Row AlignItems="AlignItems.Stretch" Spacing="3" Class="pb-3">
+			<MudStack Row Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="3" Class="flex-wrap wot-battle-cards">
 				@TeamCard(first, false)
 				<MudStack Spacing="0" AlignItems="AlignItems.Center">
 					<MudText Typo="Typo.h6" HtmlTag="span" Class="mud-text-secondary">VS</MudText>
@@ -20,15 +20,15 @@
 					}
 				</MudStack>
 				@TeamCard(second, true)
-			</div>
+			</MudStack>
 			@if (_canToggleBattleStats)
 			{
-				@* The main page's stats button as a third card: the slot is as high as the card row and 120px wide; the button fills it (.wot-battle-stats-slot, .wot-dlg-battle .stats-book-button in mud.css). *@
+				@* The main page's stats button as a third card: the slot is as high as the card row and 120px wide; the button fills it (.wot-stats-slot, .wot-dlg-battle .stats-book-button in mud.css). *@
 				<div class="wot-stats-slot">
 					<StatsToggle @bind-Pressed="_showBattleStats" />
 				</div>
 			}
-		</div>
+		</MudStack>
 		<Details Report="Report" ShowBattleStats="_showBattleStats" ExpandTeams="true" />
 	</DialogContent>
 	<DialogActions>
