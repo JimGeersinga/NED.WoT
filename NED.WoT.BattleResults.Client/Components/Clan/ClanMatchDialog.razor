@@ -260,7 +260,7 @@
 				<button type="button" aria-pressed="@(IsSelected(context) ? "true" : "false")" class="wot-row-btn">@context.MatchTimeDisplay</button>
 			</MudTd>
 			<MudTd DataLabel="Duur" Style="text-align: right" Class="mud-text-secondary">@context.MatchDurationDisplay</MudTd>
-			<MudTd DataLabel="Map"><b>@context.MapName</b> @ownTeam?.Base</MudTd>
+			<MudTd DataLabel="Map"><div class="mapc"><b title="@context.MapName">@context.MapName</b><MudChip T="string" Size="Size.Small" Variant="Variant.Text" Class="map-base-chip">@ownTeam?.Base</MudChip></div></MudTd>
 			<MudTd DataLabel="Score" Style="text-align: center">
 				@if (context.HasScore)
 				{
