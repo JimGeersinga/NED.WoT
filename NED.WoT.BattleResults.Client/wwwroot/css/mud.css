@@ -654,6 +654,7 @@ a.wot-clan-card[href]:focus-visible > .mud-paper { border-color: var(--mud-palet
 .mud-icon-button.mud-button-outlined-default:not(:disabled):hover { border-color: var(--mud-palette-text-secondary); }
 
 /* MudIconButton (the tool buttons of the filter bar: the stats book, the clan members, the unknown names; game art inside). */
+.mud-icon-button.filter-tool-button { padding: 5px 12px; }
 .mud-icon-button.filter-tool-button img { width: 28px; height: 28px; object-fit: contain; }
 .mud-icon-button.stats-book-button img { width: 36px; }
 
