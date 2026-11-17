@@ -31,9 +31,9 @@
                                           Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.FolderOpen"
                                           AdornmentAriaLabel="@($"Kies map voor {name}")" OnAdornmentClick="() => PickFolder(folder)"
                                           @bind-Value="folder.Path" For="(() => folder.Path)" />
-                            <MudIconButton Icon="@Icons.Material.Outlined.ArrowUpward" Size="Size.Small" Disabled="@(index == 0)" OnClick="() => Move(folder, -1)" aria-label="@($"{name} omhoog")" />
-                            <MudIconButton Icon="@Icons.Material.Outlined.ArrowDownward" Size="Size.Small" Disabled="@(index == modal.ReplayFolders.Count - 1)" OnClick="() => Move(folder, 1)" aria-label="@($"{name} omlaag")" />
-                            <MudIconButton Icon="@Icons.Material.Outlined.Delete" Size="Size.Small" Disabled="@(modal.ReplayFolders.Count == 1)" OnClick="() => Remove(folder)" aria-label="@($"{name} verwijderen")" />
+                            <MudIconButton Icon="@Icons.Material.Outlined.ArrowUpward" Disabled="@(index == 0)" OnClick="() => Move(folder, -1)" aria-label="@($"{name} omhoog")" />
+                            <MudIconButton Icon="@Icons.Material.Outlined.ArrowDownward" Disabled="@(index == modal.ReplayFolders.Count - 1)" OnClick="() => Move(folder, 1)" aria-label="@($"{name} omlaag")" />
+                            <MudIconButton Icon="@Icons.Material.Outlined.Delete" Disabled="@(modal.ReplayFolders.Count == 1)" OnClick="() => Remove(folder)" aria-label="@($"{name} verwijderen")" />
                         </div>
                     }
                 </MudStack>

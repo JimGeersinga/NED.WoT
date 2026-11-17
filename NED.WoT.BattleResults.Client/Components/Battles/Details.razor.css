@@ -35,15 +35,6 @@
     flex: none;
 }
 
-/* "Jij": hangs in the expander column, left of the # cell (a sticky cell, so it is the anchor). */
-.own-row-icon {
-    position: absolute;
-    right: 100%;
-    top: 50%;
-    transform: translateY(-50%);
-    margin-right: 8px;
-}
-
 .wot-name-text {
     min-width: 0;
     overflow: hidden;
