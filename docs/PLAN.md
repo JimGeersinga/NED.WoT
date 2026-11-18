@@ -144,7 +144,7 @@ Titles match the GitHub milestones one to one.
 | 07 | Speed and memory | #41–#45, #73 | A reload frees the old battle list; replays are read by block and parsed into a typed model; analyzers run as errors; startup options measured: the SDK's ReadyToRun default stays, trimming does not pay off. |
 | 08 | Fewer MudBlazor overrides | #54–#60 | Hand-made buttons, icons, chips and menu rows become MudBlazor components; unused and leaking CSS goes; shadows move into the theme. |
 | 09 | Teams | #65–#70 | Per-team statistics: lobbies grouped into teams, a team filter and results per map per team. |
-| 10 | .NET 11 | #78 | Upgrade to .NET 11. |
+| 10 | .NET 11 | #78, #139 | Upgrade to .NET 11. |
 | 11 | Component structure | #108–#114 | Components in feature folders; `Index`, the Clan battle dialog, the filter bar and `Details` split so each has one job. |
 
 Release publishing keeps the SDK defaults, with nothing set in the csproj (#73, measured 2026-11-16). For this framework-dependent MSIX publish, the SDK already turns ReadyToRun on and leaves trimming off.
