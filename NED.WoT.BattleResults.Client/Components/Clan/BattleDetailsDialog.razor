@@ -6,17 +6,17 @@
 	</TitleContent>
 	<DialogContent>
 		@{
-			Team first = Report.OwnTeam ?? Report.Team1;
-			Team second = first == Report.Team1 ? Report.Team2 : Report.Team1;
+			Team first = Current.OwnTeam ?? Current.Team1;
+			Team second = first == Current.Team1 ? Current.Team2 : Current.Team1;
 		}
 		<MudStack Row AlignItems="AlignItems.Stretch" Spacing="3" Class="pb-3 wot-battle-head">
 			<MudStack Row Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="3" Class="flex-wrap wot-battle-cards">
 				@TeamCard(first, false)
 				<MudStack Spacing="0" AlignItems="AlignItems.Center">
 					<MudText Typo="Typo.h6" HtmlTag="span" Class="mud-text-secondary">VS</MudText>
-					@if (Report.HasScore)
+					@if (Current.HasScore)
 					{
-						<BattleScore Left="Report.Destroyed(first)" Right="Report.Destroyed(second)" LeftResult="first.Result" RightResult="second.Result" Large="true" />
+						<BattleScore Left="Current.Destroyed(first)" Right="Current.Destroyed(second)" LeftResult="first.Result" RightResult="second.Result" Large="true" />
 					}
 				</MudStack>
 				@TeamCard(second, true)
@@ -29,10 +29,22 @@
 				</div>
 			}
 		</MudStack>
-		<Details Report="Report" ShowBattleStats="_showBattleStats" ExpandTeams="true" />
+		<Details @key="Current" Report="Current" ShowBattleStats="_showBattleStats" ExpandTeams="true" />
 	</DialogContent>
 	<DialogActions>
-		<MudButton OnClick="() => MudDialog.Close()">Sluiten</MudButton>
+		@* Three equal slots keep the navigation in the middle of the bar: empty | Vorige 3 van 12 Volgende | Sluiten. Vorige is the newer battle (the history table is newest first). *@
+		<div style="flex: 1 1 0"></div>
+		@if (Battles.Count > 1)
+		{
+			<div class="d-flex align-center justify-center gap-2">
+				<MudButton StartIcon="@Icons.Material.Filled.ChevronLeft" Disabled="@(_index <= 0)" OnClick="() => Move(-1)">Vorige</MudButton>
+				<MudText Typo="Typo.caption" Class="mud-text-secondary">@(_index + 1) van @Battles.Count</MudText>
+				<MudButton EndIcon="@Icons.Material.Filled.ChevronRight" Disabled="@(_index >= Battles.Count - 1)" OnClick="() => Move(1)">Volgende</MudButton>
+			</div>
+		}
+		<div class="d-flex justify-end" style="flex: 1 1 0">
+			<MudButton OnClick="() => MudDialog.Close()">Sluiten</MudButton>
+		</div>
 	</DialogActions>
 </MudDialog>
 
@@ -45,6 +57,10 @@
 
 	[Parameter]
 	public required BattleReport Report { get; set; }
+
+	/// <summary>The battles Vorige and Volgende walk through, in the order of the history table (newest first); empty or one battle shows no buttons.</summary>
+	[Parameter]
+	public IReadOnlyList<BattleReport> Battles { get; set; } = [];
 
 	/// <summary>The clan ratings the clan match dialog already fetched (emblem, rank); null while they are missing or failed: the header then shows the tag only.</summary>
 	[Parameter]
@@ -67,21 +83,32 @@
 		}
 	</text>;
 
+	private BattleReport Current { get; set; } = null!;
+	private int _index;
+
+	private void Move(int step)
+	{
+		_index = Math.Clamp(_index + step, 0, Battles.Count - 1);
+		Current = Battles[_index];
+	}
+
 	private bool _canToggleBattleStats;
 	private bool _showBattleStats;
 
 	// Map, date, start–end time and duration: "Ensk · 04-04-2026 · 21:45–21:48 · 2m 20s".
 	private string Title => string.Join(" · ", new[]
 	{
-		Report.MapName,
-		Report.MatchStart.ToString("dd-MM-yyyy"),
-		Report.MatchStart.ToString("HH:mm") + (Report.MatchEnd is { } end ? $" – {end:HH:mm}" : null),
-		Report.MatchDuration.HasValue ? Report.MatchDurationDisplay.ToString() : null,
+		Current.MapName,
+		Current.MatchStart.ToString("dd-MM-yyyy"),
+		Current.MatchStart.ToString("HH:mm") + (Current.MatchEnd is { } end ? $" – {end:HH:mm}" : null),
+		Current.MatchDuration.HasValue ? Current.MatchDurationDisplay.ToString() : null,
 	}.Where(x => !string.IsNullOrEmpty(x)));
 
 	// Same claim as Index; the stats columns start off.
 	protected override async Task OnInitializedAsync()
 	{
+		Current = Report;
+		_index = Math.Max(0, Battles.ToList().IndexOf(Report));
 		_canToggleBattleStats = AuthenticationState is not null && (await AuthenticationState).User.HasClaim(Claims.CanSeeBattleStats, bool.TrueString);
 	}
 }
