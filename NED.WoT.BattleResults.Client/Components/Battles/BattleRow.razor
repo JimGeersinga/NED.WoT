@@ -51,7 +51,7 @@ else
 		</MudTooltip>
 	</MudTd>
 	<MudTd Class="mapcol"><div class="mapc"><b title="@Report.MapName">@Report.MapName</b><MudChip T="string" Size="Size.Small" Variant="Variant.Text" Class="map-base-chip">@ownTeam?.Base</MudChip></div></MudTd>
-	<MudTd @oncontextmenu="OpenMatchMenu">
+	<MudTd @oncontextmenu="e => OnMatchMenu.InvokeAsync((Report, e))">
 		<span class="vs" @oncontextmenu:preventDefault="true">
 			<a class="@TagClass(left, left == ownTeam, onlyOwn)" href="@left.ClanUrl" target="_blank" title="@(left.ClanUrl is null ? null : "Open de clanpagina")" @onclick:stopPropagation="true"><span class="tag-t">@left.Abbreviation</span></a>
 			<span class="score">@(left.Result is Result.Win ? (MarkupString)$"<b>{leftKills}</b>" : (MarkupString)$"<span>{leftKills}</span>")–@(right.Result is Result.Win ? (MarkupString)$"<b>{rightKills}</b>" : (MarkupString)$"<span>{rightKills}</span>")</span>
@@ -63,22 +63,7 @@ else
 		@Stats(new[] { Report })
 	}
 	<MudTd Class="res"><ResultChip Result="Report.Result" IconRight="true" /></MudTd>
-	<MudTd Class="p4" @oncontextmenu="OpenFileMenu">
-		@* Right-click menu of the row: the replay's file name, and a button to copy it. Opened from the cells at the cursor; the activator is only an anchor. *@
-		<MudMenu @ref="_fileMenu" PositionAtCursor="true" ActivationEvent="MouseEvent.RightClick" PopoverClass="wot-ctx-pop" Dense="true">
-			<ActivatorContent><span class="gl-ctx-anchor"></span></ActivatorContent>
-			<ChildContent>
-				<div class="wot-ctx-file"><span>Replaybestand</span><code>@Report.FileName</code></div>
-				<MudMenuItem Icon="@Icons.Material.Filled.ContentCopy" OnClick="() => OnCopyFileName.InvokeAsync(Report)">Kopieer bestandsnaam</MudMenuItem>
-			</ChildContent>
-		</MudMenu>
-		@* Right-click menu of the teams cell: the clan battle of the two tags. It lives here, next to the file menu, so the teams cell stays as on master; OpenMatchMenu opens it at the cursor. *@
-		<MudMenu @ref="_matchMenu" PositionAtCursor="true" ActivationEvent="MouseEvent.RightClick" PopoverClass="wot-ctx-pop" Dense="true">
-			<ActivatorContent><span class="gl-ctx-anchor"></span></ActivatorContent>
-			<ChildContent>
-				<MudMenuItem Icon="@Icons.Material.Filled.SportsEsports" Disabled="@(string.IsNullOrEmpty(Report.Team1.Abbreviation) || string.IsNullOrEmpty(Report.Team2.Abbreviation))" OnClick="() => OnOpenClanMatch.InvokeAsync((Report.Team1.Abbreviation!, Report.Team2.Abbreviation!))">Open clan gevecht</MudMenuItem>
-			</ChildContent>
-		</MudMenu>
+	<MudTd Class="p4" @oncontextmenu="e => OnFileMenu.InvokeAsync((Report, e))">
 		<MudIconButton Icon="@Icons.Material.Filled.ContentCopy" Variant="Variant.Outlined" Size="Size.Small" Disabled="@(ownTeam == null)" OnClick="() => OnCopy.InvokeAsync(Report)" aria-label="Kopieer opstelling" title="Kopieer opstelling" />
 	</MudTd>
 }
@@ -105,20 +90,13 @@ else
 	[Parameter]
 	public EventCallback<BattleReport> OnCopy { get; set; }
 
-	/// <summary>The "Kopieer bestandsnaam" item of the right-click menu.</summary>
+	/// <summary>Right-click on the last cell: Index opens its one shared file menu at the cursor for this battle (a menu per row broke on rows rendered by scrolling).</summary>
 	[Parameter]
-	public EventCallback<BattleReport> OnCopyFileName { get; set; }
+	public EventCallback<(BattleReport Report, MouseEventArgs Args)> OnFileMenu { get; set; }
 
-	/// <summary>The "Open clan gevecht" item of the right-click menu: the two clan tags of this battle.</summary>
+	/// <summary>Right-click on the teams cell: Index opens its one shared clan menu at the cursor for this battle.</summary>
 	[Parameter]
-	public EventCallback<(string, string)> OnOpenClanMatch { get; set; }
-
-	private MudMenu? _fileMenu;
-	private MudMenu? _matchMenu;
-
-	private Task OpenFileMenu(MouseEventArgs e) => _fileMenu?.OpenMenuAsync(e) ?? Task.CompletedTask;
-
-	private Task OpenMatchMenu(MouseEventArgs e) => _matchMenu?.OpenMenuAsync(e) ?? Task.CompletedTask;
+	public EventCallback<(BattleReport Report, MouseEventArgs Args)> OnMatchMenu { get; set; }
 
 	/// <summary>A team tag in the VS cell (Team 1 left, Team 2 right): coloured by the team's result, and with the clan-chip edge when it is the own team. With "Alleen eigen gevechten uitlichten" only the own tag is coloured.</summary>
 	public static string TagClass(Team team, bool own, bool onlyOwn)

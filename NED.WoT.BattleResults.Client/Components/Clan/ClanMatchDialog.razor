@@ -9,7 +9,7 @@
 
 <MudDialog Class="wot-dialog wot-dlg-history overflow-hidden" ContentClass="overflow-y-auto" TitleClass="wot-dialog-bar">
 	<TitleContent>
-		<WotDialogTitle Title="Gevechtshistorie" />
+		<WotDialogTitle Title="@($"Gevechtshistorie tegen [{Sides.Right}]")" />
 	</TitleContent>
 	<DialogContent>
 		@if (Match.HasValue)
@@ -257,7 +257,7 @@
 
 	// Stacked on top of this dialog; Esc closes only the top one.
 	private Task OpenBattle(BattleReport report) => DialogService.ShowAsync<BattleDetailsDialog>(string.Empty,
-		new DialogParameters<BattleDetailsDialog> { { x => x.Report, report }, { x => x.Clans, _state is RatingState.Ok ? _clans : null } },
+		new DialogParameters<BattleDetailsDialog> { { x => x.Report, report }, { x => x.Battles, _battles.OrderByDescending(b => b.MatchStart).ToList() }, { x => x.Clans, _state is RatingState.Ok ? _clans : null } },
 		new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, MaxWidth = MaxWidth.False });
 
 	void Cancel() => MudDialog.Close(DialogResult.Ok(true));

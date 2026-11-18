@@ -200,8 +200,8 @@
 						   ShowBattleStats="_showBattleStats"
 						   Stats="StatCells"
 						   OnCopy="@(report => CopyResultAsync(report, report.OwnTeam))"
-						   OnCopyFileName="CopyFileNameAsync"
-						   OnOpenClanMatch="@(m => OpenClanMatchDialog(m))" />
+						   OnFileMenu="@(x => OpenMenu(_fileMenu, x))"
+						   OnMatchMenu="@(x => OpenMenu(_matchMenu, x))" />
 			}
 		</RowTemplate>
 		<ChildRowContent>
@@ -247,6 +247,23 @@
 			<MudTd></MudTd>
 		</FooterContent>
 	</MudTable>
+	@* One right-click menu each for all rows, opened at the cursor by BattleRow's context-menu events; the activator is only an anchor. *@
+	<MudMenu @ref="_fileMenu" PositionAtCursor="true" ActivationEvent="MouseEvent.RightClick" PopoverClass="wot-ctx-pop" Dense="true">
+		<ActivatorContent><span class="gl-ctx-anchor"></span></ActivatorContent>
+		<ChildContent>
+			<div class="wot-ctx-file"><span>Replaybestand</span><code>@_menuReport?.FileName</code></div>
+			<MudMenuItem Icon="@Icons.Material.Filled.ContentCopy" OnClick="() => CopyFileNameAsync(_menuReport!)">Kopieer bestandsnaam</MudMenuItem>
+		</ChildContent>
+	</MudMenu>
+	<MudMenu @ref="_matchMenu" PositionAtCursor="true" ActivationEvent="MouseEvent.RightClick" PopoverClass="wot-ctx-pop" Dense="true">
+		<ActivatorContent><span class="gl-ctx-anchor"></span></ActivatorContent>
+		<ChildContent>
+			@if (_menuReport is { } r)
+			{
+				<MudMenuItem Icon="@Icons.Material.Filled.History" Disabled="@(string.IsNullOrEmpty(r.Team1.Abbreviation) || string.IsNullOrEmpty(r.Team2.Abbreviation))" OnClick="() => OpenClanMatchDialog((r.Team1.Abbreviation!, r.Team2.Abbreviation!))">Gevechtshistorie tegen [@((r.OwnTeam == r.Team1 ? r.Team2 : r.Team1).Abbreviation)]</MudMenuItem>
+			}
+		</ChildContent>
+	</MudMenu>
 	}
 </div>
 
@@ -806,10 +823,24 @@
 		NotifyCopied(output);
 	}
 
+	private MudMenu? _fileMenu;
+	private MudMenu? _matchMenu;
+	private BattleReport? _menuReport; // the battle the open right-click menu is for
+
+	private async Task OpenMenu(MudMenu? menu, (BattleReport Report, MouseEventArgs Args) x)
+	{
+		_menuReport = x.Report;
+		StateHasChanged(); // the items read _menuReport: render them before the menu opens
+		if (menu is not null)
+		{
+			await menu.OpenMenuAsync(x.Args);
+		}
+	}
+
 	private async Task OpenClanMatchDialog((string, string) match)
 	{
 		_clanMatchDialog?.Close();
-		_clanMatchDialog = await DialogService.ShowAsync<ClanMatchDialog>("Gevechtshistorie",
+		_clanMatchDialog = await DialogService.ShowAsync<ClanMatchDialog>(string.Empty,
 			new DialogParameters<ClanMatchDialog>() { { x => x.Match, match } },
 			new DialogOptions
 			{

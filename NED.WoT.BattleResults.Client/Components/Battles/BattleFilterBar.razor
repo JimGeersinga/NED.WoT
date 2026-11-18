@@ -54,7 +54,7 @@
 		<NoItemsTemplate><span class="filter-option-note">Geen speler gevonden</span></NoItemsTemplate>
 	</MudAutocomplete>
 
-	@* Map: a MudMenu whose popover holds a search box, a checkbox per map and the Wissen and Alles buttons; the field is its activator. *@
+	@* Map: a MudMenu whose popover holds a search box, a checkbox per map and the Wissen button; the field is its activator. *@
 	<MudMenu @bind-Open="_mapOpen" Class="map-filter" PopoverClass="filter-popover map-filter-popover" RelativeWidth="DropdownWidth.Adaptive" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft">
 		<ActivatorContent>
 			@* The clear button is MudBlazor's own (a small MudIconButton with its mud-input-clear-button class), placed over the box like the one MudBlazor draws in the other three; it sits outside the clickable field so its click does not also toggle the menu. *@
@@ -96,7 +96,6 @@
 				<div class="map-filter-footer">
 					<span class="filter-option-note">@Maps.Count geselecteerd</span>
 					<MudButton Variant="Variant.Text" Size="Size.Small" Disabled="@(Maps.Count == 0)" OnClick="ClearMaps">Wissen</MudButton>
-					<MudButton Variant="Variant.Outlined" Size="Size.Small" OnClick="() => TickAll(maps)">Alles</MudButton>
 				</div>
 			}
 		</ChildContent>
@@ -304,8 +303,6 @@
 		return MapsChanged.InvokeAsync(maps);
 	}
 
-	/// <summary>Alles ticks every map in the list as it is now (the typed term narrows it).</summary>
-	private Task TickAll(IEnumerable<BattleFilters.Choice> listed) => MapsChanged.InvokeAsync([.. Maps, .. listed.Select(x => x.Name)]);
 
 	private Task PickResults(IEnumerable<Result>? results) => ResultsChanged.InvokeAsync([.. results ?? []]);
 
