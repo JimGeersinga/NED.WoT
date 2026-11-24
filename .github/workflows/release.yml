@@ -17,12 +17,12 @@ jobs:
       PACKAGES: NED.WoT.BattleResults.Client/AppPackages
     steps:
     - name: Checkout
-      uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         fetch-depth: 0
 
     - name: Install .NET Core
-      uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+      uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
@@ -46,7 +46,7 @@ jobs:
         sed -i 's|HoursBetweenUpdateChecks="0"|HoursBetweenUpdateChecks="0" ShowPrompt="true"|' '${{ env.PACKAGES }}/NED.WoT.BattleResults.Client_x64.appinstaller'
 
     - name: Deploy to Azure webapp
-      uses: azure/webapps-deploy@5cfb776471c748b351e1ebf5770e208a54ace016 # v2
+      uses: azure/webapps-deploy@02a81bead70021f5284939794bcec79c271ab383 # v3.0.8
       with:
         app-name: ${{ env.AZURE_WEBAPP_NAME }}
         publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
