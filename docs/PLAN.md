@@ -128,8 +128,9 @@ Today every setting is a `Preferences.Default` key named after a property of
 
 New keys are added by the issue that needs them and listed here in the same PR.
 The Wargaming token is **not** a `Preferences` key; it is in `SecureStorage`
-(§3.2). Team names are not settings either; they live in the SQLite file `gevechtslog.db` (§1, "Local database"). Names and values of folder and temp-replay settings are fixed by #15 and
-#17.
+(§3.2). Team names are not settings either; they live in the SQLite file
+`gevechtslog.db` (§1, "Local database"). Names and values of folder and
+temp-replay settings are fixed by #15 and #17.
 
 ## 5. Milestones
 
