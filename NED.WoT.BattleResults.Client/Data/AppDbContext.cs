@@ -32,7 +32,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
             await using (AppDbContext db = new(options))
             {
-                // The app calls `await db.Database.MigrateAsync()` once before the first query (#67); this replaces the old EnsureCreated plan.
+                // The app migrates at start-up through DatabaseMigration (consumers await DatabaseMigration.Ready); this runs the same MigrateAsync on a temp file.
                 await db.Database.MigrateAsync();
                 Debug.Assert(await db.Database.SqlQuery<int>($"SELECT count(*) AS Value FROM sqlite_master WHERE name = 'LobbyTeams'").SingleAsync() == 1, "Migrate made no LobbyTeams table");
                 db.LobbyTeams.Add(new LobbyTeam { LobbyKey = "2026-04-05|34288599", TeamName = "NED-1", ChangedAt = DateTime.UtcNow });
