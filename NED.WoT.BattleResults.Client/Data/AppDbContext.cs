@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace NED.WoT.BattleResults.Client.Data;
 
-public sealed class TeamDb(DbContextOptions<TeamDb> options) : DbContext(options)
+public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
     public static string DatabasePath => Path.Combine(FileSystem.AppDataDirectory, "gevechtslog.db");
 
@@ -12,12 +12,11 @@ public sealed class TeamDb(DbContextOptions<TeamDb> options) : DbContext(options
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<LobbyTeam>(e =>
-        {
-            e.HasIndex(x => x.LobbyKey).IsUnique();
-            e.Property(x => x.LobbyKey).IsRequired().HasMaxLength(32);
-            e.Property(x => x.TeamName).IsRequired().HasMaxLength(40);
-        });
+        ArgumentNullException.ThrowIfNull(modelBuilder);
+
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
     }
 
 #if DEBUG
@@ -27,9 +26,9 @@ public sealed class TeamDb(DbContextOptions<TeamDb> options) : DbContext(options
         string path = Path.GetTempFileName();
         try
         {
-            DbContextOptions<TeamDb> options = new DbContextOptionsBuilder<TeamDb>().UseSqlite($"Data Source={path}").Options;
+            DbContextOptions<AppDbContext> options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite($"Data Source={path}").Options;
 
-            await using (TeamDb db = new(options))
+            await using (AppDbContext db = new(options))
             {
                 // GetTempFileName leaves an empty file; EnsureCreated treats a database without tables as new.
                 Debug.Assert(await db.Database.EnsureCreatedAsync(), "EnsureCreated made no tables");
@@ -37,7 +36,7 @@ public sealed class TeamDb(DbContextOptions<TeamDb> options) : DbContext(options
                 await db.SaveChangesAsync();
             }
 
-            await using (TeamDb db = new(options))
+            await using (AppDbContext db = new(options))
             {
                 Debug.Assert(await db.LobbyTeams.Where(x => x.LobbyKey == "2026-04-05|34288599").Select(x => x.TeamName).SingleAsync() == "NED-1");
                 db.LobbyTeams.Add(new LobbyTeam { LobbyKey = "2026-04-05|34288599", TeamName = "NED-2", ChangedAt = DateTime.UtcNow });

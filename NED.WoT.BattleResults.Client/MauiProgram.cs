@@ -50,7 +50,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<GevechtslogSessionClient>();
         builder.Services.AddSingleton<IdentityService>();
         // Not opened here: EF builds its model and SQLite loads on the first call (#67, only when ShowTeams is on). One short-lived context per operation.
-        builder.Services.AddDbContextFactory<TeamDb>(o => o.UseSqlite($"Data Source={TeamDb.DatabasePath}"));
+        builder.Services.AddDbContextFactory<AppDbContext>(o => o.UseSqlite($"Data Source={AppDbContext.DatabasePath}"));
 
         return builder.Build();
     }
