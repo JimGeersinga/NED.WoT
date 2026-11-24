@@ -30,8 +30,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
             await using (AppDbContext db = new(options))
             {
-                // GetTempFileName leaves an empty file; EnsureCreated treats a database without tables as new.
-                Debug.Assert(await db.Database.EnsureCreatedAsync(), "EnsureCreated made no tables");
+                // The app calls `await db.Database.MigrateAsync()` once before the first query (#67); this replaces the old EnsureCreated plan.
+                await db.Database.MigrateAsync();
+                Debug.Assert(await db.Database.SqlQuery<int>($"SELECT count(*) AS Value FROM sqlite_master WHERE name = 'LobbyTeams'").SingleAsync() == 1, "Migrate made no LobbyTeams table");
                 db.LobbyTeams.Add(new LobbyTeam { LobbyKey = "2026-04-05|34288599", TeamName = "NED-1", ChangedAt = DateTime.UtcNow });
                 await db.SaveChangesAsync();
             }
