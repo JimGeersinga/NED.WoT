@@ -49,9 +49,15 @@ public static class MauiProgram
         builder.Services.AddSingleton<WargamingApiClient>();
         builder.Services.AddSingleton<GevechtslogSessionClient>();
         builder.Services.AddSingleton<IdentityService>();
-        // Not opened here: EF builds its model and SQLite loads on the first call (#67, only when ShowTeams is on). One short-lived context per operation.
+        // One short-lived context per operation; DatabaseMigration brings the schema up to date in the background (see below).
         builder.Services.AddDbContextFactory<AppDbContext>(o => o.UseSqlite($"Data Source={AppDbContext.DatabasePath}"));
+        builder.Services.AddSingleton<DatabaseMigration>();
 
-        return builder.Build();
+        MauiApp app = builder.Build();
+
+        // Resolving it starts the migration on a thread-pool task; start-up does not wait for it. Consumers await DatabaseMigration.Ready.
+        _ = app.Services.GetRequiredService<DatabaseMigration>();
+
+        return app;
     }
 }
