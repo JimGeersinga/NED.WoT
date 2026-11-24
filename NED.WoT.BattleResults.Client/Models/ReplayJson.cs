@@ -132,6 +132,7 @@ public sealed class ReplayResultsConverter : JsonConverter<ReplayResults>
                     {
                         reader.Read();
                         arenaUniqueId = reader.TokenType == JsonTokenType.Number && reader.TryGetInt64(out long id) ? id : null;
+                        reader.Skip();
                     }
                     else if (reader.ValueTextEquals("players"u8))
                     {
