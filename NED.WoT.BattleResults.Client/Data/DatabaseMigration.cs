@@ -27,7 +27,7 @@ public sealed class DatabaseMigration
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Database migration failed: {ex.Message}");
+            Debug.WriteLine($"Database migration failed: {ex}");
             throw;
         }
     }
