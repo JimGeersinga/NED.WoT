@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 using MudBlazor.Services;
 
+using NED.WoT.BattleResults.Client.Data;
 using NED.WoT.BattleResults.Client.Services;
 
 namespace NED.WoT.BattleResults.Client;
@@ -47,6 +49,8 @@ public static class MauiProgram
         builder.Services.AddSingleton<WargamingApiClient>();
         builder.Services.AddSingleton<GevechtslogSessionClient>();
         builder.Services.AddSingleton<IdentityService>();
+        // Not opened here: EF builds its model and SQLite loads on the first call (#67, only when ShowTeams is on). One short-lived context per operation.
+        builder.Services.AddDbContextFactory<TeamDb>(o => o.UseSqlite($"Data Source={TeamDb.DatabasePath}"));
 
         return builder.Build();
     }

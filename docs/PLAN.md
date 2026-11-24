@@ -18,6 +18,7 @@ A path marked "created by #N" does not exist yet.
 | Duplicate battles | Two recordings of one battle (same `results[0].arenaUniqueID`) are one battle: the first file that is listed keeps its place, any later file with the same id is skipped with one "Overgeslagen" snackbar per load or batch. Always on; a one-block replay has no id and is never skipped. Deleting the kept file frees the id; the copy returns when the folder is loaded again. |
 | Live battle | One temp-replay path setting, separate from the folders. |
 | Ratings | PR, WTR (`account/wtr`) and clan rating in the Clan battle dialog, for everyone with access, from Wargaming's public API under the app's own application id. |
+| Local database | SQLite through EF Core (`Microsoft.EntityFrameworkCore.Sqlite` 11.0.0, owner's choice 2026-11-08), file `gevechtslog.db` in `FileSystem.AppDataDirectory`; one table `LobbyTeams` (lobby key `yyyy-MM-dd\|prebattleID` to team name). Opened only on first use (when `ShowTeams` is on), through `IDbContextFactory<TeamDb>` with one context per operation. Schema by `EnsureCreated`; the first schema change is its own issue (migrations or a `PRAGMA user_version` step). |
 | Tests | No test project. Acceptance is checked by hand and with screenshots (CLAUDE.md, "Screenshots instead of UI tests"). |
 | Build | The .NET recommended analyzers run (`AnalysisLevel` `latest-recommended`) and any warning fails the build (`TreatWarningsAsErrors`); decided by the owner on 2026-11-07. The other Recur build rules stay out (CLAUDE.md). The SDK is pinned to 11.0.x by `global.json`, the same band CI uses. |
 
@@ -36,6 +37,7 @@ is a second project in `NED.WoT.slnx`.
 | `Components/Setup` | `SettingsDialog` |
 | `Components/Shared` | `WotDialogTitle`, `ResultChip`, `NumberFormat`: used by more than one feature |
 | `Services` | `BattleReportService`, `BattleReportMapper`, `SettingService`, `HqAuthenticationStateProvider`, `UpdateCheckService`, `MapNameResolver`, `TankNameResolver`, `ColorHelper` |
+| `Data` | `TeamDb` (EF Core context), `LobbyTeam` (added by #66) |
 | `Models` | `Settings`, `AppSettings`, `BattleReport` and its event args |
 | `Attributes` | `DirectoryExistsAttribute` |
 | `Platforms/Windows` | `App.xaml(.cs)`, `Package.appxmanifest`, `app.manifest` |
@@ -126,7 +128,7 @@ Today every setting is a `Preferences.Default` key named after a property of
 
 New keys are added by the issue that needs them and listed here in the same PR.
 The Wargaming token is **not** a `Preferences` key; it is in `SecureStorage`
-(§3.2). Names and values of folder and temp-replay settings are fixed by #15 and
+(§3.2). Team names are not settings either; they live in the SQLite file `gevechtslog.db` (§1, "Local database"). Names and values of folder and temp-replay settings are fixed by #15 and
 #17.
 
 ## 5. Milestones
