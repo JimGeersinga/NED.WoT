@@ -48,6 +48,15 @@ public class BattleReportService : IDisposable
 
     private volatile bool _loaded;
 
+    /// <summary>Guards <see cref="_keptByArena"/> and <see cref="_skippedFiles"/>.</summary>
+    private readonly object _arenaGate = new();
+
+    /// <summary>Arena id → name of the file that holds that battle in <see cref="BattleReports"/>.</summary>
+    private readonly Dictionary<long, string> _keptByArena = [];
+
+    /// <summary>Names of the files skipped as a second copy of a listed battle.</summary>
+    private readonly HashSet<string> _skippedFiles = [];
+
     /// <returns>The readable battles of the current folder once its read has finished; null for every other folder, and while it is being read.</returns>
     public int? GetBattleCount(ReplayFolder folder) => _loaded && string.Equals(folder.Path, ReplayDirectory, StringComparison.OrdinalIgnoreCase)
         ? BattleReports.Values.Count(x => x.Error == null)
@@ -121,6 +130,12 @@ public class BattleReportService : IDisposable
                 _folderCts = CancellationTokenSource.CreateLinkedTokenSource(_disposed.Token);
                 CurrentFolder = index;
                 BattleReports = new ConcurrentDictionary<string, BattleReport>();
+                lock (_arenaGate)
+                {
+                    _keptByArena.Clear();
+                    _skippedFiles.Clear();
+                }
+
                 _loaded = false;
             }
             finally
@@ -185,6 +200,7 @@ public class BattleReportService : IDisposable
         List<FileInfo> files = ReplayFiles();
         Interlocked.Exchange(ref _filesToLoad, files.Count);
 
+        ConcurrentBag<string> skipped = [];
         OrderablePartitioner<FileInfo> partitioner = Partitioner.Create(files);
         try
         {
@@ -194,12 +210,12 @@ public class BattleReportService : IDisposable
                 {
                     BattleReport report = GetBattleReport(file);
 
-                    AddBattleReport(cache, file.Name, report, _settingService.Settings.UpdateScreeenWhileLoading);
+                    AddBattleReport(cache, file.Name, report, skipped, _settingService.Settings.UpdateScreeenWhileLoading);
                 }
                 catch (Exception ex)
                 {
                     // The unreadable file becomes a row of its own in the table, not a silent gap.
-                    AddBattleReport(cache, file.Name, Unreadable(file, ex.Message), _settingService.Settings.UpdateScreeenWhileLoading);
+                    AddBattleReport(cache, file.Name, Unreadable(file, ex.Message), skipped, _settingService.Settings.UpdateScreeenWhileLoading);
                 }
                 finally
                 {
@@ -216,6 +232,7 @@ public class BattleReportService : IDisposable
         }
 
         _loaded = true;
+        NoticeSkipped(skipped);
 
         long elapsedMs = stopwatch.ElapsedMilliseconds;
         LastLoadDuration = stopwatch.Elapsed;
@@ -295,6 +312,13 @@ public class BattleReportService : IDisposable
         string folder = Path.GetTempPath();
         Debug.Assert(LiveReplayFile(folder, @"C:\replays") == Path.Combine(folder, "temp.wotreplay"), "a configured folder gives temp.wotreplay in it");
         Debug.Assert(LiveReplayFile(null, null) is null, "nothing known: no lookup");
+
+        Dictionary<long, string> kept = [];
+        Debug.Assert(TryKeep(kept, null, "a") && TryKeep(kept, null, "b"), "no arena id: always kept");
+        Debug.Assert(TryKeep(kept, 124088161076949145, "a"), "an unseen arena id is kept");
+        Debug.Assert(!TryKeep(kept, 124088161076949145, "b"), "a second file of the same arena is skipped");
+        Debug.Assert(TryKeep(kept, 124088161076949145, "a"), "the file that holds the arena stays kept");
+        Debug.Assert(TryKeep(kept, 124088302810871141, "b"), "a different arena is independent");
     }
 
     /// <summary>Every 2 s: the two clan tags of the battle being played, from the live packet stream of temp.wotreplay. A tick that finds the previous one still running is skipped.</summary>
@@ -353,7 +377,7 @@ public class BattleReportService : IDisposable
     /// <summary>Puts a new replay in the pending set (unless it is listed or pending already) and restarts the 1 s quiet timer of the batch.</summary>
     private void QueueNewFile(string name, string fullPath)
     {
-        if (_disposed.IsCancellationRequested || BattleReports.ContainsKey(name) || !_pending.TryAdd(name, fullPath))
+        if (_disposed.IsCancellationRequested || BattleReports.ContainsKey(name) || IsSkipped(name) || !_pending.TryAdd(name, fullPath))
         {
             return;
         }
@@ -426,13 +450,14 @@ public class BattleReportService : IDisposable
             _clanMatch = null;
 
             ConcurrentBag<string> added = [];
+            ConcurrentBag<string> skipped = [];
             int unreadable = 0;
             Parallel.ForEach(Partitioner.Create(batch), new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount, CancellationToken = token }, file =>
             {
                 BattleReport report = GetBattleReport(new FileInfo(file.Value));
 
                 // An unreadable replay is added too (it shows as a warning row).
-                bool listed = AddBattleReport(cache, file.Key, report);
+                bool listed = AddBattleReport(cache, file.Key, report, skipped);
                 _pending.TryRemove(file.Key, out _);
                 if (listed)
                 {
@@ -455,6 +480,7 @@ public class BattleReportService : IDisposable
                 _snackbar.Add(NoticeList("Toegevoegd", sentence, [.. added.Order(StringComparer.Ordinal)]), unreadable == 0 ? Severity.Success : Severity.Warning);
             }
 
+            NoticeSkipped(skipped);
             LoadingBattleReportsFinished?.Invoke(this, new EventArgs());
             Debug.WriteLine($"New replays loaded: {batch.Count} files, {stopwatch.ElapsedMilliseconds} ms");
         }
@@ -489,10 +515,21 @@ public class BattleReportService : IDisposable
 
     private void OnDeleted(object sender, FileSystemEventArgs e)
     {
-        if (BattleReports.Remove(e.Name!, out BattleReport? report))
+        bool removed = BattleReports.Remove(e.Name!, out BattleReport? report);
+        lock (_arenaGate)
+        {
+            // A skipped copy only leaves the set; a kept file frees its battle (the copy comes back when the folder is loaded again).
+            _skippedFiles.Remove(e.Name!);
+            if (report?.ArenaUniqueId is { } arenaId && _keptByArena.GetValueOrDefault(arenaId) == e.Name)
+            {
+                _keptByArena.Remove(arenaId);
+            }
+        }
+
+        if (removed)
         {
             _snackbar.Add(Notice("Verwijderd", $"{e.Name} is niet meer aanwezig"), Severity.Warning);
-            BattleReportRemoved?.Invoke(this, new BattleReportRemovedEventArgs(report));
+            BattleReportRemoved?.Invoke(this, new BattleReportRemovedEventArgs(report!));
         }
     }
 
@@ -594,14 +631,46 @@ public class BattleReportService : IDisposable
         return new($"<b>{WebUtility.HtmlEncode(lead)} · </b>{WebUtility.HtmlEncode(sentence)}{lines}{more}");
     }
 
-    /// <returns>False when a report with this file name is already there (the user has been told).</returns>
-    private bool AddBattleReport(ConcurrentDictionary<string, BattleReport> cache, string name, BattleReport report, bool notify = true)
+    private bool IsSkipped(string name)
+    {
+        lock (_arenaGate)
+        {
+            return _skippedFiles.Contains(name);
+        }
+    }
+
+    /// <summary>Check first, then add: false when another file already holds the battle <paramref name="arenaId"/>. No id (no results block): always true.</summary>
+    internal static bool TryKeep(Dictionary<long, string> kept, long? arenaId, string fileName) =>
+        arenaId is not { } id || kept.TryAdd(id, fileName) || kept[id] == fileName;
+
+    /// <summary>One snackbar for the files a load or batch skipped as a second copy of a listed battle.</summary>
+    private void NoticeSkipped(ConcurrentBag<string> skipped)
+    {
+        if (!skipped.IsEmpty)
+        {
+            _snackbar.Add(NoticeList("Overgeslagen", $"{skipped.Count} {(skipped.Count == 1 ? "bestand" : "bestanden")}: zelfde gevecht als een al geladen bestand", [.. skipped.Order(StringComparer.Ordinal)]), Severity.Info);
+        }
+    }
+
+    /// <returns>False when the report is not listed: a report with this file name is already there (the user has been told), or the battle is held by another file (it goes to <paramref name="skipped"/>).</returns>
+    private bool AddBattleReport(ConcurrentDictionary<string, BattleReport> cache, string name, BattleReport report, ConcurrentBag<string> skipped, bool notify = true)
     {
         if (_disposed.IsCancellationRequested)
         {
             Debug.WriteLine($"Battle report not added, service disposed: {name}");
 
             return false;
+        }
+
+        lock (_arenaGate)
+        {
+            if (!TryKeep(_keptByArena, report.ArenaUniqueId, name))
+            {
+                _skippedFiles.Add(name);
+                skipped.Add(name);
+
+                return false;
+            }
         }
 
         bool added = cache.TryAdd(name, report);

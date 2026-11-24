@@ -13,6 +13,12 @@ public sealed record ReplayHeader
     public string? DateTime { get; init; }
     public string? MapDisplayName { get; init; }
 
+    /// <summary>The map's internal key ("01_karelia").</summary>
+    public string? MapName { get; init; }
+
+    /// <summary>The player who recorded the replay.</summary>
+    public string? PlayerName { get; init; }
+
     /// <summary>The players by vehicle id.</summary>
     public Dictionary<string, ReplayPlayer>? Vehicles { get; init; }
 }
@@ -26,6 +32,10 @@ public sealed record ReplayPlayer
     /// <summary>Only in results[0].players; 0 for a player without a clan.</summary>
     [JsonPropertyName("clanDBID")]
     public long? ClanDbid { get; init; }
+
+    /// <summary>Only in results[0].players; 0 or absent for a player outside a platoon.</summary>
+    [JsonPropertyName("prebattleID")]
+    public long? PrebattleId { get; init; }
     public int? Team { get; init; }
     public string? VehicleType { get; init; }
 }
@@ -35,6 +45,9 @@ public sealed record ReplayPlayer
 public sealed record ReplayResults
 {
     public ReplayCommon? Common { get; init; }
+
+    /// <summary>results[0].arenaUniqueID: the same in every recording of a battle.</summary>
+    public long? ArenaUniqueId { get; init; }
 
     /// <summary>The stats by vehicle id. Every value is an array; the first element is the one that counts.</summary>
     public Dictionary<string, ReplayVehicleStats[]>? Vehicles { get; init; }
@@ -58,6 +71,8 @@ public sealed record ReplayCommon
 
 public sealed record ReplayVehicleStats
 {
+    [JsonPropertyName("accountDBID")]
+    public long? AccountDbId { get; init; }
     public int? DamageDealt { get; init; }
     public int? DamageReceived { get; init; }
     public int? DamageBlockedByArmor { get; init; }
@@ -98,6 +113,7 @@ public sealed class ReplayResultsConverter : JsonConverter<ReplayResults>
 
         ReplayCommon? common = null;
         Dictionary<string, ReplayVehicleStats[]>? vehicles = null;
+        long? arenaUniqueId = null;
         Dictionary<string, ReplayPlayer>? players = null;
         Dictionary<string, ReplayPlayer>? accountPlayers = null;
 
@@ -111,6 +127,12 @@ public sealed class ReplayResultsConverter : JsonConverter<ReplayResults>
                     {
                         reader.Read();
                         common = JsonSerializer.Deserialize(ref reader, ReplayJsonContext.Default.ReplayCommon);
+                    }
+                    else if (reader.ValueTextEquals("arenaUniqueID"u8))
+                    {
+                        reader.Read();
+                        arenaUniqueId = reader.TokenType == JsonTokenType.Number && reader.TryGetInt64(out long id) ? id : null;
+                        reader.Skip();
                     }
                     else if (reader.ValueTextEquals("players"u8))
                     {
@@ -139,7 +161,7 @@ public sealed class ReplayResultsConverter : JsonConverter<ReplayResults>
             }
         }
 
-        return new ReplayResults { Common = common, Vehicles = vehicles, Players = players, AccountPlayers = accountPlayers };
+        return new ReplayResults { Common = common, ArenaUniqueId = arenaUniqueId, Vehicles = vehicles, Players = players, AccountPlayers = accountPlayers };
     }
 
     public override void Write(Utf8JsonWriter writer, ReplayResults value, JsonSerializerOptions options) =>

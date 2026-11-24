@@ -496,6 +496,15 @@
 		Debug.Assert(mapped.Team1.Players.Count == 2 && mapped.Team1.Players.Single(x => x.Name == "Dader").IsTeamKiller == true, "isTeamKiller: true maps to IsTeamKiller == true");
 		Debug.Assert(mapped.Team1.Players.Single(x => x.Name == "Slachtoffer").IsTeamKiller == false && mapped.Team1.Health == 100 && mapped.Team1.IsWinner == true, "isTeamKiller: false stays false, and the other results fields are read");
 
+		// The identity of a battle and the recorder: arenaUniqueID, the platoon and clan of a player, the team of the recording player.
+		byte[] arenaJson = """
+			[{"arenaUniqueID":124088161076949145,"vehicles":{"1":[{"accountDBID":505219928}]},"players":{"505219928":{"prebattleID":34288599,"clanDBID":500012147}}},{"1":{"name":"jimG","team":2}}]
+			"""u8.ToArray();
+		BattleReport arena = BattleReportMapper.Map(new ReplayHeader { DateTime = "08.12.2023 22:50:00", MapName = "01_karelia", PlayerName = "jimG" }, System.Text.Json.JsonSerializer.Deserialize(arenaJson, ReplayJsonContext.Default.ReplayResults), null);
+		Debug.Assert(arena.ArenaUniqueId == 124088161076949145 && arena.MapKey == "01_karelia", "the arena id and the map key are mapped");
+		Debug.Assert(arena.Team2.Players.Any(x => x.PrebattleId == 34288599 && x.ClanId == 500012147), "a player gets the platoon and clan id of results[0].players");
+		Debug.Assert(arena.RecorderTeam == arena.Team2, "the recorder's team is the team of the player named in the header");
+
 		// 13 against 15: team 1 gets two filler rows, each its own player, numbered 14 and 15 (they earned nothing, so they sort last).
 		string Slots(int count, int firstId) => string.Join(",", Enumerable.Range(firstId, count).Select(x => $"\"{x}\":[{{\"xp\":{100 + x}}}]"));
 		string Named(int team, int count, int firstId) => string.Join(",", Enumerable.Range(firstId, count).Select(x => $"\"{x}\":{{\"name\":\"P{x}\",\"team\":{team}}}"));

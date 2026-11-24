@@ -15,6 +15,7 @@ A path marked "created by #N" does not exist yet.
 | Rights | From WoT HQ (`POST /api/gevechtslog/session`, `JimGeersinga/NED.WoT.Clan#149`): the app sends the Wargaming token at every start (and daily while open); HQ verifies it and answers identity, clan, role, `canUse` and `canSeeAdvancedStats`. **HQ down means no access** (owner, 2026-11-09). |
 | Identity | Sign in with Wargaming (§3.2), then HQ's answer (§3.3) gives nickname, clan tag, name, emblem, role and rights; none of it comes from Settings. |
 | Replay folders | Several folders (title + path) and a carousel in the app bar. Only the selected folder is read, watched and held in memory; switching folders drops the old one's battles and reads the new one from disk. |
+| Duplicate battles | Two recordings of one battle (same `results[0].arenaUniqueID`) are one battle: the first file that is listed keeps its place, any later file with the same id is skipped with one "Overgeslagen" snackbar per load or batch. Always on; a one-block replay has no id and is never skipped. Deleting the kept file frees the id; the copy returns when the folder is loaded again. |
 | Live battle | One temp-replay path setting, separate from the folders. |
 | Ratings | PR, WTR (`account/wtr`) and clan rating in the Clan battle dialog, for everyone with access, from Wargaming's public API under the app's own application id. |
 | Tests | No test project. Acceptance is checked by hand and with screenshots (CLAUDE.md, "Screenshots instead of UI tests"). |
