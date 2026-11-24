@@ -52,10 +52,10 @@ public class BattleReportService : IDisposable
     private readonly object _arenaGate = new();
 
     /// <summary>Arena id → name of the file that holds that battle in <see cref="BattleReports"/>.</summary>
-    private Dictionary<long, string> _keptByArena = [];
+    private readonly Dictionary<long, string> _keptByArena = [];
 
     /// <summary>Names of the files skipped as a second copy of a listed battle.</summary>
-    private HashSet<string> _skippedFiles = [];
+    private readonly HashSet<string> _skippedFiles = [];
 
     /// <returns>The readable battles of the current folder once its read has finished; null for every other folder, and while it is being read.</returns>
     public int? GetBattleCount(ReplayFolder folder) => _loaded && string.Equals(folder.Path, ReplayDirectory, StringComparison.OrdinalIgnoreCase)
@@ -132,8 +132,8 @@ public class BattleReportService : IDisposable
                 BattleReports = new ConcurrentDictionary<string, BattleReport>();
                 lock (_arenaGate)
                 {
-                    _keptByArena = [];
-                    _skippedFiles = [];
+                    _keptByArena.Clear();
+                    _skippedFiles.Clear();
                 }
 
                 _loaded = false;
@@ -515,24 +515,21 @@ public class BattleReportService : IDisposable
 
     private void OnDeleted(object sender, FileSystemEventArgs e)
     {
+        bool removed = BattleReports.Remove(e.Name!, out BattleReport? report);
         lock (_arenaGate)
         {
             // A skipped copy only leaves the set; a kept file frees its battle (the copy comes back when the folder is loaded again).
             _skippedFiles.Remove(e.Name!);
+            if (report?.ArenaUniqueId is { } arenaId && _keptByArena.GetValueOrDefault(arenaId) == e.Name)
+            {
+                _keptByArena.Remove(arenaId);
+            }
         }
 
-        if (BattleReports.Remove(e.Name!, out BattleReport? report))
+        if (removed)
         {
-            lock (_arenaGate)
-            {
-                if (report.ArenaUniqueId is { } arenaId && _keptByArena.TryGetValue(arenaId, out string? kept) && kept == e.Name)
-                {
-                    _keptByArena.Remove(arenaId);
-                }
-            }
-
             _snackbar.Add(Notice("Verwijderd", $"{e.Name} is niet meer aanwezig"), Severity.Warning);
-            BattleReportRemoved?.Invoke(this, new BattleReportRemovedEventArgs(report));
+            BattleReportRemoved?.Invoke(this, new BattleReportRemovedEventArgs(report!));
         }
     }
 
@@ -643,20 +640,8 @@ public class BattleReportService : IDisposable
     }
 
     /// <summary>Check first, then add: false when another file already holds the battle <paramref name="arenaId"/>. No id (no results block): always true.</summary>
-    internal static bool TryKeep(Dictionary<long, string> kept, long? arenaId, string fileName)
-    {
-        if (arenaId is not { } id)
-        {
-            return true;
-        }
-
-        if (kept.TryAdd(id, fileName))
-        {
-            return true;
-        }
-
-        return kept[id] == fileName;
-    }
+    internal static bool TryKeep(Dictionary<long, string> kept, long? arenaId, string fileName) =>
+        arenaId is not { } id || kept.TryAdd(id, fileName) || kept[id] == fileName;
 
     /// <summary>One snackbar for the files a load or batch skipped as a second copy of a listed battle.</summary>
     private void NoticeSkipped(ConcurrentBag<string> skipped)
