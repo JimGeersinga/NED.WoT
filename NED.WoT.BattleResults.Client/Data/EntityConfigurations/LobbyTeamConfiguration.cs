@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-using NED.WoT.BattleResults.Client.Models;
+using NED.WoT.BattleResults.Client.Data.Models;
 
 namespace NED.WoT.BattleResults.Client.Data.EntityConfigurations;
 

@@ -1,4 +1,4 @@
-namespace NED.WoT.BattleResults.Client.Models;
+namespace NED.WoT.BattleResults.Client.Data.Models;
 
 /// <summary>The team name of one lobby. An unnamed lobby has no row.</summary>
 public sealed class LobbyTeam

@@ -2,7 +2,7 @@ using System.Diagnostics;
 
 using Microsoft.EntityFrameworkCore;
 
-using NED.WoT.BattleResults.Client.Models;
+using NED.WoT.BattleResults.Client.Data.Models;
 
 namespace NED.WoT.BattleResults.Client.Data;
 
