@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 using MudBlazor.Services;
 
+using NED.WoT.BattleResults.Client.Data;
 using NED.WoT.BattleResults.Client.Services;
 
 namespace NED.WoT.BattleResults.Client;
@@ -47,7 +49,15 @@ public static class MauiProgram
         builder.Services.AddSingleton<WargamingApiClient>();
         builder.Services.AddSingleton<GevechtslogSessionClient>();
         builder.Services.AddSingleton<IdentityService>();
+        // One short-lived context per operation; DatabaseMigration brings the schema up to date in the background (see below).
+        builder.Services.AddDbContextFactory<AppDbContext>(o => o.UseSqlite($"Data Source={AppDbContext.DatabasePath}"));
+        builder.Services.AddSingleton<DatabaseMigration>();
 
-        return builder.Build();
+        MauiApp app = builder.Build();
+
+        // Resolving it starts the migration on a thread-pool task; start-up does not wait for it. Consumers await DatabaseMigration.Ready.
+        _ = app.Services.GetRequiredService<DatabaseMigration>();
+
+        return app;
     }
 }

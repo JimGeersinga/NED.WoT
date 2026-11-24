@@ -18,8 +18,18 @@ A path marked "created by #N" does not exist yet.
 | Duplicate battles | Two recordings of one battle (same `results[0].arenaUniqueID`) are one battle: the first file that is listed keeps its place, any later file with the same id is skipped with one "Overgeslagen" snackbar per load or batch. Always on; a one-block replay has no id and is never skipped. Deleting the kept file frees the id; the copy returns when the folder is loaded again. |
 | Live battle | One temp-replay path setting, separate from the folders. |
 | Ratings | PR, WTR (`account/wtr`) and clan rating in the Clan battle dialog, for everyone with access, from Wargaming's public API under the app's own application id. |
+| Local database | SQLite through EF Core (`Microsoft.EntityFrameworkCore.Sqlite` 11.0.0, owner's choice 2026-11-08), file `gevechtslog.db` in `FileSystem.AppDataDirectory`; one table `LobbyTeams` (lobby key `yyyy-MM-dd\|prebattleID` to team name). Through `IDbContextFactory<AppDbContext>` with one context per operation. Schema changes are EF migrations (`Data/Migrations`), applied at start-up in the background by `DatabaseMigration`; queries await `DatabaseMigration.Ready`. |
 | Tests | No test project. Acceptance is checked by hand and with screenshots (CLAUDE.md, "Screenshots instead of UI tests"). |
 | Build | The .NET recommended analyzers run (`AnalysisLevel` `latest-recommended`) and any warning fails the build (`TreatWarningsAsErrors`); decided by the owner on 2026-11-07. The other Recur build rules stay out (CLAUDE.md). The SDK is pinned to 11.0.x by `global.json`, the same band CI uses. |
+
+**Adding a migration.** `dotnet ef` cannot run against the MAUI project (its WinRT
+module initializer throws). Make a scratch net11.0 console project outside the
+repo that links `Data/**` and references `Microsoft.EntityFrameworkCore.Sqlite`
+and `Microsoft.EntityFrameworkCore.Design`, and run
+`dotnet ef migrations add <Name>` there (the local `dotnet-tools.json` has
+`dotnet-ef`). Copy the generated migration and the snapshot into
+`Data/Migrations/`, and rename the class `_<timestamp>_<Name>` to `<Name>`
+(the `[Migration]` id stays). `DatabaseMigration` applies it at the next start.
 
 ## 2. Project layout (as it is)
 
@@ -36,6 +46,7 @@ is a second project in `NED.WoT.slnx`.
 | `Components/Setup` | `SettingsDialog` |
 | `Components/Shared` | `WotDialogTitle`, `ResultChip`, `NumberFormat`: used by more than one feature |
 | `Services` | `BattleReportService`, `BattleReportMapper`, `SettingService`, `HqAuthenticationStateProvider`, `UpdateCheckService`, `MapNameResolver`, `TankNameResolver`, `ColorHelper` |
+| `Data` | `AppDbContext` (EF Core context), `DatabaseMigration`, `Models/` (`LobbyTeam`, added by #66), `EntityConfigurations/`, `Migrations/` |
 | `Models` | `Settings`, `AppSettings`, `BattleReport` and its event args |
 | `Attributes` | `DirectoryExistsAttribute` |
 | `Platforms/Windows` | `App.xaml(.cs)`, `Package.appxmanifest`, `app.manifest` |
@@ -126,8 +137,9 @@ Today every setting is a `Preferences.Default` key named after a property of
 
 New keys are added by the issue that needs them and listed here in the same PR.
 The Wargaming token is **not** a `Preferences` key; it is in `SecureStorage`
-(§3.2). Names and values of folder and temp-replay settings are fixed by #15 and
-#17.
+(§3.2). Team names are not settings either; they live in the SQLite file
+`gevechtslog.db` (§1, "Local database"). Names and values of folder and
+temp-replay settings are fixed by #15 and #17.
 
 ## 5. Milestones
 
