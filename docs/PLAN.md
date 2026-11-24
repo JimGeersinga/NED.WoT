@@ -22,6 +22,15 @@ A path marked "created by #N" does not exist yet.
 | Tests | No test project. Acceptance is checked by hand and with screenshots (CLAUDE.md, "Screenshots instead of UI tests"). |
 | Build | The .NET recommended analyzers run (`AnalysisLevel` `latest-recommended`) and any warning fails the build (`TreatWarningsAsErrors`); decided by the owner on 2026-11-07. The other Recur build rules stay out (CLAUDE.md). The SDK is pinned to 11.0.x by `global.json`, the same band CI uses. |
 
+**Adding a migration.** `dotnet ef` cannot run against the MAUI project (its WinRT
+module initializer throws). Make a scratch net11.0 console project outside the
+repo that links `Data/**` and references `Microsoft.EntityFrameworkCore.Sqlite`
+and `Microsoft.EntityFrameworkCore.Design`, and run
+`dotnet ef migrations add <Name>` there (the local `dotnet-tools.json` has
+`dotnet-ef`). Copy the generated migration and the snapshot into
+`Data/Migrations/`, and rename the class `_<timestamp>_<Name>` to `<Name>`
+(the `[Migration]` id stays).
+
 ## 2. Project layout (as it is)
 
 One MAUI Blazor Hybrid project, `NED.WoT.BattleResults.Client/` (target
