@@ -20,7 +20,7 @@ partial class InitialCreate
 #pragma warning disable 612, 618
         modelBuilder.HasAnnotation("ProductVersion", "11.0.0");
 
-        modelBuilder.Entity("NED.WoT.BattleResults.Client.Data.LobbyTeam", b =>
+        modelBuilder.Entity("NED.WoT.BattleResults.Client.Models.LobbyTeam", b =>
             {
                 b.Property<int>("Id")
                     .ValueGeneratedOnAdd()

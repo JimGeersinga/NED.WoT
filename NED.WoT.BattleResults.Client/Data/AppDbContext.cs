@@ -2,6 +2,8 @@ using System.Diagnostics;
 
 using Microsoft.EntityFrameworkCore;
 
+using NED.WoT.BattleResults.Client.Models;
+
 namespace NED.WoT.BattleResults.Client.Data;
 
 public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)

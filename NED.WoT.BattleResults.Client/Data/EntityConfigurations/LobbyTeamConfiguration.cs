@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using NED.WoT.BattleResults.Client.Models;
+
 namespace NED.WoT.BattleResults.Client.Data.EntityConfigurations;
 
 public sealed class LobbyTeamConfiguration : IEntityTypeConfiguration<LobbyTeam>

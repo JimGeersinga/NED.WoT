@@ -46,8 +46,8 @@ is a second project in `NED.WoT.slnx`.
 | `Components/Setup` | `SettingsDialog` |
 | `Components/Shared` | `WotDialogTitle`, `ResultChip`, `NumberFormat`: used by more than one feature |
 | `Services` | `BattleReportService`, `BattleReportMapper`, `SettingService`, `HqAuthenticationStateProvider`, `UpdateCheckService`, `MapNameResolver`, `TankNameResolver`, `ColorHelper` |
-| `Data` | `AppDbContext` (EF Core context), `LobbyTeam` (added by #66), `EntityConfigurations/`, `Migrations/` |
-| `Models` | `Settings`, `AppSettings`, `BattleReport` and its event args |
+| `Data` | `AppDbContext` (EF Core context), `EntityConfigurations/`, `Migrations/` |
+| `Models` | `LobbyTeam` (added by #66), `Settings`, `AppSettings`, `BattleReport` and its event args |
 | `Attributes` | `DirectoryExistsAttribute` |
 | `Platforms/Windows` | `App.xaml(.cs)`, `Package.appxmanifest`, `app.manifest` |
 | `wwwroot` | `index.html`, `css/app.css`, `css/fontawesome/`, `favicon.ico` |
