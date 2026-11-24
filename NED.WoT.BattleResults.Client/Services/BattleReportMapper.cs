@@ -22,6 +22,9 @@ public class BattleReportMapper
         BattleReport game = new()
         {
             MapName = MapNameResolver.GetMapName(header.MapDisplayName),
+            MapKey = header.MapName,
+            RecorderName = header.PlayerName,
+            ArenaUniqueId = results?.ArenaUniqueId,
             MatchStart = matchStart,
             Team1 = new Team { Number = 1 },
             Team2 = new Team { Number = 2 }
@@ -43,7 +46,7 @@ public class BattleReportMapper
                 {
                     ReplayPlayer? player = null;
                     results.Players?.TryGetValue(vehicle.Key, out player);
-                    MapPlayerData(game, player, vehicle.Value is { Length: > 0 } stats ? stats[0] : null, me);
+                    MapPlayerData(game, player, vehicle.Value is { Length: > 0 } stats ? stats[0] : null, results, me);
                 }
             }
         }
@@ -51,7 +54,7 @@ public class BattleReportMapper
         {
             foreach (ReplayPlayer? player in header.Vehicles.Values)
             {
-                MapPlayerData(game, player, null, me);
+                MapPlayerData(game, player, null, null, me);
             }
         }
 
@@ -59,6 +62,11 @@ public class BattleReportMapper
         game.Team2.Abbreviation = GetMostMentionedClanAbbreviation(game.Team2);
         game.Team1.ClanId = ClanId(results, game.Team1);
         game.Team2.ClanId = ClanId(results, game.Team2);
+
+        game.RecorderTeam = header.PlayerName is null ? null
+            : game.Team1.Players.Any(x => x.Name == header.PlayerName) ? game.Team1
+            : game.Team2.Players.Any(x => x.Name == header.PlayerName) ? game.Team2
+            : null;
 
         game.Team1.Result = GetResult(game.Team1.IsWinner, game.Team2.IsWinner);
         game.Team2.Result = GetResult(game.Team2.IsWinner, game.Team1.IsWinner);
@@ -153,7 +161,7 @@ public class BattleReportMapper
     private static int? TeamHealth(ReplayCommon? common, int team) =>
         common?.TeamHealth is { } health && health.TryGetValue(team.ToString(CultureInfo), out int value) ? value : null;
 
-    private static void MapPlayerData(BattleReport game, ReplayPlayer? playerData, ReplayVehicleStats? vehicleData, HqIdentity? me)
+    private static void MapPlayerData(BattleReport game, ReplayPlayer? playerData, ReplayVehicleStats? vehicleData, ReplayResults? results, HqIdentity? me)
     {
         string? clan = playerData?.ClanAbbrev;
 
@@ -169,6 +177,13 @@ public class BattleReportMapper
 
         if (vehicleData != null)
         {
+            player.AccountId = vehicleData.AccountDbId;
+            if (vehicleData.AccountDbId is { } accountId && results?.AccountPlayers?.TryGetValue(accountId.ToString(CultureInfo), out ReplayPlayer? account) == true)
+            {
+                player.PrebattleId = account.PrebattleId is > 0 ? account.PrebattleId : null;
+                player.ClanId = account.ClanDbid is > 0 ? account.ClanDbid : null;
+            }
+
             player.DamageDealt = vehicleData.DamageDealt;
             player.DamageReceived = vehicleData.DamageReceived;
             player.DamageBlocked = vehicleData.DamageBlockedByArmor;

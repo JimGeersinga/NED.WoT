@@ -16,6 +16,16 @@ public class BattleReport
     public string? FileName { get; set; }
     public string? MapName { get; set; }
     public string? ReplayVersion { get; set; }
+
+    /// <summary>The same in every recording of a battle; null for a replay without results.</summary>
+    public long? ArenaUniqueId { get; set; }
+
+    /// <summary>The map's internal key ("01_karelia").</summary>
+    public string? MapKey { get; set; }
+    public string? RecorderName { get; set; }
+
+    /// <summary>The team of the player who recorded the replay; null when that player is not found.</summary>
+    public Team? RecorderTeam { get; set; }
     public DateTime MatchStart { get; set; }
     public DateTime? MatchEnd
     {
@@ -130,6 +140,11 @@ public class Team
 public class Player(Team team)
 {
     public Team Team { get; set; } = team;
+    public long? AccountId { get; set; }
+
+    /// <summary>The platoon id; null when the player is in none.</summary>
+    public long? PrebattleId { get; set; }
+    public long? ClanId { get; set; }
     public int Number { get; set; }
     public string? Name { get; set; }
     public string? Clan { get; set; }
