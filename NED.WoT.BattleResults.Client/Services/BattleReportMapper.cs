@@ -399,7 +399,7 @@ public class BattleReportMapper
                 Vehicles = Enumerable.Range(1, 3).ToDictionary(x => x.ToString(CultureInfo), x => new ReplayPlayer { Name = $"H{x}", Team = x % 2 + 1, ClanAbbrev = "NED" })
             };
 
-            HqIdentity? NedPlayer(string tag) => new(1, "P3", null, tag, null, null, ClanRole.Unknown, true);
+            HqIdentity? NedPlayer(string tag) => new(1, "Ghost", null, tag, null, null, ClanRole.Unknown, true);
             foreach (ReplayResults? source in new[] { results, null })
             {
                 foreach (HqIdentity? me in new[] { null, NedPlayer("NED"), NedPlayer("ABC") })
