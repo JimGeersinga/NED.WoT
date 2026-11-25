@@ -14,11 +14,12 @@ A path marked "created by #N" does not exist yet.
 | Sign-in | Wargaming OpenID in the system browser with a loopback redirect, under the app's own WG application (Mobile/Standalone). The token is kept in `SecureStorage` and prolonged at start when it expires within 72 h. |
 | Rights | From WoT HQ (`POST /api/gevechtslog/session`, `JimGeersinga/NED.WoT.Clan#149`): the app sends the Wargaming token at every start (and daily while open); HQ verifies it and answers identity, clan, role, `canUse` and `canSeeAdvancedStats`. **HQ down means no access** (owner, 2026-11-09). |
 | Identity | Sign in with Wargaming (§3.2), then HQ's answer (§3.3) gives nickname, clan tag, name, emblem, role and rights; none of it comes from Settings. |
-| Replay folders | Several folders (title + path) and a carousel in the app bar. Only the selected folder is read, watched and held in memory; switching folders drops the old one's battles and reads the new one from disk. |
-| Duplicate battles | Two recordings of one battle (same `results[0].arenaUniqueID`) are one battle: the first file that is listed keeps its place, any later file with the same id is skipped with one "Overgeslagen" snackbar per load or batch. Always on; a one-block replay has no id and is never skipped. Deleting the kept file frees the id; the copy returns when the folder is loaded again. |
+| Replay folders | Several folders (title + path) and a carousel in the app bar. Only the selected folder is read, watched and held in memory; switching folders drops the old one's battles and loads the new one: from the replay cache for the files it knows, from disk for the rest. |
+| Duplicate battles | Two recordings of one battle (same `results[0].arenaUniqueID`) are one battle: the first file that is listed keeps its place, any later file with the same id is skipped with one "Overgeslagen" snackbar per load or batch. Always on; a one-block replay has no id and is never skipped. A deleted file does not change the list (see "Replay cache"): its battle stays and its copy stays skipped; at the next load the present copy is listed and the stored row of the deleted file is ignored. |
 | Live battle | One temp-replay path setting, separate from the folders. |
 | Ratings | PR, WTR (`account/wtr`) and clan rating in the Clan battle dialog, for everyone with access, from Wargaming's public API under the app's own application id. |
-| Local database | SQLite through EF Core (`Microsoft.EntityFrameworkCore.Sqlite` 11.0.0, owner's choice 2026-11-08), file `gevechtslog.db` in `FileSystem.AppDataDirectory`; one table `LobbyTeams` (lobby key `yyyy-MM-dd\|prebattleID` to team name). Through `IDbContextFactory<AppDbContext>` with one context per operation. Schema changes are EF migrations (`Data/Migrations`), applied at start-up in the background by `DatabaseMigration`; queries await `DatabaseMigration.Ready`. |
+| Replay cache | Every replay that is read is stored in `gevechtslog.db` (same `AppDbContext`, tables `Battles` and `Players`: one row per file with its battle, one row per player with the figures of the results block). Nothing that depends on who is signed in is stored (own team, result, clan member): it is applied on load from the identity. A file is read only when its `(file name, length, last-write time)` is not stored; resolved map and tank names are stored as read. The database is the history: a deleted replay keeps its row and its battle stays in the list. It is always on and the app works without it (a database error is logged and the folder loads from the files). A replay copied back under the name of a deleted one is read at the next load, not during the session. Schema changes are EF migrations that keep every row. |
+| Local database | SQLite through EF Core (`Microsoft.EntityFrameworkCore.Sqlite` 11.0.0, owner's choice 2026-11-08), file `gevechtslog.db` in `FileSystem.AppDataDirectory`; tables `LobbyTeams` (lobby key `yyyy-MM-dd\|prebattleID` to team name), `Battles` and `Players` (the replay cache, next row). Through `IDbContextFactory<AppDbContext>` with one context per operation. Schema changes are EF migrations (`Data/Migrations`), applied at start-up in the background by `DatabaseMigration`; queries await `DatabaseMigration.Ready`. |
 | Tests | No test project. Acceptance is checked by hand and with screenshots (CLAUDE.md, "Screenshots instead of UI tests"). |
 | Build | The .NET recommended analyzers run (`AnalysisLevel` `latest-recommended`) and any warning fails the build (`TreatWarningsAsErrors`); decided by the owner on 2026-11-07. The other Recur build rules stay out (CLAUDE.md). The SDK is pinned to 11.0.x by `global.json`, the same band CI uses. |
 
@@ -46,7 +47,7 @@ is a second project in `NED.WoT.slnx`.
 | `Components/Setup` | `SettingsDialog` |
 | `Components/Shared` | `WotDialogTitle`, `ResultChip`, `NumberFormat`: used by more than one feature |
 | `Services` | `BattleReportService`, `BattleReportMapper`, `SettingService`, `HqAuthenticationStateProvider`, `UpdateCheckService`, `MapNameResolver`, `TankNameResolver`, `ColorHelper` |
-| `Data` | `AppDbContext` (EF Core context), `DatabaseMigration`, `Models/` (`LobbyTeam`, added by #66), `EntityConfigurations/`, `Migrations/` |
+| `Data` | `AppDbContext` (EF Core context), `DatabaseMigration`, `Models/` (`LobbyTeam` from #66, `StoredBattle` and `StoredPlayer` from #147), `EntityConfigurations/`, `Migrations/` |
 | `Models` | `Settings`, `AppSettings`, `BattleReport` and its event args |
 | `Attributes` | `DirectoryExistsAttribute` |
 | `Platforms/Windows` | `App.xaml(.cs)`, `Package.appxmanifest`, `app.manifest` |
@@ -159,6 +160,7 @@ Titles match the GitHub milestones one to one.
 | 09 | Teams | #65–#70 | Per-team statistics: lobbies grouped into teams, a team filter and results per map per team. |
 | 10 | .NET 11 | #78, #139, #144 | Upgrade to .NET 11. |
 | 11 | Component structure | #108–#114 | Components in feature folders; `Index`, the Clan battle dialog, the filter bar and `Details` split so each has one job. |
+| 12 | Replay cache | #147 | Replays are read once and kept in `gevechtslog.db`; a start or a folder switch reads only the files the database does not know. |
 
 Release publishing keeps the SDK defaults, with nothing set in the csproj (#73, measured 2026-11-16). For this framework-dependent MSIX publish, the SDK already turns ReadyToRun on and leaves trimming off.
 - **Turning ReadyToRun off** makes the cold start slower: a median of 7.1 s to the first battle rows, against 5.0 s with it.

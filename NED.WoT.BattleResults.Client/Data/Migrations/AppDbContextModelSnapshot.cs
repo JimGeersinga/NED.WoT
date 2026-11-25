@@ -15,7 +15,7 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261124150137_InitialCreate";
+    public override string LastMigrationId => "20261124235530_AddReplayCache";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -47,6 +47,188 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
                     .IsUnique();
 
                 b.ToTable("LobbyTeams");
+            });
+
+        modelBuilder.Entity("NED.WoT.BattleResults.Client.Data.Models.StoredBattle", b =>
+            {
+                b.Property<long>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("INTEGER");
+
+                b.Property<long?>("ArenaUniqueId")
+                    .HasColumnType("INTEGER");
+
+                b.Property<long>("FileLength")
+                    .HasColumnType("INTEGER");
+
+                b.Property<string>("FileName")
+                    .IsRequired()
+                    .HasColumnType("TEXT")
+                    .UseCollation("NOCASE");
+
+                b.Property<long>("FileWriteTicks")
+                    .HasColumnType("INTEGER");
+
+                b.Property<int?>("FinishReason")
+                    .HasColumnType("INTEGER");
+
+                b.Property<string>("Folder")
+                    .IsRequired()
+                    .HasColumnType("TEXT")
+                    .UseCollation("NOCASE");
+
+                b.Property<string>("MapKey")
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("MapName")
+                    .HasColumnType("TEXT");
+
+                b.Property<int?>("MatchDuration")
+                    .HasColumnType("INTEGER");
+
+                b.Property<DateTime>("MatchStart")
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("RecorderName")
+                    .HasColumnType("TEXT");
+
+                b.Property<long?>("Team1ClanId")
+                    .HasColumnType("INTEGER");
+
+                b.Property<int?>("Team1Health")
+                    .HasColumnType("INTEGER");
+
+                b.Property<bool?>("Team1IsWinner")
+                    .HasColumnType("INTEGER");
+
+                b.Property<long?>("Team2ClanId")
+                    .HasColumnType("INTEGER");
+
+                b.Property<int?>("Team2Health")
+                    .HasColumnType("INTEGER");
+
+                b.Property<bool?>("Team2IsWinner")
+                    .HasColumnType("INTEGER");
+
+                b.Property<bool>("Unreadable")
+                    .HasColumnType("INTEGER");
+
+                b.HasKey("Id");
+
+                b.HasIndex("MatchStart");
+
+                b.HasIndex("Folder", "FileName")
+                    .IsUnique();
+
+                b.ToTable("Battles");
+            });
+
+        modelBuilder.Entity("NED.WoT.BattleResults.Client.Data.Models.StoredPlayer", b =>
+            {
+                b.Property<long>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("INTEGER");
+
+                b.Property<long?>("AccountId")
+                    .HasColumnType("INTEGER");
+
+                b.Property<long>("BattleId")
+                    .HasColumnType("INTEGER");
+
+                b.Property<int?>("CapturePoints")
+                    .HasColumnType("INTEGER");
+
+                b.Property<string>("Clan")
+                    .HasColumnType("TEXT");
+
+                b.Property<long?>("ClanId")
+                    .HasColumnType("INTEGER");
+
+                b.Property<int?>("CreditsEarned")
+                    .HasColumnType("INTEGER");
+
+                b.Property<int?>("DamageBlocked")
+                    .HasColumnType("INTEGER");
+
+                b.Property<int?>("DamageDealt")
+                    .HasColumnType("INTEGER");
+
+                b.Property<int?>("DamageReceived")
+                    .HasColumnType("INTEGER");
+
+                b.Property<int?>("DeathReason")
+                    .HasColumnType("INTEGER");
+
+                b.Property<int?>("DirectHits")
+                    .HasColumnType("INTEGER");
+
+                b.Property<int?>("ExperienceEarned")
+                    .HasColumnType("INTEGER");
+
+                b.Property<int?>("Health")
+                    .HasColumnType("INTEGER");
+
+                b.Property<int?>("HitsReceived")
+                    .HasColumnType("INTEGER");
+
+                b.Property<bool?>("IsTeamKiller")
+                    .HasColumnType("INTEGER");
+
+                b.Property<int?>("Kills")
+                    .HasColumnType("INTEGER");
+
+                b.Property<int?>("LifeTime")
+                    .HasColumnType("INTEGER");
+
+                b.Property<int?>("MaxHealth")
+                    .HasColumnType("INTEGER");
+
+                b.Property<string>("Name")
+                    .HasColumnType("TEXT");
+
+                b.Property<int?>("Piercings")
+                    .HasColumnType("INTEGER");
+
+                b.Property<long?>("PrebattleId")
+                    .HasColumnType("INTEGER");
+
+                b.Property<int?>("Shots")
+                    .HasColumnType("INTEGER");
+
+                b.Property<int?>("ShotsBlocked")
+                    .HasColumnType("INTEGER");
+
+                b.Property<int?>("ShotsReceived")
+                    .HasColumnType("INTEGER");
+
+                b.Property<int?>("Spotted")
+                    .HasColumnType("INTEGER");
+
+                b.Property<int>("TeamNumber")
+                    .HasColumnType("INTEGER");
+
+                b.Property<string>("Vehicle")
+                    .HasColumnType("TEXT");
+
+                b.HasKey("Id");
+
+                b.HasIndex("BattleId");
+
+                b.ToTable("Players");
+            });
+
+        modelBuilder.Entity("NED.WoT.BattleResults.Client.Data.Models.StoredPlayer", b =>
+            {
+                b.HasOne("NED.WoT.BattleResults.Client.Data.Models.StoredBattle", null)
+                    .WithMany("Players")
+                    .HasForeignKey("BattleId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
+            });
+
+        modelBuilder.Entity("NED.WoT.BattleResults.Client.Data.Models.StoredBattle", b =>
+            {
+                b.Navigation("Players");
             });
 #pragma warning restore 612, 618
     }

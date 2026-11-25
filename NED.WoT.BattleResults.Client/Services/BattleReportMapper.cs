@@ -1,5 +1,7 @@
-﻿using NED.WoT.BattleResults.Client.Models;
+﻿using NED.WoT.BattleResults.Client.Data.Models;
+using NED.WoT.BattleResults.Client.Models;
 
+using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
 
@@ -46,7 +48,7 @@ public class BattleReportMapper
                 {
                     ReplayPlayer? player = null;
                     results.Players?.TryGetValue(vehicle.Key, out player);
-                    MapPlayerData(game, player, vehicle.Value is { Length: > 0 } stats ? stats[0] : null, results, me);
+                    MapPlayerData(game, player, vehicle.Value is { Length: > 0 } stats ? stats[0] : null, results);
                 }
             }
         }
@@ -54,7 +56,7 @@ public class BattleReportMapper
         {
             foreach (ReplayPlayer? player in header.Vehicles.Values)
             {
-                MapPlayerData(game, player, null, null, me);
+                MapPlayerData(game, player, null, null);
             }
         }
 
@@ -63,10 +65,29 @@ public class BattleReportMapper
         game.Team1.ClanId = ClanId(results, game.Team1);
         game.Team2.ClanId = ClanId(results, game.Team2);
 
-        game.RecorderTeam = header.PlayerName is null ? null
-            : game.Team1.Players.Any(x => x.Name == header.PlayerName) ? game.Team1
-            : game.Team2.Players.Any(x => x.Name == header.PlayerName) ? game.Team2
-            : null;
+        game.RecorderTeam = RecorderTeamOf(game, header.PlayerName);
+
+        int playerCount = Math.Max(game.Team1.Players.Count, game.Team2.Players.Count);
+        EnrichAndSortPlayers(game.Team1, playerCount);
+        EnrichAndSortPlayers(game.Team2, playerCount);
+
+        ApplyIdentity(game, me);
+
+        return game;
+    }
+
+    private static Team? RecorderTeamOf(BattleReport game, string? recorderName) => recorderName is null ? null
+        : game.Team1.Players.Any(x => x.Name == recorderName) ? game.Team1
+        : game.Team2.Players.Any(x => x.Name == recorderName) ? game.Team2
+        : null;
+
+    /// <summary>The part of a report that depends on who is signed in: clan members, your team, the result of each team and of the battle. Needs the team abbreviations.</summary>
+    public static void ApplyIdentity(BattleReport game, HqIdentity? me)
+    {
+        foreach (Player player in game.Team1.Players.Concat(game.Team2.Players))
+        {
+            player.IsClanMember = me?.ClanTag is not null && string.Equals(me.ClanTag, player.Clan, StringComparison.OrdinalIgnoreCase);
+        }
 
         game.Team1.Result = GetResult(game.Team1.IsWinner, game.Team2.IsWinner);
         game.Team2.Result = GetResult(game.Team2.IsWinner, game.Team1.IsWinner);
@@ -92,10 +113,144 @@ public class BattleReportMapper
         {
             game.Result = Result.Unknown;
         }
+    }
+
+    /// <summary>The row of a replay for the database: only what the file says, nothing that depends on who is signed in. The filler players of an uneven match are left out.</summary>
+    public static StoredBattle ToStored(BattleReport report, string folder, FileInfo file)
+    {
+        StoredBattle stored = new()
+        {
+            Folder = folder,
+            FileName = file.Name,
+            FileLength = file.Length,
+            FileWriteTicks = file.LastWriteTimeUtc.Ticks,
+            Unreadable = report.Error is not null,
+            MatchStart = report.MatchStart
+        };
+
+        if (stored.Unreadable)
+        {
+            return stored;
+        }
+
+        stored.MapName = report.MapName;
+        stored.MapKey = report.MapKey;
+        stored.RecorderName = report.RecorderName;
+        stored.ArenaUniqueId = report.ArenaUniqueId;
+        stored.MatchDuration = report.MatchDuration;
+        stored.FinishReason = report.FinishReason;
+        stored.Team1Health = report.Team1.Health;
+        stored.Team2Health = report.Team2.Health;
+        stored.Team1IsWinner = report.Team1.IsWinner;
+        stored.Team2IsWinner = report.Team2.IsWinner;
+        stored.Team1ClanId = report.Team1.ClanId;
+        stored.Team2ClanId = report.Team2.ClanId;
+
+        foreach (Team team in new[] { report.Team1, report.Team2 })
+        {
+            // A filler has neither a name nor an account: it only pads the shorter team.
+            foreach (Player x in team.Players.Where(x => x.Name is not null || x.AccountId is not null))
+            {
+                stored.Players.Add(new StoredPlayer
+                {
+                    TeamNumber = team.Number,
+                    Name = x.Name,
+                    Clan = x.Clan,
+                    Vehicle = x.Vehicle,
+                    AccountId = x.AccountId,
+                    PrebattleId = x.PrebattleId,
+                    ClanId = x.ClanId,
+                    DamageDealt = x.DamageDealt,
+                    DamageReceived = x.DamageReceived,
+                    DamageBlocked = x.DamageBlocked,
+                    Piercings = x.Piercings,
+                    HitsReceived = x.HitsReceived,
+                    ShotsReceived = x.ShotsReceived,
+                    ShotsBlocked = x.ShotsBlocked,
+                    ExperienceEarned = x.ExperienceEarned,
+                    CreditsEarned = x.CreditsEarned,
+                    Health = x.Health,
+                    MaxHealth = x.MaxHealth,
+                    LifeTime = x.LifeTime,
+                    Kills = x.Kills,
+                    Shots = x.Shots,
+                    DirectHits = x.DirectHits,
+                    DeathReason = x.DeathReason,
+                    Spotted = x.Spotted,
+                    CapturePoints = x.CapturePoints,
+                    IsTeamKiller = x.IsTeamKiller
+                });
+            }
+        }
+
+        return stored;
+    }
+
+    /// <summary>The report of a stored row, for the signed-in player <paramref name="me"/>. The players need to be loaded.</summary>
+    public static BattleReport FromStored(StoredBattle stored, HqIdentity? me)
+    {
+        if (stored.Unreadable)
+        {
+            return new BattleReport { FileName = stored.FileName, MatchStart = stored.MatchStart, Error = BattleReportService.UnreadableMessage(stored.FileName) };
+        }
+
+        BattleReport game = new()
+        {
+            FileName = stored.FileName,
+            MapName = stored.MapName,
+            MapKey = stored.MapKey,
+            RecorderName = stored.RecorderName,
+            ArenaUniqueId = stored.ArenaUniqueId,
+            MatchStart = stored.MatchStart,
+            MatchDuration = stored.MatchDuration,
+            FinishReason = stored.FinishReason,
+            Team1 = new Team { Number = 1, Health = stored.Team1Health, IsWinner = stored.Team1IsWinner, ClanId = stored.Team1ClanId },
+            Team2 = new Team { Number = 2, Health = stored.Team2Health, IsWinner = stored.Team2IsWinner, ClanId = stored.Team2ClanId }
+        };
+
+        // Stored in table order: the (stable, 15 per team) sort below keeps it; the fillers go last.
+        foreach (StoredPlayer x in stored.Players.OrderBy(x => x.Id))
+        {
+            Team team = x.TeamNumber == 1 ? game.Team1 : game.Team2;
+            team.Players.Add(new Player(team)
+            {
+                Name = x.Name,
+                Clan = x.Clan,
+                Vehicle = x.Vehicle,
+                AccountId = x.AccountId,
+                PrebattleId = x.PrebattleId,
+                ClanId = x.ClanId,
+                DamageDealt = x.DamageDealt,
+                DamageReceived = x.DamageReceived,
+                DamageBlocked = x.DamageBlocked,
+                Piercings = x.Piercings,
+                HitsReceived = x.HitsReceived,
+                ShotsReceived = x.ShotsReceived,
+                ShotsBlocked = x.ShotsBlocked,
+                ExperienceEarned = x.ExperienceEarned,
+                CreditsEarned = x.CreditsEarned,
+                Health = x.Health,
+                MaxHealth = x.MaxHealth,
+                LifeTime = x.LifeTime,
+                Kills = x.Kills,
+                Shots = x.Shots,
+                DirectHits = x.DirectHits,
+                DeathReason = x.DeathReason,
+                Spotted = x.Spotted,
+                CapturePoints = x.CapturePoints,
+                IsTeamKiller = x.IsTeamKiller
+            });
+        }
+
+        game.Team1.Abbreviation = GetMostMentionedClanAbbreviation(game.Team1);
+        game.Team2.Abbreviation = GetMostMentionedClanAbbreviation(game.Team2);
+        game.RecorderTeam = RecorderTeamOf(game, stored.RecorderName);
 
         int playerCount = Math.Max(game.Team1.Players.Count, game.Team2.Players.Count);
         EnrichAndSortPlayers(game.Team1, playerCount);
         EnrichAndSortPlayers(game.Team2, playerCount);
+
+        ApplyIdentity(game, me);
 
         return game;
     }
@@ -161,7 +316,7 @@ public class BattleReportMapper
     private static int? TeamHealth(ReplayCommon? common, int team) =>
         common?.TeamHealth is { } health && health.TryGetValue(team.ToString(CultureInfo), out int value) ? value : null;
 
-    private static void MapPlayerData(BattleReport game, ReplayPlayer? playerData, ReplayVehicleStats? vehicleData, ReplayResults? results, HqIdentity? me)
+    private static void MapPlayerData(BattleReport game, ReplayPlayer? playerData, ReplayVehicleStats? vehicleData, ReplayResults? results)
     {
         string? clan = playerData?.ClanAbbrev;
 
@@ -171,8 +326,7 @@ public class BattleReportMapper
         {
             Name = playerData?.Name,
             Clan = clan,
-            Vehicle = TankNameResolver.GetTankName(playerData?.VehicleType),
-            IsClanMember = me?.ClanTag is not null && string.Equals(me.ClanTag, clan, StringComparison.OrdinalIgnoreCase)
+            Vehicle = TankNameResolver.GetTankName(playerData?.VehicleType)
         };
 
         if (vehicleData != null)
@@ -224,5 +378,70 @@ public class BattleReportMapper
         }
 
         return Result.Unknown;
+    }
+
+    [Conditional("DEBUG")]
+    internal static void SelfCheck()
+    {
+        FileInfo file = new(Path.GetTempFileName());
+        try
+        {
+            // 13 against 15 with results (fillers), the same without results (header only), each with and without an identity.
+            string Slots(int count, int firstId) => string.Join(",", Enumerable.Range(firstId, count).Select(x => $"\"{x}\":[{{\"accountDBID\":{x},\"xp\":{100 + x % 5},\"damageDealt\":{x * 10},\"deathReason\":{(x % 2 == 0 ? -1 : 0)},\"isTeamKiller\":false}}]"));
+            string Named(int team, int count, int firstId) => string.Join(",", Enumerable.Range(firstId, count).Select(x => $"\"{x}\":{{\"name\":\"P{x}\",\"team\":{team},\"clanAbbrev\":\"{(team == 1 ? "NED" : "ABC")}\"}}"));
+            byte[] json = System.Text.Encoding.UTF8.GetBytes($"[{{\"arenaUniqueID\":7,\"common\":{{\"winnerTeam\":1,\"duration\":420,\"teamHealth\":{{\"1\":3,\"2\":0}}}},\"vehicles\":{{{Slots(13, 1)},{Slots(15, 14)}}}}},{{{Named(1, 13, 1)},{Named(2, 15, 14)}}}]");
+            ReplayResults? results = System.Text.Json.JsonSerializer.Deserialize(json, ReplayJsonContext.Default.ReplayResults);
+            ReplayHeader header = new()
+            {
+                DateTime = "08.12.2023 22:50:00",
+                MapName = "01_karelia",
+                PlayerName = "P14",
+                Vehicles = Enumerable.Range(1, 3).ToDictionary(x => x.ToString(CultureInfo), x => new ReplayPlayer { Name = $"H{x}", Team = x % 2 + 1, ClanAbbrev = "NED" })
+            };
+
+            HqIdentity? NedPlayer(string tag) => new(1, "P3", null, tag, null, null, ClanRole.Unknown, true);
+            foreach (ReplayResults? source in new[] { results, null })
+            {
+                foreach (HqIdentity? me in new[] { null, NedPlayer("NED"), NedPlayer("ABC") })
+                {
+                    BattleReport before = Map(header, source, me);
+                    StoredBattle stored = ToStored(before, "C:\\replays", file);
+                    BattleReport after = FromStored(stored, me);
+                    Debug.Assert(Same(before, after), "FromStored(ToStored(report)) equals the report");
+                    Debug.Assert(after.Team1.Players.Count == before.Team1.Players.Count && after.Team2.Players.Count == before.Team2.Players.Count, "the fillers come back");
+                }
+            }
+
+            // The identity is applied on load: the same stored row follows a changed clan tag, with nothing rebuilt.
+            StoredBattle row = ToStored(Map(header, results, null), "C:\\replays", file);
+            Debug.Assert(FromStored(row, NedPlayer("NED")).Result == Result.Win && FromStored(row, NedPlayer("ABC")).Result == Result.Lose, "a changed clan tag changes own team and result");
+            Debug.Assert(FromStored(row, null).Result == Result.Unknown && FromStored(row, null).OwnTeam is null, "no identity: no own team");
+
+            // An unreadable file is the warning row.
+            BattleReport broken = new() { FileName = file.Name, MatchStart = new DateTime(2026, 4, 5, 21, 30, 0), Error = BattleReportService.UnreadableMessage(file.Name) };
+            BattleReport brokenBack = FromStored(ToStored(broken, "C:\\replays", file), null);
+            Debug.Assert(brokenBack.Error == broken.Error && brokenBack.MatchStart == broken.MatchStart && brokenBack.FileName == broken.FileName, "an unreadable file comes back as its warning row");
+        }
+        finally
+        {
+            file.Delete();
+        }
+    }
+
+    private static bool Same(BattleReport a, BattleReport b)
+    {
+        static bool SamePlayer(Player x, Player y) =>
+            (x.Number, x.Name, x.Clan, x.Vehicle, x.AccountId, x.PrebattleId, x.ClanId, x.IsClanMember, x.DamageDealt, x.DamageReceived, x.DamageBlocked, x.Piercings, x.HitsReceived, x.ShotsReceived, x.ShotsBlocked)
+            == (y.Number, y.Name, y.Clan, y.Vehicle, y.AccountId, y.PrebattleId, y.ClanId, y.IsClanMember, y.DamageDealt, y.DamageReceived, y.DamageBlocked, y.Piercings, y.HitsReceived, y.ShotsReceived, y.ShotsBlocked)
+            && (x.ExperienceEarned, x.CreditsEarned, x.Health, x.MaxHealth, x.LifeTime, x.Kills, x.Shots, x.DirectHits, x.DeathReason, x.Spotted, x.CapturePoints, x.IsTeamKiller)
+            == (y.ExperienceEarned, y.CreditsEarned, y.Health, y.MaxHealth, y.LifeTime, y.Kills, y.Shots, y.DirectHits, y.DeathReason, y.Spotted, y.CapturePoints, y.IsTeamKiller);
+
+        static bool SameTeam(Team x, Team y) =>
+            (x.Number, x.Abbreviation, x.ClanId, x.Health, x.IsWinner, x.IsOwnTeam, x.Result) == (y.Number, y.Abbreviation, y.ClanId, y.Health, y.IsWinner, y.IsOwnTeam, y.Result)
+            && x.Players.Count == y.Players.Count && x.Players.Zip(y.Players).All(p => SamePlayer(p.First, p.Second));
+
+        return (a.MapName, a.MapKey, a.RecorderName, a.ArenaUniqueId, a.MatchStart, a.MatchDuration, a.FinishReason, a.Result, a.RecorderTeam?.Number, a.OwnTeam?.Number)
+            == (b.MapName, b.MapKey, b.RecorderName, b.ArenaUniqueId, b.MatchStart, b.MatchDuration, b.FinishReason, b.Result, b.RecorderTeam?.Number, b.OwnTeam?.Number)
+            && SameTeam(a.Team1, b.Team1) && SameTeam(a.Team2, b.Team2);
     }
 }
