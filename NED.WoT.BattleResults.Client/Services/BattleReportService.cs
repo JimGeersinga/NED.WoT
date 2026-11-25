@@ -208,9 +208,12 @@ public class BattleReportService : IDisposable
 
         List<FileInfo> files = ReplayFiles();
         Interlocked.Exchange(ref _filesToLoad, files.Count);
+        long listedMs = stopwatch.ElapsedMilliseconds;
 
         string folder = StoredFolder!;
-        Dictionary<string, StoredBattle> stored = LoadStored(folder);
+        Dictionary<string, StoredBattle> stored = LoadStored(folder, out long migrationMs, out long queryMs);
+        long storedMs = stopwatch.ElapsedMilliseconds;
+        long fromStoredTicks = 0;
         ConcurrentBag<(BattleReport Report, FileInfo File)> read = [];
         HqIdentity? me = _identity.Current;
 
@@ -226,7 +229,9 @@ public class BattleReportService : IDisposable
                     BattleReport report;
                     if (stored.TryGetValue(file.Name, out StoredBattle? row) && row.FileLength == file.Length && row.FileWriteTicks == file.LastWriteTimeUtc.Ticks)
                     {
+                        long t = Stopwatch.GetTimestamp();
                         report = BattleReportMapper.FromStored(row, me);
+                        Interlocked.Add(ref fromStoredTicks, Stopwatch.GetTimestamp() - t);
                     }
                     else
                     {
@@ -265,10 +270,12 @@ public class BattleReportService : IDisposable
             return;
         }
 
+        long forEachMs = stopwatch.ElapsedMilliseconds;
         _loaded = true;
         NoticeSkipped(skipped);
 
         long elapsedMs = stopwatch.ElapsedMilliseconds;
+        Debug.WriteLine($"Battle list timing: listed {listedMs} ms, migration wait {migrationMs} ms, db query {queryMs} ms, stored ready at {storedMs} ms, FromStored {fromStoredTicks * 1000 / Stopwatch.Frequency} ms (summed over threads), loop done at {forEachMs} ms, total {elapsedMs} ms");
         LastLoadDuration = stopwatch.Elapsed;
         long allocated = GC.GetTotalAllocatedBytes(true) - allocatedBefore;
         LoadingBattleReportsFinished?.Invoke(this, new EventArgs());
@@ -290,14 +297,20 @@ public class BattleReportService : IDisposable
     }
 
     /// <summary>The stored battles of <paramref name="folder"/> by file name, with their players. Empty when the database can't be used: the folder then loads from the files.</summary>
-    private Dictionary<string, StoredBattle> LoadStored(string folder)
+    private Dictionary<string, StoredBattle> LoadStored(string folder, out long migrationMs, out long queryMs)
     {
+        migrationMs = queryMs = 0;
         try
         {
+            Stopwatch timer = Stopwatch.StartNew();
             _migration.Ready.GetAwaiter().GetResult();
+            migrationMs = timer.ElapsedMilliseconds;
             using AppDbContext db = _dbFactory.CreateDbContext();
 
-            return db.Battles.AsNoTracking().Include(x => x.Players).Where(x => x.Folder == folder).ToDictionary(x => x.FileName, StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, StoredBattle> rows = db.Battles.AsNoTracking().Include(x => x.Players).Where(x => x.Folder == folder).ToDictionary(x => x.FileName, StringComparer.OrdinalIgnoreCase);
+            queryMs = timer.ElapsedMilliseconds - migrationMs;
+
+            return rows;
         }
         catch (Exception ex)
         {
