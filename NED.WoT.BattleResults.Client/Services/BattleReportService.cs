@@ -208,12 +208,9 @@ public class BattleReportService : IDisposable
 
         List<FileInfo> files = ReplayFiles();
         Interlocked.Exchange(ref _filesToLoad, files.Count);
-        long listedMs = stopwatch.ElapsedMilliseconds;
 
         string folder = StoredFolder!;
-        Dictionary<string, StoredBattle> stored = LoadStored(folder, out long migrationMs, out long queryMs);
-        long storedMs = stopwatch.ElapsedMilliseconds;
-        long fromStoredTicks = 0;
+        Dictionary<string, StoredBattleReader.Entry> stored = LoadStored(folder);
         ConcurrentBag<(BattleReport Report, FileInfo File)> read = [];
         HqIdentity? me = _identity.Current;
 
@@ -227,11 +224,10 @@ public class BattleReportService : IDisposable
                 try
                 {
                     BattleReport report;
-                    if (stored.TryGetValue(file.Name, out StoredBattle? row) && row.FileLength == file.Length && row.FileWriteTicks == file.LastWriteTimeUtc.Ticks)
+                    if (stored.TryGetValue(file.Name, out StoredBattleReader.Entry? row) && row.Length == file.Length && row.WriteTicks == file.LastWriteTimeUtc.Ticks)
                     {
-                        long t = Stopwatch.GetTimestamp();
-                        report = BattleReportMapper.FromStored(row, me);
-                        Interlocked.Add(ref fromStoredTicks, Stopwatch.GetTimestamp() - t);
+                        report = row.Report;
+                        BattleReportMapper.Complete(report, me);
                     }
                     else
                     {
@@ -256,10 +252,11 @@ public class BattleReportService : IDisposable
 
             // The battles of replays that are gone stay listed; an unreadable row without its file holds nothing and goes.
             ConcurrentBag<string> ignored = [];
-            foreach (StoredBattle row in stored.Values.Where(x => !present.Contains(x.FileName) && !x.Unreadable))
+            foreach (StoredBattleReader.Entry row in stored.Values.Where(x => !present.Contains(x.Report.FileName!) && x.Report.Error is null))
             {
                 // A battle that a present file holds already is not listed twice; no notice, the user deleted that file.
-                AddBattleReport(cache, row.FileName, BattleReportMapper.FromStored(row, me), ignored, _settingService.Settings.UpdateScreeenWhileLoading);
+                BattleReportMapper.Complete(row.Report, me);
+                AddBattleReport(cache, row.Report.FileName!, row.Report, ignored, _settingService.Settings.UpdateScreeenWhileLoading);
             }
         }
         catch (OperationCanceledException)
@@ -270,12 +267,10 @@ public class BattleReportService : IDisposable
             return;
         }
 
-        long forEachMs = stopwatch.ElapsedMilliseconds;
         _loaded = true;
         NoticeSkipped(skipped);
 
         long elapsedMs = stopwatch.ElapsedMilliseconds;
-        Debug.WriteLine($"Battle list timing: listed {listedMs} ms, migration wait {migrationMs} ms, db query {queryMs} ms, stored ready at {storedMs} ms, FromStored {fromStoredTicks * 1000 / Stopwatch.Frequency} ms (summed over threads), loop done at {forEachMs} ms, total {elapsedMs} ms");
         LastLoadDuration = stopwatch.Elapsed;
         long allocated = GC.GetTotalAllocatedBytes(true) - allocatedBefore;
         LoadingBattleReportsFinished?.Invoke(this, new EventArgs());
@@ -286,7 +281,7 @@ public class BattleReportService : IDisposable
         Stopwatch storing = Stopwatch.StartNew();
         try
         {
-            StoreAsync(folder, [.. read], [.. stored.Values.Where(x => x.Unreadable && !present.Contains(x.FileName)).Select(x => x.Id)], cancellation).GetAwaiter().GetResult();
+            StoreAsync(folder, [.. read], [.. stored.Values.Where(x => x.Report.Error is not null && !present.Contains(x.Report.FileName!)).Select(x => x.Id)], cancellation).GetAwaiter().GetResult();
         }
         catch (OperationCanceledException)
         {
@@ -296,27 +291,21 @@ public class BattleReportService : IDisposable
         Debug.WriteLine($"Battle list stored: {read.Count} rows, {storing.ElapsedMilliseconds} ms");
     }
 
-    /// <summary>The stored battles of <paramref name="folder"/> by file name, with their players. Empty when the database can't be used: the folder then loads from the files.</summary>
-    private Dictionary<string, StoredBattle> LoadStored(string folder, out long migrationMs, out long queryMs)
+    /// <summary>The stored battles of <paramref name="folder"/> by file name, with their players (read by <see cref="StoredBattleReader"/>). Empty when the database can't be used: the folder then loads from the files.</summary>
+    private Dictionary<string, StoredBattleReader.Entry> LoadStored(string folder)
     {
-        migrationMs = queryMs = 0;
         try
         {
-            Stopwatch timer = Stopwatch.StartNew();
             _migration.Ready.GetAwaiter().GetResult();
-            migrationMs = timer.ElapsedMilliseconds;
             using AppDbContext db = _dbFactory.CreateDbContext();
 
-            Dictionary<string, StoredBattle> rows = db.Battles.AsNoTracking().Include(x => x.Players).Where(x => x.Folder == folder).ToDictionary(x => x.FileName, StringComparer.OrdinalIgnoreCase);
-            queryMs = timer.ElapsedMilliseconds - migrationMs;
-
-            return rows;
+            return StoredBattleReader.Read(db, folder);
         }
         catch (Exception ex)
         {
             Debug.WriteLine($"Stored battles not read: {ex.Message}");
 
-            return new Dictionary<string, StoredBattle>(StringComparer.OrdinalIgnoreCase);
+            return new Dictionary<string, StoredBattleReader.Entry>(StringComparer.OrdinalIgnoreCase);
         }
     }
 

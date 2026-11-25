@@ -191,7 +191,7 @@ public class BattleReportMapper
     {
         if (stored.Unreadable)
         {
-            return new BattleReport { FileName = stored.FileName, MatchStart = stored.MatchStart, Error = BattleReportService.UnreadableMessage(stored.FileName) };
+            return UnreadableRow(stored.FileName, stored.MatchStart);
         }
 
         BattleReport game = new()
@@ -242,17 +242,32 @@ public class BattleReportMapper
             });
         }
 
+        Complete(game, me);
+
+        return game;
+    }
+
+    /// <summary>The warning row of an unreadable file.</summary>
+    public static BattleReport UnreadableRow(string fileName, DateTime matchStart) =>
+        new() { FileName = fileName, MatchStart = matchStart, Error = BattleReportService.UnreadableMessage(fileName) };
+
+    /// <summary>What a stored report still lacks once its fields and players are set (players in table order): abbreviations, recorder team, filler players, numbers, then the identity.</summary>
+    public static void Complete(BattleReport game, HqIdentity? me)
+    {
+        if (game.Error is not null)
+        {
+            return;
+        }
+
         game.Team1.Abbreviation = GetMostMentionedClanAbbreviation(game.Team1);
         game.Team2.Abbreviation = GetMostMentionedClanAbbreviation(game.Team2);
-        game.RecorderTeam = RecorderTeamOf(game, stored.RecorderName);
+        game.RecorderTeam = RecorderTeamOf(game, game.RecorderName);
 
         int playerCount = Math.Max(game.Team1.Players.Count, game.Team2.Players.Count);
         EnrichAndSortPlayers(game.Team1, playerCount);
         EnrichAndSortPlayers(game.Team2, playerCount);
 
         ApplyIdentity(game, me);
-
-        return game;
     }
 
     /// <summary>Your team: its clan tag is yours, or one of its players has your name. Without a clan only the name matches.</summary>
@@ -428,7 +443,7 @@ public class BattleReportMapper
         }
     }
 
-    private static bool Same(BattleReport a, BattleReport b)
+    internal static bool Same(BattleReport a, BattleReport b)
     {
         static bool SamePlayer(Player x, Player y) =>
             (x.Number, x.Name, x.Clan, x.Vehicle, x.AccountId, x.PrebattleId, x.ClanId, x.IsClanMember, x.DamageDealt, x.DamageReceived, x.DamageBlocked, x.Piercings, x.HitsReceived, x.ShotsReceived, x.ShotsBlocked)

@@ -77,6 +77,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 BattleReport back = BattleReportMapper.FromStored(row, null);
                 Debug.Assert(row.Players.Count == 4 && back.MapName == "Great Wall" && back.Team1.Players[0].DamageDealt == 2500 && back.Team2.Players[0].Name == "B", "a stored battle comes back, the folder and file name case-insensitive");
                 Debug.Assert(back.Team1.Players.Select(x => x.Name).SequenceEqual(["A", "C", "D"]) && back.Team1.Players.Select(x => x.Number).SequenceEqual([1, 2, 3]), "players with equal experience keep their stored order and numbers");
+                BattleReport viaReader = StoredBattleReader.Read(db, @"c:\REPLAYS")[replay.Name.ToUpperInvariant()].Report;
+                BattleReportMapper.Complete(viaReader, null);
+                Debug.Assert(BattleReportMapper.Same(back, viaReader), "the reader gives the same report as FromStored");
                 Debug.Assert(await db.LobbyTeams.CountAsync() == 1, "the team names are untouched");
 
                 db.Battles.Add(BattleReportMapper.ToStored(report, @"C:\replays", replay));
