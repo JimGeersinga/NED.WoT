@@ -1,4 +1,4 @@
-using System.Data.Common;
+using Dapper;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -8,108 +8,84 @@ using NED.WoT.BattleResults.Client.Models;
 namespace NED.WoT.BattleResults.Client.Services;
 
 /// <summary>
-/// Reads the stored battles of a folder straight into <see cref="BattleReport"/> and <see cref="Player"/> with two queries, without EF materialising
-/// <c>StoredBattle</c> and <c>StoredPlayer</c> first (the EF read was 3-4 s of the warm load of 12,787 battles with 331k players).
-/// The column lists are the ones of <c>BattleReportMapper.ToStored</c>; a migration that changes them changes this file too.
+/// Reads the stored battles of a folder with two queries, straight into <see cref="BattleReport"/> and <see cref="Player"/> (Dapper fills them by column name;
+/// there is no copy from an entity). EF materialising <c>StoredBattle</c> and <c>StoredPlayer</c> cost about twice as much on the warm load.
+/// A new column needs no change here when <see cref="Player"/> has a property of that name; a battle column that is not on <see cref="BattleReport"/> goes on <see cref="Row"/>.
 /// </summary>
 public static class StoredBattleReader
 {
     /// <summary>A stored file: what the cache check compares, and its report. The report still needs <see cref="BattleReportMapper.Complete"/> (unless unreadable).</summary>
     public sealed record Entry(long Id, long Length, long WriteTicks, BattleReport Report);
 
-    private const string BATTLES = "SELECT Id, FileName, FileLength, FileWriteTicks, Unreadable, MatchStart, MapName, MapKey, RecorderName, ArenaUniqueId, MatchDuration, FinishReason, Team1Health, Team2Health, Team1IsWinner, Team2IsWinner, Team1ClanId, Team2ClanId FROM Battles WHERE Folder = $folder";
+    /// <summary>The columns of Battles that are not a property of <see cref="BattleReport"/>: the file check, and the figures of the two teams.</summary>
+    private sealed class Row : BattleReport
+    {
+        public Row()
+        {
+            Team1 = new Team { Number = 1 };
+            Team2 = new Team { Number = 2 };
+        }
 
-    // Players are read in insert order (= table order) per battle: FromStored and Complete rely on it for Number.
-    private const string PLAYERS = "SELECT p.BattleId, p.TeamNumber, p.Name, p.Clan, p.Vehicle, p.AccountId, p.PrebattleId, p.ClanId, p.DamageDealt, p.DamageReceived, p.DamageBlocked, p.Piercings, p.HitsReceived, p.ShotsReceived, p.ShotsBlocked, p.ExperienceEarned, p.CreditsEarned, p.Health, p.MaxHealth, p.LifeTime, p.Kills, p.Shots, p.DirectHits, p.DeathReason, p.Spotted, p.CapturePoints, p.IsTeamKiller FROM Players p JOIN Battles b ON b.Id = p.BattleId WHERE b.Folder = $folder ORDER BY p.BattleId, p.Id";
+        public long Id { get; set; }
+        public long FileLength { get; set; }
+        public long FileWriteTicks { get; set; }
+        public bool Unreadable { get; set; }
+
+        public int? Team1Health { get => Team1.Health; set => Team1.Health = value; }
+        public int? Team2Health { get => Team2.Health; set => Team2.Health = value; }
+        public bool? Team1IsWinner { get => Team1.IsWinner; set => Team1.IsWinner = value; }
+        public bool? Team2IsWinner { get => Team2.IsWinner; set => Team2.IsWinner = value; }
+        public long? Team1ClanId { get => Team1.ClanId; set => Team1.ClanId = value; }
+        public long? Team2ClanId { get => Team2.ClanId; set => Team2.ClanId = value; }
+    }
+
+    /// <summary>Players have the columns of Players as properties, plus the battle they belong to (<see cref="Player.TeamNumber"/> is the team).</summary>
+    private sealed class PlayerRow : Player
+    {
+        public PlayerRow() : base(null!)
+        {
+        }
+
+        public long BattleId { get; set; }
+    }
 
     /// <returns>The stored files of <paramref name="folder"/> by file name (case-insensitive).</returns>
     public static Dictionary<string, Entry> Read(AppDbContext db, string folder)
     {
-        Dictionary<long, Entry> byId = [];
+        Dictionary<long, Row> byId = [];
         Dictionary<string, Entry> byName = new(StringComparer.OrdinalIgnoreCase);
 
         db.Database.OpenConnection();
         try
         {
-            DbConnection connection = db.Database.GetDbConnection();
+            System.Data.Common.DbConnection connection = db.Database.GetDbConnection();
 
-            using (DbCommand command = Command(connection, BATTLES, folder))
-            using (DbDataReader r = command.ExecuteReader())
+            foreach (Row row in connection.Query<Row>("SELECT * FROM Battles WHERE Folder = @folder", new { folder }))
             {
-                while (r.Read())
+                if (row.Unreadable)
                 {
-                    string name = r.GetString(1);
-                    DateTime matchStart = r.GetDateTime(5);
-                    BattleReport report = r.GetBoolean(4)
-                        ? BattleReportMapper.UnreadableRow(name, matchStart)
-                        : new BattleReport
-                        {
-                            FileName = name,
-                            MatchStart = matchStart,
-                            MapName = Str(r, 6),
-                            MapKey = Str(r, 7),
-                            RecorderName = Str(r, 8),
-                            ArenaUniqueId = Long(r, 9),
-                            MatchDuration = Int(r, 10),
-                            FinishReason = Int(r, 11),
-                            Team1 = new Team { Number = 1, Health = Int(r, 12), IsWinner = Bool(r, 14), ClanId = Long(r, 16) },
-                            Team2 = new Team { Number = 2, Health = Int(r, 13), IsWinner = Bool(r, 15), ClanId = Long(r, 17) }
-                        };
-
-                    Entry entry = new(r.GetInt64(0), r.GetInt64(2), r.GetInt64(3), report);
-                    byId[entry.Id] = entry;
-                    byName[name] = entry;
+                    row.Error = BattleReportService.UnreadableMessage(row.FileName!);
                 }
+
+                byId[row.Id] = row;
+                byName[row.FileName!] = new Entry(row.Id, row.FileLength, row.FileWriteTicks, row);
             }
 
-            using (DbCommand command = Command(connection, PLAYERS, folder))
-            using (DbDataReader r = command.ExecuteReader())
+            // In insert order (= table order) per battle: Complete relies on it for Number.
+            long lastId = -1;
+            Row? battle = null;
+            foreach (PlayerRow player in connection.Query<PlayerRow>("SELECT p.* FROM Players p JOIN Battles b ON b.Id = p.BattleId WHERE b.Folder = @folder ORDER BY p.BattleId, p.Id", new { folder }, buffered: false))
             {
-                long lastId = -1;
-                BattleReport? report = null;
-                while (r.Read())
+                if (player.BattleId != lastId)
                 {
-                    long battleId = r.GetInt64(0);
-                    if (battleId != lastId)
-                    {
-                        lastId = battleId;
-                        report = byId.GetValueOrDefault(battleId)?.Report;
-                    }
+                    lastId = player.BattleId;
+                    battle = byId.GetValueOrDefault(lastId);
+                }
 
-                    if (report is null)
-                    {
-                        continue;
-                    }
-
-                    Team team = r.GetInt32(1) == 1 ? report.Team1 : report.Team2;
-                    team.Players.Add(new Player(team)
-                    {
-                        Name = Str(r, 2),
-                        Clan = Str(r, 3),
-                        Vehicle = Str(r, 4),
-                        AccountId = Long(r, 5),
-                        PrebattleId = Long(r, 6),
-                        ClanId = Long(r, 7),
-                        DamageDealt = Int(r, 8),
-                        DamageReceived = Int(r, 9),
-                        DamageBlocked = Int(r, 10),
-                        Piercings = Int(r, 11),
-                        HitsReceived = Int(r, 12),
-                        ShotsReceived = Int(r, 13),
-                        ShotsBlocked = Int(r, 14),
-                        ExperienceEarned = Int(r, 15),
-                        CreditsEarned = Int(r, 16),
-                        Health = Int(r, 17),
-                        MaxHealth = Int(r, 18),
-                        LifeTime = Int(r, 19),
-                        Kills = Int(r, 20),
-                        Shots = Int(r, 21),
-                        DirectHits = Int(r, 22),
-                        DeathReason = Int(r, 23),
-                        Spotted = Int(r, 24),
-                        CapturePoints = Int(r, 25),
-                        IsTeamKiller = Bool(r, 26)
-                    });
+                if (battle is not null)
+                {
+                    player.Team = player.TeamNumber == 1 ? battle.Team1 : battle.Team2;
+                    player.Team.Players.Add(player);
                 }
             }
         }
@@ -120,21 +96,4 @@ public static class StoredBattleReader
 
         return byName;
     }
-
-    private static DbCommand Command(DbConnection connection, string sql, string folder)
-    {
-        DbCommand command = connection.CreateCommand();
-        command.CommandText = sql;
-        DbParameter parameter = command.CreateParameter();
-        parameter.ParameterName = "$folder";
-        parameter.Value = folder;
-        command.Parameters.Add(parameter);
-
-        return command;
-    }
-
-    private static string? Str(DbDataReader r, int i) => r.IsDBNull(i) ? null : r.GetString(i);
-    private static int? Int(DbDataReader r, int i) => r.IsDBNull(i) ? null : r.GetInt32(i);
-    private static long? Long(DbDataReader r, int i) => r.IsDBNull(i) ? null : r.GetInt64(i);
-    private static bool? Bool(DbDataReader r, int i) => r.IsDBNull(i) ? null : r.GetBoolean(i);
 }

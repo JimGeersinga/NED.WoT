@@ -415,7 +415,6 @@ public class BattleReportService : IDisposable
         string folder = Path.GetTempPath();
         Debug.Assert(LiveReplayFile(folder, @"C:\replays") == Path.Combine(folder, "temp.wotreplay"), "a configured folder gives temp.wotreplay in it");
         Debug.Assert(LiveReplayFile(null, null) is null, "nothing known: no lookup");
-        BattleReportMapper.SelfCheck();
 #if DEBUG
         if (!_storeChecked)
         {

@@ -1,4 +1,9 @@
 ﻿using NED.WoT.BattleResults.Client.Data.Models;
+#if DEBUG
+using Microsoft.EntityFrameworkCore;
+
+using NED.WoT.BattleResults.Client.Data;
+#endif
 using NED.WoT.BattleResults.Client.Models;
 
 using System.Diagnostics;
@@ -186,67 +191,6 @@ public class BattleReportMapper
         return stored;
     }
 
-    /// <summary>The report of a stored row, for the signed-in player <paramref name="me"/>. The players need to be loaded.</summary>
-    public static BattleReport FromStored(StoredBattle stored, HqIdentity? me)
-    {
-        if (stored.Unreadable)
-        {
-            return UnreadableRow(stored.FileName, stored.MatchStart);
-        }
-
-        BattleReport game = new()
-        {
-            FileName = stored.FileName,
-            MapName = stored.MapName,
-            MapKey = stored.MapKey,
-            RecorderName = stored.RecorderName,
-            ArenaUniqueId = stored.ArenaUniqueId,
-            MatchStart = stored.MatchStart,
-            MatchDuration = stored.MatchDuration,
-            FinishReason = stored.FinishReason,
-            Team1 = new Team { Number = 1, Health = stored.Team1Health, IsWinner = stored.Team1IsWinner, ClanId = stored.Team1ClanId },
-            Team2 = new Team { Number = 2, Health = stored.Team2Health, IsWinner = stored.Team2IsWinner, ClanId = stored.Team2ClanId }
-        };
-
-        // Stored in table order: the (stable, 15 per team) sort below keeps it; the fillers go last.
-        foreach (StoredPlayer x in stored.Players.OrderBy(x => x.Id))
-        {
-            Team team = x.TeamNumber == 1 ? game.Team1 : game.Team2;
-            team.Players.Add(new Player(team)
-            {
-                Name = x.Name,
-                Clan = x.Clan,
-                Vehicle = x.Vehicle,
-                AccountId = x.AccountId,
-                PrebattleId = x.PrebattleId,
-                ClanId = x.ClanId,
-                DamageDealt = x.DamageDealt,
-                DamageReceived = x.DamageReceived,
-                DamageBlocked = x.DamageBlocked,
-                Piercings = x.Piercings,
-                HitsReceived = x.HitsReceived,
-                ShotsReceived = x.ShotsReceived,
-                ShotsBlocked = x.ShotsBlocked,
-                ExperienceEarned = x.ExperienceEarned,
-                CreditsEarned = x.CreditsEarned,
-                Health = x.Health,
-                MaxHealth = x.MaxHealth,
-                LifeTime = x.LifeTime,
-                Kills = x.Kills,
-                Shots = x.Shots,
-                DirectHits = x.DirectHits,
-                DeathReason = x.DeathReason,
-                Spotted = x.Spotted,
-                CapturePoints = x.CapturePoints,
-                IsTeamKiller = x.IsTeamKiller
-            });
-        }
-
-        Complete(game, me);
-
-        return game;
-    }
-
     /// <summary>The warning row of an unreadable file.</summary>
     public static BattleReport UnreadableRow(string fileName, DateTime matchStart) =>
         new() { FileName = fileName, MatchStart = matchStart, Error = BattleReportService.UnreadableMessage(fileName) };
@@ -395,9 +339,13 @@ public class BattleReportMapper
         return Result.Unknown;
     }
 
-    [Conditional("DEBUG")]
-    internal static void SelfCheck()
+#if DEBUG
+    internal static HqIdentity SelfCheckIdentity(string tag) => new(1, "Ghost", null, tag, null, null, ClanRole.Unknown, true);
+
+    /// <summary>Stores reports in a migrated temp database and reads them back with <see cref="StoredBattleReader"/>: each comes back equal, and the identity is applied on load.</summary>
+    internal static async Task SelfCheckAsync(DbContextOptions<AppDbContext> options)
     {
+        const string FOLDER = @"C:\self";
         FileInfo file = new(Path.GetTempFileName());
         try
         {
@@ -414,28 +362,51 @@ public class BattleReportMapper
                 Vehicles = Enumerable.Range(1, 3).ToDictionary(x => x.ToString(CultureInfo), x => new ReplayPlayer { Name = $"H{x}", Team = x % 2 + 1, ClanAbbrev = "NED" })
             };
 
-            HqIdentity? NedPlayer(string tag) => new(1, "Ghost", null, tag, null, null, ClanRole.Unknown, true);
+            List<(string Name, BattleReport Before, HqIdentity? Me)> cases = [];
             foreach (ReplayResults? source in new[] { results, null })
             {
-                foreach (HqIdentity? me in new[] { null, NedPlayer("NED"), NedPlayer("ABC") })
+                foreach (HqIdentity? me in new[] { null, SelfCheckIdentity("NED"), SelfCheckIdentity("ABC") })
                 {
-                    BattleReport before = Map(header, source, me);
-                    StoredBattle stored = ToStored(before, "C:\\replays", file);
-                    BattleReport after = FromStored(stored, me);
-                    Debug.Assert(Same(before, after), "FromStored(ToStored(report)) equals the report");
+                    cases.Add(($"case{cases.Count}.wotreplay", Map(header, source, me), me));
+                }
+            }
+
+            cases.Add(("identity.wotreplay", Map(header, results, null), null));
+            cases.Add(("broken.wotreplay", UnreadableRow("broken.wotreplay", new DateTime(2026, 4, 5, 21, 30, 0)), null));
+
+            await using (AppDbContext db = new(options))
+            {
+                foreach ((string name, BattleReport before, _) in cases)
+                {
+                    StoredBattle stored = ToStored(before, FOLDER, file);
+                    stored.FileName = name;
+                    db.Battles.Add(stored);
+                }
+
+                await db.SaveChangesAsync();
+            }
+
+            await using (AppDbContext db = new(options))
+            {
+                Dictionary<string, StoredBattleReader.Entry> read = StoredBattleReader.Read(db, FOLDER);
+                foreach ((string name, BattleReport before, HqIdentity? me) in cases)
+                {
+                    BattleReport after = read[name].Report;
+                    Complete(after, me);
+                    Debug.Assert(after.Error == before.Error && after.MatchStart == before.MatchStart && after.FileName == name, "an unreadable file comes back as its warning row, a readable one without error");
+                    Debug.Assert(before.Error is not null || Same(before, after), "a stored report comes back equal");
                     Debug.Assert(after.Team1.Players.Count == before.Team1.Players.Count && after.Team2.Players.Count == before.Team2.Players.Count, "the fillers come back");
                 }
             }
 
             // The identity is applied on load: the same stored row follows a changed clan tag, with nothing rebuilt.
-            StoredBattle row = ToStored(Map(header, results, null), "C:\\replays", file);
-            Debug.Assert(FromStored(row, NedPlayer("NED")).Result == Result.Win && FromStored(row, NedPlayer("ABC")).Result == Result.Lose, "a changed clan tag changes own team and result");
-            Debug.Assert(FromStored(row, null).Result == Result.Unknown && FromStored(row, null).OwnTeam is null, "no identity: no own team");
-
-            // An unreadable file is the warning row.
-            BattleReport broken = new() { FileName = file.Name, MatchStart = new DateTime(2026, 4, 5, 21, 30, 0), Error = BattleReportService.UnreadableMessage(file.Name) };
-            BattleReport brokenBack = FromStored(ToStored(broken, "C:\\replays", file), null);
-            Debug.Assert(brokenBack.Error == broken.Error && brokenBack.MatchStart == broken.MatchStart && brokenBack.FileName == broken.FileName, "an unreadable file comes back as its warning row");
+            foreach ((HqIdentity? me, Result expected) in new (HqIdentity?, Result)[] { (SelfCheckIdentity("NED"), Result.Win), (SelfCheckIdentity("ABC"), Result.Lose), (null, Result.Unknown) })
+            {
+                await using AppDbContext db = new(options);
+                BattleReport after = StoredBattleReader.Read(db, FOLDER)["identity.wotreplay"].Report;
+                Complete(after, me);
+                Debug.Assert(after.Result == expected && (me is not null || after.OwnTeam is null), "a changed clan tag changes own team and result");
+            }
         }
         finally
         {
@@ -459,4 +430,5 @@ public class BattleReportMapper
             == (b.MapName, b.MapKey, b.RecorderName, b.ArenaUniqueId, b.MatchStart, b.MatchDuration, b.FinishReason, b.Result, b.RecorderTeam?.Number, b.OwnTeam?.Number)
             && SameTeam(a.Team1, b.Team1) && SameTeam(a.Team2, b.Team2);
     }
+#endif
 }
