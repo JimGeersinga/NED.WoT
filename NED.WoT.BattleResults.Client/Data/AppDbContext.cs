@@ -12,6 +12,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
     public DbSet<LobbyTeam> LobbyTeams => Set<LobbyTeam>();
 
+    public DbSet<StoredBattle> Battles => Set<StoredBattle>();
+
+    public DbSet<StoredPlayer> Players => Set<StoredPlayer>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);

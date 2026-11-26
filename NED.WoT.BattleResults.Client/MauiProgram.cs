@@ -50,7 +50,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<GevechtslogSessionClient>();
         builder.Services.AddSingleton<IdentityService>();
         // One short-lived context per operation; DatabaseMigration brings the schema up to date in the background (see below).
-        builder.Services.AddDbContextFactory<AppDbContext>(o => o.UseSqlite($"Data Source={AppDbContext.DatabasePath}"));
+        builder.Services.AddDbContextFactory<AppDbContext>(o => o.UseSqlite($"Data Source={AppDbContext.DatabasePath};Default Timeout=3"));
         builder.Services.AddSingleton<DatabaseMigration>();
 
         MauiApp app = builder.Build();

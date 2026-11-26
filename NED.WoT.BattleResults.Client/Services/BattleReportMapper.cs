@@ -1,4 +1,5 @@
-﻿using NED.WoT.BattleResults.Client.Models;
+﻿using NED.WoT.BattleResults.Client.Data.Models;
+using NED.WoT.BattleResults.Client.Models;
 
 using System.Globalization;
 using System.Runtime.InteropServices;
@@ -46,7 +47,7 @@ public class BattleReportMapper
                 {
                     ReplayPlayer? player = null;
                     results.Players?.TryGetValue(vehicle.Key, out player);
-                    MapPlayerData(game, player, vehicle.Value is { Length: > 0 } stats ? stats[0] : null, results, me);
+                    MapPlayerData(game, player, vehicle.Value is { Length: > 0 } stats ? stats[0] : null, results);
                 }
             }
         }
@@ -54,7 +55,7 @@ public class BattleReportMapper
         {
             foreach (ReplayPlayer? player in header.Vehicles.Values)
             {
-                MapPlayerData(game, player, null, null, me);
+                MapPlayerData(game, player, null, null);
             }
         }
 
@@ -63,10 +64,29 @@ public class BattleReportMapper
         game.Team1.ClanId = ClanId(results, game.Team1);
         game.Team2.ClanId = ClanId(results, game.Team2);
 
-        game.RecorderTeam = header.PlayerName is null ? null
-            : game.Team1.Players.Any(x => x.Name == header.PlayerName) ? game.Team1
-            : game.Team2.Players.Any(x => x.Name == header.PlayerName) ? game.Team2
-            : null;
+        game.RecorderTeam = RecorderTeamOf(game, header.PlayerName);
+
+        int playerCount = Math.Max(game.Team1.Players.Count, game.Team2.Players.Count);
+        EnrichAndSortPlayers(game.Team1, playerCount);
+        EnrichAndSortPlayers(game.Team2, playerCount);
+
+        ApplyIdentity(game, me);
+
+        return game;
+    }
+
+    private static Team? RecorderTeamOf(BattleReport game, string? recorderName) => recorderName is null ? null
+        : game.Team1.Players.Any(x => x.Name == recorderName) ? game.Team1
+        : game.Team2.Players.Any(x => x.Name == recorderName) ? game.Team2
+        : null;
+
+    /// <summary>The part of a report that depends on who is signed in: clan members, your team, the result of each team and of the battle. Needs the team abbreviations.</summary>
+    public static void ApplyIdentity(BattleReport game, HqIdentity? me)
+    {
+        foreach (Player player in game.Team1.Players.Concat(game.Team2.Players))
+        {
+            player.IsClanMember = me?.ClanTag is not null && string.Equals(me.ClanTag, player.Clan, StringComparison.OrdinalIgnoreCase);
+        }
 
         game.Team1.Result = GetResult(game.Team1.IsWinner, game.Team2.IsWinner);
         game.Team2.Result = GetResult(game.Team2.IsWinner, game.Team1.IsWinner);
@@ -92,12 +112,96 @@ public class BattleReportMapper
         {
             game.Result = Result.Unknown;
         }
+    }
+
+    /// <summary>The row of a replay for the database: only what the file says, nothing that depends on who is signed in. The filler players of an uneven match are left out.</summary>
+    public static StoredBattle ToStored(BattleReport report, string folder, FileInfo file)
+    {
+        StoredBattle stored = new()
+        {
+            Folder = folder,
+            FileName = file.Name,
+            FileLength = file.Length,
+            FileWriteTicks = file.LastWriteTimeUtc.Ticks,
+            Unreadable = report.Error is not null,
+            MatchStart = report.MatchStart
+        };
+
+        if (stored.Unreadable)
+        {
+            return stored;
+        }
+
+        stored.MapName = report.MapName;
+        stored.MapKey = report.MapKey;
+        stored.RecorderName = report.RecorderName;
+        stored.ArenaUniqueId = report.ArenaUniqueId;
+        stored.MatchDuration = report.MatchDuration;
+        stored.FinishReason = report.FinishReason;
+        stored.Team1Health = report.Team1.Health;
+        stored.Team2Health = report.Team2.Health;
+        stored.Team1IsWinner = report.Team1.IsWinner;
+        stored.Team2IsWinner = report.Team2.IsWinner;
+        stored.Team1ClanId = report.Team1.ClanId;
+        stored.Team2ClanId = report.Team2.ClanId;
+
+        foreach (Team team in new[] { report.Team1, report.Team2 })
+        {
+            // A filler has neither a name nor an account: it only pads the shorter team.
+            foreach (Player x in team.Players.Where(x => x.Name is not null || x.AccountId is not null))
+            {
+                stored.Players.Add(new StoredPlayer
+                {
+                    TeamNumber = team.Number,
+                    Name = x.Name,
+                    Clan = x.Clan,
+                    Vehicle = x.Vehicle,
+                    AccountId = x.AccountId,
+                    PrebattleId = x.PrebattleId,
+                    ClanId = x.ClanId,
+                    DamageDealt = x.DamageDealt,
+                    DamageReceived = x.DamageReceived,
+                    DamageBlocked = x.DamageBlocked,
+                    Piercings = x.Piercings,
+                    HitsReceived = x.HitsReceived,
+                    ShotsReceived = x.ShotsReceived,
+                    ShotsBlocked = x.ShotsBlocked,
+                    ExperienceEarned = x.ExperienceEarned,
+                    CreditsEarned = x.CreditsEarned,
+                    Health = x.Health,
+                    MaxHealth = x.MaxHealth,
+                    LifeTime = x.LifeTime,
+                    Kills = x.Kills,
+                    Shots = x.Shots,
+                    DirectHits = x.DirectHits,
+                    DeathReason = x.DeathReason,
+                    Spotted = x.Spotted,
+                    CapturePoints = x.CapturePoints,
+                    IsTeamKiller = x.IsTeamKiller
+                });
+            }
+        }
+
+        return stored;
+    }
+
+    /// <summary>What a stored report still lacks once its fields and players are set (players in table order): abbreviations, recorder team, filler players, numbers, then the identity.</summary>
+    public static void Complete(BattleReport game, HqIdentity? me)
+    {
+        if (game.Error is not null)
+        {
+            return;
+        }
+
+        game.Team1.Abbreviation = GetMostMentionedClanAbbreviation(game.Team1);
+        game.Team2.Abbreviation = GetMostMentionedClanAbbreviation(game.Team2);
+        game.RecorderTeam = RecorderTeamOf(game, game.RecorderName);
 
         int playerCount = Math.Max(game.Team1.Players.Count, game.Team2.Players.Count);
         EnrichAndSortPlayers(game.Team1, playerCount);
         EnrichAndSortPlayers(game.Team2, playerCount);
 
-        return game;
+        ApplyIdentity(game, me);
     }
 
     /// <summary>Your team: its clan tag is yours, or one of its players has your name. Without a clan only the name matches.</summary>
@@ -161,7 +265,7 @@ public class BattleReportMapper
     private static int? TeamHealth(ReplayCommon? common, int team) =>
         common?.TeamHealth is { } health && health.TryGetValue(team.ToString(CultureInfo), out int value) ? value : null;
 
-    private static void MapPlayerData(BattleReport game, ReplayPlayer? playerData, ReplayVehicleStats? vehicleData, ReplayResults? results, HqIdentity? me)
+    private static void MapPlayerData(BattleReport game, ReplayPlayer? playerData, ReplayVehicleStats? vehicleData, ReplayResults? results)
     {
         string? clan = playerData?.ClanAbbrev;
 
@@ -171,8 +275,7 @@ public class BattleReportMapper
         {
             Name = playerData?.Name,
             Clan = clan,
-            Vehicle = TankNameResolver.GetTankName(playerData?.VehicleType),
-            IsClanMember = me?.ClanTag is not null && string.Equals(me.ClanTag, clan, StringComparison.OrdinalIgnoreCase)
+            Vehicle = TankNameResolver.GetTankName(playerData?.VehicleType)
         };
 
         if (vehicleData != null)

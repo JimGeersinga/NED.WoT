@@ -1,7 +1,10 @@
 using Microsoft.AspNetCore.Components;
+using Microsoft.EntityFrameworkCore;
 
 using MudBlazor;
 
+using NED.WoT.BattleResults.Client.Data;
+using NED.WoT.BattleResults.Client.Data.Models;
 using NED.WoT.BattleResults.Client.Models;
 
 using System.Collections.Concurrent;
@@ -18,6 +21,8 @@ public class BattleReportService : IDisposable
     private readonly ISnackbar _snackbar;
     private readonly SettingService _settingService;
     private readonly IdentityService _identity;
+    private readonly IDbContextFactory<AppDbContext> _dbFactory;
+    private readonly DatabaseMigration _migration;
     private FileSystemWatcher? _watcher;
     private readonly Timer _timer;
     private (string, string)? _clanMatch;
@@ -31,6 +36,9 @@ public class BattleReportService : IDisposable
 
     /// <summary>The position of the folder that is read and watched, in <see cref="Settings.ReplayFolders"/>. The app starts on the first one.</summary>
     public int CurrentFolder { get; private set; }
+
+    /// <summary>The key of the folder in the database: the full path without a trailing separator, so one folder has one history.</summary>
+    private string? StoredFolder => ReplayDirectory is null ? null : Path.TrimEndingDirectorySeparator(Path.GetFullPath(ReplayDirectory));
 
     private string? ReplayDirectory => _settingService.Settings.ReplayFolders.ElementAtOrDefault(CurrentFolder)?.Path;
 
@@ -77,14 +85,15 @@ public class BattleReportService : IDisposable
     public event EventHandler? LoadingBattleReportsStarted;
     public event EventHandler? LoadingBattleReportsFinished;
     public event EventHandler<BattleReportAddedEventArgs>? BattleReportAdded;
-    public event EventHandler<BattleReportRemovedEventArgs>? BattleReportRemoved;
     public event EventHandler<(string, string)>? ClanMatchStarted;
 
-    public BattleReportService(ISnackbar snackbar, SettingService settingService, IdentityService identity)
+    public BattleReportService(ISnackbar snackbar, SettingService settingService, IdentityService identity, IDbContextFactory<AppDbContext> dbFactory, DatabaseMigration migration)
     {
         _snackbar = snackbar;
         _settingService = settingService;
         _identity = identity;
+        _dbFactory = dbFactory;
+        _migration = migration;
         _folderCts = CancellationTokenSource.CreateLinkedTokenSource(_disposed.Token);
         _batchTimer = new Timer(async _ => await AddPendingFilesAsync(), null, Timeout.Infinite, Timeout.Infinite);
         SelfCheck();
@@ -95,8 +104,8 @@ public class BattleReportService : IDisposable
     }
 
     /// <summary>
-    /// Makes the folder at <paramref name="index"/> the current one: stops what the old one was doing, drops its battles, watches the new folder and reads it from disk.
-    /// Every switch reads again, also back to a folder seen before. A second call while this one loads cancels that load.
+    /// Makes the folder at <paramref name="index"/> the current one: stops what the old one was doing, drops its battles, watches the new folder and loads it (from the database, and from disk for the files it does not know).
+    /// Every switch lists the folder again, also back to a folder seen before; only files the database does not know are read. A second call while this one loads cancels that load.
     /// </summary>
     public async Task SelectFolderAsync(int index)
     {
@@ -200,7 +209,13 @@ public class BattleReportService : IDisposable
         List<FileInfo> files = ReplayFiles();
         Interlocked.Exchange(ref _filesToLoad, files.Count);
 
+        string folder = StoredFolder!;
+        Dictionary<string, StoredBattleReader.Entry> stored = LoadStored(folder);
+        ConcurrentBag<(BattleReport Report, FileInfo File)> read = [];
+        HqIdentity? me = _identity.Current;
+
         ConcurrentBag<string> skipped = [];
+        HashSet<string> present = new(files.Select(x => x.Name), StringComparer.OrdinalIgnoreCase);
         OrderablePartitioner<FileInfo> partitioner = Partitioner.Create(files);
         try
         {
@@ -208,20 +223,41 @@ public class BattleReportService : IDisposable
             {
                 try
                 {
-                    BattleReport report = GetBattleReport(file);
+                    BattleReport report;
+                    if (stored.TryGetValue(file.Name, out StoredBattleReader.Entry? row) && row.Length == file.Length && row.WriteTicks == file.LastWriteTimeUtc.Ticks)
+                    {
+                        report = row.Report;
+                        BattleReportMapper.Complete(report, me);
+                    }
+                    else
+                    {
+                        report = GetBattleReport(file);
+                        read.Add((report, file));
+                    }
 
                     AddBattleReport(cache, file.Name, report, skipped, _settingService.Settings.UpdateScreeenWhileLoading);
                 }
                 catch (Exception ex)
                 {
                     // The unreadable file becomes a row of its own in the table, not a silent gap.
-                    AddBattleReport(cache, file.Name, Unreadable(file, ex.Message), skipped, _settingService.Settings.UpdateScreeenWhileLoading);
+                    BattleReport broken = Unreadable(file, ex.Message);
+                    read.Add((broken, file));
+                    AddBattleReport(cache, file.Name, broken, skipped, _settingService.Settings.UpdateScreeenWhileLoading);
                 }
                 finally
                 {
                     Interlocked.Increment(ref _filesLoaded);
                 }
             });
+
+            // The battles of replays that are gone stay listed; an unreadable row without its file holds nothing and goes.
+            ConcurrentBag<string> ignored = [];
+            foreach (StoredBattleReader.Entry row in stored.Values.Where(x => !present.Contains(x.Report.FileName!) && x.Report.Error is null))
+            {
+                // A battle that a present file holds already is not listed twice; no notice, the user deleted that file.
+                BattleReportMapper.Complete(row.Report, me);
+                AddBattleReport(cache, row.Report.FileName!, row.Report, ignored, _settingService.Settings.UpdateScreeenWhileLoading);
+            }
         }
         catch (OperationCanceledException)
         {
@@ -240,6 +276,69 @@ public class BattleReportService : IDisposable
         LoadingBattleReportsFinished?.Invoke(this, new EventArgs());
         Debug.WriteLine($"Battle list loaded: {files.Count} files, {Interlocked.Read(ref _bytesRead) / 1048576.0:F1} MB read, {allocated / 1048576.0:F1} MB allocated, {elapsedMs} ms");
         Debug.WriteLine($"Battle list loaded: managed heap {GC.GetTotalMemory(true) / 1048576} MB");
+
+        // After the list is shown: what was read goes into the database, and unreadable rows of vanished files out of it.
+        Stopwatch storing = Stopwatch.StartNew();
+        try
+        {
+            StoreAsync(folder, [.. read], [.. stored.Values.Where(x => x.Report.Error is not null && !present.Contains(x.Report.FileName!)).Select(x => x.Id)], cancellation).GetAwaiter().GetResult();
+        }
+        catch (OperationCanceledException)
+        {
+            // Disposed or switched while storing: the next load reads what is missing.
+        }
+
+        Debug.WriteLine($"Battle list stored: {read.Count} rows, {storing.ElapsedMilliseconds} ms");
+    }
+
+    /// <summary>The stored battles of <paramref name="folder"/> by file name, with their players (read by <see cref="StoredBattleReader"/>). Empty when the database can't be used: the folder then loads from the files.</summary>
+    private Dictionary<string, StoredBattleReader.Entry> LoadStored(string folder)
+    {
+        try
+        {
+            _migration.Ready.GetAwaiter().GetResult();
+            using AppDbContext db = _dbFactory.CreateDbContext();
+
+            return StoredBattleReader.Read(db, folder);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Stored battles not read: {ex.Message}");
+
+            return new Dictionary<string, StoredBattleReader.Entry>(StringComparer.OrdinalIgnoreCase);
+        }
+    }
+
+    /// <summary>Writes the read replays (a replaced file replaces its row) and removes the rows <paramref name="goneIds"/>, in batches of 200, one context each. A database error is logged, never thrown: the app works without the database.</summary>
+    private async Task StoreAsync(string folder, IReadOnlyList<(BattleReport Report, FileInfo File)> items, IReadOnlyList<long> goneIds, CancellationToken token)
+    {
+        try
+        {
+            await _migration.Ready;
+            if (goneIds.Count > 0)
+            {
+                await using AppDbContext cleanup = await _dbFactory.CreateDbContextAsync(token);
+                await cleanup.Battles.Where(x => goneIds.Contains(x.Id)).ExecuteDeleteAsync(token);
+            }
+
+            foreach ((BattleReport Report, FileInfo File)[] chunk in items.Chunk(200))
+            {
+                token.ThrowIfCancellationRequested();
+                await using AppDbContext db = await _dbFactory.CreateDbContextAsync(token);
+                string[] names = [.. chunk.Select(x => x.File.Name)];
+                await db.Battles.Where(x => x.Folder == folder && names.Contains(x.FileName)).ExecuteDeleteAsync(token);
+                db.Battles.AddRange(chunk.Select(x => BattleReportMapper.ToStored(x.Report, folder, x.File)));
+                await db.SaveChangesAsync(token);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Battles not stored: {ex.Message}");
+        }
     }
 
     public void ListenForFileChanges()
@@ -451,10 +550,13 @@ public class BattleReportService : IDisposable
 
             ConcurrentBag<string> added = [];
             ConcurrentBag<string> skipped = [];
+            ConcurrentBag<(BattleReport Report, FileInfo File)> read = [];
             int unreadable = 0;
             Parallel.ForEach(Partitioner.Create(batch), new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount, CancellationToken = token }, file =>
             {
-                BattleReport report = GetBattleReport(new FileInfo(file.Value));
+                FileInfo info = new(file.Value);
+                BattleReport report = GetBattleReport(info);
+                read.Add((report, info));
 
                 // An unreadable replay is added too (it shows as a warning row).
                 bool listed = AddBattleReport(cache, file.Key, report, skipped);
@@ -483,6 +585,8 @@ public class BattleReportService : IDisposable
             NoticeSkipped(skipped);
             LoadingBattleReportsFinished?.Invoke(this, new EventArgs());
             Debug.WriteLine($"New replays loaded: {batch.Count} files, {stopwatch.ElapsedMilliseconds} ms");
+
+            await StoreAsync(StoredFolder!, [.. read], [], token);
         }
         catch (OperationCanceledException)
         {
@@ -513,23 +617,12 @@ public class BattleReportService : IDisposable
         }
     }
 
+    /// <summary>A deleted replay does not change the history: its battle stays listed and stored. Only a skipped copy leaves the skipped set (it is read again when it comes back).</summary>
     private void OnDeleted(object sender, FileSystemEventArgs e)
     {
-        bool removed = BattleReports.Remove(e.Name!, out BattleReport? report);
         lock (_arenaGate)
         {
-            // A skipped copy only leaves the set; a kept file frees its battle (the copy comes back when the folder is loaded again).
             _skippedFiles.Remove(e.Name!);
-            if (report?.ArenaUniqueId is { } arenaId && _keptByArena.GetValueOrDefault(arenaId) == e.Name)
-            {
-                _keptByArena.Remove(arenaId);
-            }
-        }
-
-        if (removed)
-        {
-            _snackbar.Add(Notice("Verwijderd", $"{e.Name} is niet meer aanwezig"), Severity.Warning);
-            BattleReportRemoved?.Invoke(this, new BattleReportRemovedEventArgs(report!));
         }
     }
 

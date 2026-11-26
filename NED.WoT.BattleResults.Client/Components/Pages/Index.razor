@@ -542,7 +542,6 @@
 		BattleResultService.LoadingBattleReportsStarted += OnLoadingStarted;
 		BattleResultService.FolderChanged += OnFolderChanged;
 		BattleResultService.BattleReportAdded += OnReportAdded;
-		BattleResultService.BattleReportRemoved += OnReportRemoved;
 		BattleResultService.LoadingBattleReportsFinished += OnLoadingFinished;
 		BattleResultService.ClanMatchStarted += OnClanMatchStarted;
 
@@ -593,7 +592,6 @@
 		BattleResultService.LoadingBattleReportsStarted -= OnLoadingStarted;
 		BattleResultService.FolderChanged -= OnFolderChanged;
 		BattleResultService.BattleReportAdded -= OnReportAdded;
-		BattleResultService.BattleReportRemoved -= OnReportRemoved;
 		BattleResultService.LoadingBattleReportsFinished -= OnLoadingFinished;
 		BattleResultService.ClanMatchStarted -= OnClanMatchStarted;
 		try
@@ -666,16 +664,6 @@
 			{
 				_addedFiles.Add(e.Report.FileName);
 			}
-		});
-	}
-
-	private async void OnReportRemoved(object? s, BattleReportRemovedEventArgs e)
-	{
-		await InvokeAsync(() =>
-		{
-			_reports.Remove(e.Report);
-			_battlesVersion++;
-			StateHasChanged();
 		});
 	}
 
