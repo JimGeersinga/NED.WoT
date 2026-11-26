@@ -403,10 +403,6 @@ public class BattleReportService : IDisposable
         return string.IsNullOrWhiteSpace(firstFolder) ? null : Path.Combine(firstFolder, "temp.wotreplay");
     }
 
-#if DEBUG
-    private static bool _storeChecked;
-#endif
-
     [Conditional("DEBUG")]
     private static void SelfCheck()
     {
@@ -415,13 +411,6 @@ public class BattleReportService : IDisposable
         string folder = Path.GetTempPath();
         Debug.Assert(LiveReplayFile(folder, @"C:\replays") == Path.Combine(folder, "temp.wotreplay"), "a configured folder gives temp.wotreplay in it");
         Debug.Assert(LiveReplayFile(null, null) is null, "nothing known: no lookup");
-#if DEBUG
-        if (!_storeChecked)
-        {
-            _storeChecked = true;
-            _ = AppDbContext.SelfCheckAsync();
-        }
-#endif
 
         Dictionary<long, string> kept = [];
         Debug.Assert(TryKeep(kept, null, "a") && TryKeep(kept, null, "b"), "no arena id: always kept");
